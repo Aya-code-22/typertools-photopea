@@ -97,16 +97,16 @@ function render() {
   const names = Object.keys(state.styles);
 
   document.querySelector("#app").innerHTML = `
-    <header><strong>TypeR-P</strong><span id="status">Waiting for Photopeaâ€¦</span></header>
+    <header><strong>TypeR-P</strong><span id="status">Waiting for Photopea…</span></header>
 
     <section class="panel">
       <label>Script</label>
       <textarea id="script" placeholder="One dialogue per line..."></textarea>
       <div class="row">
         <button id="loadScript">Load</button>
-        <button id="prev">â€¹</button>
+        <button id="prev">‹</button>
         <span id="counter">0 / 0</span>
-        <button id="next">â€º</button>
+        <button id="next">›</button>
       </div>
     </section>
 
@@ -210,19 +210,19 @@ function bind() {
     const text = document.querySelector("#currentText").value.trim();
     if (!text) return;
     try {
-      setStatus("Insertingâ€¦");
+      setStatus("Inserting…");
       await insertText(text, readStyleFromUI());
       setStatus("Inserted");
     } catch (e) { setStatus(e.message); }
   };
 
   document.querySelector("#center").onclick = async () => {
-    try { setStatus("Centeringâ€¦"); await autoCenter(); setStatus("Centered"); }
+    try { setStatus("Centering…"); await autoCenter(); setStatus("Centered"); }
     catch (e) { setStatus(e.message); }
   };
 
   document.querySelector("#fit").onclick = async () => {
-    try { setStatus("Fittingâ€¦"); await fitText(); setStatus("Fitted"); }
+    try { setStatus("Fitting…"); await fitText(); setStatus("Fitted"); }
     catch (e) { setStatus(e.message); }
   };
 
