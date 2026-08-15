@@ -97,16 +97,16 @@ function render() {
   const names = Object.keys(state.styles);
 
   document.querySelector("#app").innerHTML = `
-    <header><strong>TypeR-P</strong><span id="status">Waiting for Photopea…</span></header>
+    <header><strong>TypeR-P</strong><span id="status">Waiting for Photopeaâ€¦</span></header>
 
     <section class="panel">
       <label>Script</label>
       <textarea id="script" placeholder="One dialogue per line..."></textarea>
       <div class="row">
         <button id="loadScript">Load</button>
-        <button id="prev">‹</button>
+        <button id="prev">â€¹</button>
         <span id="counter">0 / 0</span>
-        <button id="next">›</button>
+        <button id="next">â€º</button>
       </div>
     </section>
 
@@ -210,19 +210,19 @@ function bind() {
     const text = document.querySelector("#currentText").value.trim();
     if (!text) return;
     try {
-      setStatus("Inserting…");
+      setStatus("Insertingâ€¦");
       await insertText(text, readStyleFromUI());
       setStatus("Inserted");
     } catch (e) { setStatus(e.message); }
   };
 
   document.querySelector("#center").onclick = async () => {
-    try { setStatus("Centering…"); await autoCenter(); setStatus("Centered"); }
+    try { setStatus("Centeringâ€¦"); await autoCenter(); setStatus("Centered"); }
     catch (e) { setStatus(e.message); }
   };
 
   document.querySelector("#fit").onclick = async () => {
-    try { setStatus("Fitting…"); await fitText(); setStatus("Fitted"); }
+    try { setStatus("Fittingâ€¦"); await fitText(); setStatus("Fitted"); }
     catch (e) { setStatus(e.message); }
   };
 
@@ -271,11 +271,17 @@ app.preferences.rulerUnits=Units.PIXELS;
 app.preferences.typeUnits=TypeUnits.PIXELS;
 var layer=d.artLayers.add();
 layer.kind=LayerKind.TEXT;
-layer.name="TTP: ${escapeScriptString(text.slice(0,32))}";
 var t=layer.textItem;
 t.kind=TextType.PARAGRAPHTEXT;
 var box=[100,100,Math.max(300,d.width-200),Math.max(200,d.height-200)];
-try { var b=d.selection.bounds; box=[Number(b[0]),Number(b[1]),Number(b[2]),Number(b[3])]; } catch(e) {}
+try {
+  var b=d.selection.bounds;
+  var nb=[Number(b[0]),Number(b[1]),Number(b[2]),Number(b[3])];
+  var valid=true;
+  for(var i=0;i<4;i++){ if(!isFinite(nb[i])) valid=false; }
+  if(valid && nb[2]>nb[0] && nb[3]>nb[1]) box=nb;
+} catch(e) {}
+layer.name="TTP: ${escapeScriptString(text.slice(0,16))} DBG:"+d.width+"x"+d.height+" box="+box.join(",");
 t.position=[box[0],box[1]];
 t.width=Math.max(10,box[2]-box[0]);
 t.height=Math.max(10,box[3]-box[1]);
