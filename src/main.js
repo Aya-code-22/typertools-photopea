@@ -265,6 +265,7 @@ async function insertText(text, style) {
 
   await sendScript(`
 var d=app.activeDocument;
+d.name="TTP-TEST-"+Math.floor(Math.random()*10000);
 var savedRulerUnits=app.preferences.rulerUnits;
 var savedTypeUnits=app.preferences.typeUnits;
 app.preferences.rulerUnits=Units.PIXELS;
