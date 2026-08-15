@@ -1,0 +1,21 @@
+:root{color-scheme:dark;font-family:Arial,sans-serif;font-size:13px}
+*{box-sizing:border-box}
+body{margin:0;background:#202124;color:#e8eaed}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #3c4043}
+header strong{font-size:15px}
+#status{color:#9aa0a6;font-size:11px}
+.panel{padding:10px 12px;border-bottom:1px solid #303134}
+.panel.small{display:flex;gap:6px;flex-wrap:wrap}
+label{display:block;color:#bdc1c6;margin-bottom:6px}
+textarea,input,select{width:100%;background:#292a2d;color:#f1f3f4;border:1px solid #5f6368;border-radius:4px;padding:7px;outline:none}
+textarea:focus,input:focus,select:focus{border-color:#8ab4f8}
+#script{min-height:90px;resize:vertical}
+#currentText{min-height:65px;resize:vertical}
+.row{display:flex;gap:6px;margin-top:7px}
+.row>*{flex:1;min-width:0}
+button{background:#3c4043;color:#f1f3f4;border:1px solid #5f6368;border-radius:4px;padding:8px 9px;cursor:pointer}
+button:hover{background:#4a4d50}
+button.primary{background:#8ab4f8;color:#202124;border-color:#8ab4f8;font-weight:700}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px 12px}
+.actions button:first-child{grid-column:1/-1}
+#counter{flex:0 0 70px;text-align:center;padding:8px 0;color:#bdc1c6}
