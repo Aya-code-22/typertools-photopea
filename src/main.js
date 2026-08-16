@@ -13,7 +13,6 @@ function setStatus(msg) {
   statusEl.textContent = msg;
 }
 
-// هر پیامی که از Photopea (از طریق app.echoToOE) برگردد، اینجا دریافت می‌شود
 window.addEventListener("message", function (e) {
   if (typeof e.data !== "string") return;
 
@@ -22,14 +21,13 @@ window.addEventListener("message", function (e) {
     var fullMsg = "Text inserted. " + payload;
     setStatus(fullMsg);
     console.log("TypeR-P full message:", fullMsg);
-    alert(fullMsg); // برای اینکه متن کامل، بدون بریدگی، قابل مشاهده و کپی باشد
+    alert(fullMsg);
   } else if (e.data.indexOf("TYPERP_ERR:") === 0) {
     var err = e.data.slice("TYPERP_ERR:".length);
     setStatus("Error: " + err);
     console.error("TypeR-P error from Photopea:", err);
     alert("Error: " + err);
   }
-  // پیام‌های دیگر Photopea (مثل هندشیک اولیه) نادیده گرفته می‌شوند
 });
 
 insertBtn.addEventListener("click", function () {
@@ -43,13 +41,10 @@ insertBtn.addEventListener("click", function () {
   var font = fontEl.value || "ArialMT";
   var size = Number(sizeEl.value) || 48;
   var color = (colorEl.value || "FF0000").replace(/[^0-9a-fA-F]/g, "").padEnd(6, "0").slice(0, 6);
-  var align = alignEl.value || "CENTER"; // LEFT | CENTER | RIGHT
+  var align = alignEl.value || "CENTER";
 
   setStatus("Inserting...");
 
-  // اسکریپتی که داخل Photopea اجرا می‌شود.
-  // نکته: LayerKind, TextType, Justification, SolidColor, UnitValue همگی فقط
-  // داخل محیط اسکریپت Photopea معتبرند، نه در این فایل main.js.
   var script =
     "try {\n" +
     "  var d = app.activeDocument;\n" +
@@ -71,16 +66,18 @@ insertBtn.addEventListener("click", function () {
     "  var boundsErr = '';\n" +
     "  try { bounds = d.selection.bounds; } catch (e3) { bounds = null; boundsErr = (e3 && e3.message) ? e3.message : String(e3); }\n" +
     "\n" +
-    "  if (bounds) {\n" +
-    "    var left   = toPx(bounds[0]);\n" +
-    "    var top    = toPx(bounds[1]);\n" +
-    "    var right  = toPx(bounds[2]);\n" +
-    "    var bottom = toPx(bounds[3]);\n" +
+    "  if (bounds && bounds.length === 4) {\n" +
+    "    var b0 = bounds[0], b1 = bounds[1], b2 = bounds[2], b3 = bounds[3];\n" +
+    "    var left   = toPx(b0);\n" +
+    "    var top    = toPx(b1);\n" +
+    "    var right  = toPx(b2);\n" +
+    "    var bottom = toPx(b3);\n" +
     "\n" +
-    "    var raw = 'raw=[' + String(bounds[0]) + ',' + String(bounds[1]) + ',' + String(bounds[2]) + ',' + String(bounds[3]) + ']';\n" +
-    "    var typ = 'types=[' + typeof bounds[0] + ',' + typeof bounds[1] + ',' + typeof bounds[2] + ',' + typeof bounds[3] + ']';\n" +
-    "    var val = 'valueProp=[' + (bounds[0] && bounds[0].value) + ',' + (bounds[1] && bounds[1].value) + ',' + (bounds[2] && bounds[2].value) + ',' + (bounds[3] && bounds[3].value) + ']';\n" +
+    "    var raw = 'raw=[' + String(b0) + ',' + String(b1) + ',' + String(b2) + ',' + String(b3) + ']';\n" +
+    "    var typ = 'types=[' + (typeof b0) + ',' + (typeof b1) + ',' + (typeof b2) + ',' + (typeof b3) + ']';\n" +
+    "    var val = 'valueProp=[' + (b0 && b0.value) + ',' + (b1 && b1.value) + ',' + (b2 && b2.value) + ',' + (b3 && b3.value) + ']';\n" +
     "    var parsed = 'parsed=[' + left + ',' + top + ',' + right + ',' + bottom + ']';\n" +
+    "    var nanFlags = 'isNaN=[' + isNaN(left) + ',' + isNaN(top) + ',' + isNaN(right) + ',' + isNaN(bottom) + ']';\n" +
     "\n" +
     "    if (!isNaN(left) && !isNaN(top) && !isNaN(right) && !isNaN(bottom)) {\n" +
     "      cx = (left + right) / 2;\n" +
@@ -89,12 +86,12 @@ insertBtn.addEventListener("click", function () {
     "    } else {\n" +
     "      cx = d.width / 2;\n" +
     "      cy = d.height / 2;\n" +
-    "      boundsInfo = 'selection-unreadable-fallback-doc-center | ' + raw + ' | ' + typ + ' | ' + val + ' | ' + parsed;\n" +
+    "      boundsInfo = 'selection-unreadable-fallback-doc-center | ' + raw + ' | ' + typ + ' | ' + val + ' | ' + parsed + ' | ' + nanFlags;\n" +
     "    }\n" +
     "  } else {\n" +
     "    cx = d.width / 2;\n" +
     "    cy = d.height / 2;\n" +
-    "    boundsInfo = 'no-selection-or-error: ' + boundsErr;\n" +
+    "    boundsInfo = 'no-selection-or-error: ' + boundsErr + ' | boundsLen=' + (bounds && bounds.length);\n" +
     "  }\n" +
     "\n" +
     "  var layer = d.artLayers.add();\n" +
