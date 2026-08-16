@@ -1,6 +1,6 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-007
-// Selection-aware Paragraph Text + Padding + Auto Fit
+// BUILD: TYPERP-BUILD-008
+// Selection-aware Paragraph Text + Padding + Auto Fit + Saved Styles
 
 (function () {
 
@@ -187,6 +187,198 @@
 
 
     /* =====================================================
+       SAVED STYLES
+       ===================================================== */
+
+    var STYLES_KEY = "typerp_styles_v1";
+
+    var memoryStyles = {}; // اگر localStorage در دسترس نبود، fallback حافظه‌ای موقت
+
+    function loadStyles() {
+      try {
+        var raw = localStorage.getItem(STYLES_KEY);
+        if (!raw) return {};
+        var parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") return parsed;
+        return {};
+      } catch (e) {
+        return memoryStyles;
+      }
+    }
+
+    function saveStylesObj(obj) {
+      try {
+        localStorage.setItem(STYLES_KEY, JSON.stringify(obj));
+      } catch (e) {
+        memoryStyles = obj;
+      }
+    }
+
+    var stylesLabel = makeLabel("Saved Styles");
+    actions.parentElement.appendChild(stylesLabel);
+
+    var styleSelectRow = document.createElement("div");
+    styleSelectRow.style.display = "flex";
+    styleSelectRow.style.gap = "6px";
+    styleSelectRow.style.marginTop = "4px";
+
+    var styleSelectEl = document.createElement("select");
+    styleSelectEl.style.flex = "1";
+
+    var applyStyleBtn = document.createElement("button");
+    applyStyleBtn.type = "button";
+    applyStyleBtn.textContent = "Apply";
+
+    var deleteStyleBtn = document.createElement("button");
+    deleteStyleBtn.type = "button";
+    deleteStyleBtn.textContent = "Delete";
+
+    styleSelectRow.appendChild(styleSelectEl);
+    styleSelectRow.appendChild(applyStyleBtn);
+    styleSelectRow.appendChild(deleteStyleBtn);
+
+    actions.parentElement.appendChild(styleSelectRow);
+
+    var styleSaveRow = document.createElement("div");
+    styleSaveRow.style.display = "flex";
+    styleSaveRow.style.gap = "6px";
+    styleSaveRow.style.marginTop = "6px";
+
+    var styleNameEl = document.createElement("input");
+    styleNameEl.type = "text";
+    styleNameEl.placeholder = "Style name...";
+    styleNameEl.style.flex = "1";
+    styleNameEl.style.boxSizing = "border-box";
+
+    var saveStyleBtn = document.createElement("button");
+    saveStyleBtn.type = "button";
+    saveStyleBtn.textContent = "Save Style";
+
+    styleSaveRow.appendChild(styleNameEl);
+    styleSaveRow.appendChild(saveStyleBtn);
+
+    actions.parentElement.appendChild(styleSaveRow);
+
+    function refreshStyleSelect(selectName) {
+      var styles = loadStyles();
+      var names = Object.keys(styles).sort(function (a, b) {
+        return a.localeCompare(b);
+      });
+
+      styleSelectEl.innerHTML = "";
+
+      if (names.length === 0) {
+        var emptyOpt = document.createElement("option");
+        emptyOpt.value = "";
+        emptyOpt.textContent = "(no styles saved)";
+        styleSelectEl.appendChild(emptyOpt);
+        return;
+      }
+
+      for (var i = 0; i < names.length; i++) {
+        var opt = document.createElement("option");
+        opt.value = names[i];
+        opt.textContent = names[i];
+        styleSelectEl.appendChild(opt);
+      }
+
+      if (selectName && styles[selectName]) {
+        styleSelectEl.value = selectName;
+      }
+    }
+
+    function currentSettingsSnapshot() {
+      return {
+        font: fontEl.value || "ArialMT",
+        size: Number(sizeEl.value) || 48,
+        color: colorEl.value || "FF0000",
+        align: alignEl.value || "CENTER",
+        padding: Number(paddingEl.value),
+        minSize: Number(minSizeEl.value),
+        autoFit: !!fitEl.checked,
+        mode: modeEl.value
+      };
+    }
+
+    function applySettingsSnapshot(s) {
+      if (!s) return;
+      if (s.font !== undefined) fontEl.value = s.font;
+      if (s.size !== undefined) sizeEl.value = s.size;
+      if (s.color !== undefined) colorEl.value = s.color;
+      if (s.align !== undefined) alignEl.value = s.align;
+      if (s.padding !== undefined) paddingEl.value = s.padding;
+      if (s.minSize !== undefined) minSizeEl.value = s.minSize;
+      if (s.autoFit !== undefined) fitEl.checked = !!s.autoFit;
+      if (s.mode !== undefined) modeEl.value = s.mode;
+    }
+
+    saveStyleBtn.onclick = function () {
+      try {
+        var name = (styleNameEl.value || "").trim();
+
+        if (!name) {
+          setStatus("Please type a style name first.");
+          return;
+        }
+
+        var styles = loadStyles();
+        styles[name] = currentSettingsSnapshot();
+        saveStylesObj(styles);
+
+        refreshStyleSelect(name);
+        setStatus("Style saved: " + name);
+        styleNameEl.value = "";
+      } catch (e) {
+        alert("Save style error: " + e.message);
+      }
+    };
+
+    applyStyleBtn.onclick = function () {
+      try {
+        var name = styleSelectEl.value;
+        if (!name) {
+          setStatus("No style selected.");
+          return;
+        }
+
+        var styles = loadStyles();
+        var s = styles[name];
+
+        if (!s) {
+          setStatus("Style not found: " + name);
+          return;
+        }
+
+        applySettingsSnapshot(s);
+        setStatus("Style applied: " + name);
+      } catch (e) {
+        alert("Apply style error: " + e.message);
+      }
+    };
+
+    deleteStyleBtn.onclick = function () {
+      try {
+        var name = styleSelectEl.value;
+        if (!name) {
+          setStatus("No style selected.");
+          return;
+        }
+
+        var styles = loadStyles();
+        delete styles[name];
+        saveStylesObj(styles);
+
+        refreshStyleSelect();
+        setStatus("Style deleted: " + name);
+      } catch (e) {
+        alert("Delete style error: " + e.message);
+      }
+    };
+
+    refreshStyleSelect();
+
+
+    /* =====================================================
        PHOTOPEA COMMUNICATION
        ===================================================== */
 
@@ -347,7 +539,7 @@
 
 
         setStatus(
-          "Inserting build-007..."
+          "Inserting build-008..."
         );
 
 
@@ -385,10 +577,6 @@
           "  var boundsInfo = 'doc-center';\n" +
 
 
-          /* ---------------------------------------------
-             Number helper
-             --------------------------------------------- */
-
           "  function isRealNumber(x) {\n" +
 
           "    return typeof x === 'number' &&\n" +
@@ -401,12 +589,6 @@
 
           "  }\n" +
 
-
-          /* ---------------------------------------------
-             UnitValue → px
-             IMPORTANT:
-             This is the method proven by build-006.
-             --------------------------------------------- */
 
           "  function toPx(u) {\n" +
 
@@ -444,10 +626,6 @@
 
           "  }\n" +
 
-
-          /* ---------------------------------------------
-             READ SELECTION
-             --------------------------------------------- */
 
           "  try {\n" +
 
@@ -492,10 +670,6 @@
           "  } catch(selectionError) {}\n" +
 
 
-          /* ---------------------------------------------
-             FALLBACK
-             --------------------------------------------- */
-
           "  if (!hasSelection) {\n" +
 
           "    left = 0;\n" +
@@ -539,10 +713,6 @@
           "  }\n" +
 
 
-          /* ---------------------------------------------
-             PADDING
-             --------------------------------------------- */
-
           "  var boxLeft = left + " +
           padding +
           ";\n" +
@@ -567,16 +737,10 @@
           "    boxBottom - boxTop;\n" +
 
 
-          /* Prevent negative box dimensions */
-
           "  if (boxWidth < 1) boxWidth = 1;\n" +
 
           "  if (boxHeight < 1) boxHeight = 1;\n" +
 
-
-          /* ---------------------------------------------
-             CREATE TEXT LAYER
-             --------------------------------------------- */
 
           "  var layer =\n" +
           "    d.artLayers.add();\n" +
@@ -594,10 +758,6 @@
 
           "  var ti = layer.textItem;\n" +
 
-
-          /* ---------------------------------------------
-             POINT TEXT
-             --------------------------------------------- */
 
           "  if (" +
           jsString(mode) +
@@ -637,10 +797,6 @@
 
           "  } else {\n" +
 
-
-          /* ---------------------------------------------
-             PARAGRAPH TEXT
-             --------------------------------------------- */
 
           "    ti.kind =\n" +
           "      TextType.PARAGRAPHTEXT;\n" +
@@ -694,10 +850,6 @@
 
           "    ti.color = boxColor;\n" +
 
-
-          /* ---------------------------------------------
-             AUTO FIT
-             --------------------------------------------- */
 
           "    if (" +
           autoFit +
@@ -832,10 +984,6 @@
           "  d.activeLayer = layer;\n" +
 
 
-          /* ---------------------------------------------
-             RESULT
-             --------------------------------------------- */
-
           "  app.echoToOE(\n" +
 
           "    'TYPERP_OK:' +\n" +
@@ -924,7 +1072,7 @@
 
 
     setStatus(
-      "Ready (build-007)"
+      "Ready (build-008)"
     );
 
 
