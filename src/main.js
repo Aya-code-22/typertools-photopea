@@ -1,10 +1,10 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-015
+// BUILD: TYPERP-BUILD-016
 //
-// Full Text
-// Current Line
-// Line Navigation
+// Full Text -> Load Lines -> Current Line
+// Previous / Next
 // Selection-aware Paragraph Text
+// NO selection fallback
 // Padding
 // Auto Fit
 // Minimum Font Size
@@ -24,14 +24,12 @@
 
     try {
 
+      /* =================================================
+         UI ELEMENTS
+         ================================================= */
+
       var statusEl =
         document.getElementById("status");
-
-      /*
-       * ---------------------------------------------------
-       * Find all required UI elements
-       * ---------------------------------------------------
-       */
 
       var fullTextEl =
         document.getElementById("fullText");
@@ -68,7 +66,7 @@
 
 
       /* =================================================
-         CHECK
+         REQUIRED ELEMENT CHECK
          ================================================= */
 
       var missing = [];
@@ -113,20 +111,10 @@
 
       if (missing.length) {
 
-        if (statusEl) {
-
-          statusEl.textContent =
-            "BUILD-015 UI ERROR";
-
-        }
-
-
         alert(
-          "TypeR-P BUILD-015\n\n" +
-          "The loaded page does not contain:\n\n" +
-          missing.join("\n") +
-          "\n\nURL:\n" +
-          window.location.href
+          "TypeR-P BUILD-016\n\n" +
+          "Missing:\n\n" +
+          missing.join("\n")
         );
 
         return;
@@ -280,10 +268,9 @@
             /*
              * IMPORTANT:
              *
-             * Split ONLY at real newlines.
+             * Only REAL new lines are split.
              *
-             * Spaces between words are NOT
-             * treated as line breaks.
+             * Spaces between words stay intact.
              */
 
             loadedLines =
@@ -291,7 +278,7 @@
 
 
             /*
-             * Remove empty lines at the very end.
+             * Remove empty lines at the end.
              */
 
             while (
@@ -422,7 +409,7 @@
 
 
       /* =================================================
-         SETTINGS PANEL
+         ADD EXTRA CONTROLS
          ================================================= */
 
       var settingsPanel =
@@ -1188,7 +1175,7 @@
 
 
       /* =================================================
-         PHOTOPEA MESSAGE
+         PHOTOPEA MESSAGE LISTENER
          ================================================= */
 
       window.addEventListener(
@@ -1214,7 +1201,7 @@
             setStatus(
               "Text inserted. " +
               e.data.slice(
-                10
+                "TYPERP_OK:".length
               )
             );
 
@@ -1231,7 +1218,7 @@
 
             var errorText =
               e.data.slice(
-                11
+                "TYPERP_ERR:".length
               );
 
 
@@ -1242,7 +1229,7 @@
 
 
             alert(
-              "TypeR-P Error:\n" +
+              "TypeR-P Error:\n\n" +
               errorText
             );
 
@@ -1253,7 +1240,7 @@
 
 
       /* =================================================
-         STRING ESCAPE
+         SAFE STRING
          ================================================= */
 
       function jsString(value) {
@@ -1266,12 +1253,10 @@
 
 
       /* =================================================
-         INSERT
+         INSERT TEXT
          ================================================= */
 
-      function insertText(
-        text
-      ) {
+      function insertText(text) {
 
         if (
           !text ||
@@ -1362,14 +1347,20 @@
           modeEl.value;
 
 
+        /*
+         * IMPORTANT:
+         *
+         * We no longer allow a document-center fallback.
+         */
+
         setStatus(
-          "Inserting build-015..."
+          "Checking active selection..."
         );
 
 
-        /*
-         * Build Photopea script.
-         */
+        /* =================================================
+           PHOTOPEA SCRIPT
+           ================================================= */
 
         var script =
 
@@ -1379,41 +1370,62 @@
 
           "var d=app.activeDocument;\n" +
 
-          "var left,top,right,bottom;\n" +
-
-          "var cx,cy;\n" +
-
-          "var hasSelection=false;\n" +
+          "if(!d){throw new Error('No active document.');}\n" +
 
 
-          "function n(x){\n" +
+          /*
+           * -------------------------------------------------
+           * SELECTION
+           * -------------------------------------------------
+           */
 
-          "return typeof x==='number' && isFinite(x);\n" +
+          "var b;\n" +
+
+          "try{\n" +
+
+          "b=d.selection.bounds;\n" +
+
+          "}catch(selectionError){\n" +
+
+          "throw new Error('No active selection. Please make a rectangular selection first.');\n" +
 
           "}\n" +
 
 
-          "function px(u){\n" +
+          "if(!b||b.length!==4){\n" +
 
-          "if(u===null||u===undefined)return NaN;\n" +
-
-          "try{\n" +
-
-          "if(u.value!==undefined){\n" +
-
-          "var v=Number(u.value);\n" +
-
-          "if(n(v))return v;\n" +
+          "throw new Error('No active selection. Please make a rectangular selection first.');\n" +
 
           "}\n" +
 
-          "}catch(e){}\n" +
+
+          /*
+           * Convert Photopea UnitValue safely.
+           */
+
+          "function px(v){\n" +
 
           "try{\n" +
 
-          "var p=Number(u.as('px'));\n" +
+          "if(v===null||v===undefined)return NaN;\n" +
 
-          "if(n(p))return p;\n" +
+          "if(typeof v==='number')return v;\n" +
+
+          "if(v.as){\n" +
+
+          "var a=Number(v.as('px'));\n" +
+
+          "if(isFinite(a))return a;\n" +
+
+          "}\n" +
+
+          "if(v.value!==undefined){\n" +
+
+          "var n=Number(v.value);\n" +
+
+          "if(isFinite(n))return n;\n" +
+
+          "}\n" +
 
           "}catch(e){}\n" +
 
@@ -1422,48 +1434,34 @@
           "}\n" +
 
 
-          "try{\n" +
+          "var left=px(b[0]);\n" +
 
-          "var b=d.selection.bounds;\n" +
+          "var top=px(b[1]);\n" +
 
-          "if(b&&b.length===4){\n" +
+          "var right=px(b[2]);\n" +
 
-          "left=px(b[0]);\n" +
-
-          "top=px(b[1]);\n" +
-
-          "right=px(b[2]);\n" +
-
-          "bottom=px(b[3]);\n" +
-
-          "if(n(left)&&n(top)&&n(right)&&n(bottom)&&right>left&&bottom>top){\n" +
-
-          "hasSelection=true;\n" +
-
-          "}\n" +
-
-          "}\n" +
-
-          "}catch(e){}\n" +
+          "var bottom=px(b[3]);\n" +
 
 
-          "if(!hasSelection){\n" +
+          "if(!isFinite(left)||!isFinite(top)||!isFinite(right)||!isFinite(bottom)){\n" +
 
-          "left=0;\n" +
-
-          "top=0;\n" +
-
-          "right=d.width;\n" +
-
-          "bottom=d.height;\n" +
+          "throw new Error('Could not read the selection coordinates.');\n" +
 
           "}\n" +
 
 
-          "cx=(left+right)/2;\n" +
+          "if(right<=left||bottom<=top){\n" +
 
-          "cy=(top+bottom)/2;\n" +
+          "throw new Error('The active selection has invalid dimensions.');\n" +
 
+          "}\n" +
+
+
+          /*
+           * -------------------------------------------------
+           * BOX
+           * -------------------------------------------------
+           */
 
           "var boxLeft=left+" +
           padding +
@@ -1487,10 +1485,18 @@
           "var boxHeight=boxBottom-boxTop;\n" +
 
 
-          "if(boxWidth<1)boxWidth=1;\n" +
+          "if(boxWidth<1||boxHeight<1){\n" +
 
-          "if(boxHeight<1)boxHeight=1;\n" +
+          "throw new Error('Padding is larger than the selected area.');\n" +
 
+          "}\n" +
+
+
+          /*
+           * -------------------------------------------------
+           * CREATE TEXT LAYER
+           * -------------------------------------------------
+           */
 
           "var layer=d.artLayers.add();\n" +
 
@@ -1508,6 +1514,12 @@
 
           "var ti=layer.textItem;\n" +
 
+
+          /*
+           * -------------------------------------------------
+           * POINT TEXT
+           * -------------------------------------------------
+           */
 
           "if(" +
 
@@ -1541,27 +1553,71 @@
 
           ";\n" +
 
-          "var c=new SolidColor();\n" +
 
-          "c.rgb.hexValue=" +
+          "var pointColor=new SolidColor();\n" +
+
+          "pointColor.rgb.hexValue=" +
 
           jsString(color) +
 
           ";\n" +
 
-          "ti.color=c;\n" +
+          "ti.color=pointColor;\n" +
 
-          "ti.position=[cx,cy];\n" +
+
+          /*
+           * Point text uses selection center.
+           */
+
+          "ti.position=[\n" +
+
+          "(left+right)/2,\n" +
+
+          "(top+bottom)/2\n" +
+
+          "];\n" +
+
 
           "}else{\n" +
 
+
+          /*
+           * -------------------------------------------------
+           * PARAGRAPH TEXT
+           * -------------------------------------------------
+           *
+           * The text box itself is the selection rectangle.
+           */
+
           "ti.kind=TextType.PARAGRAPHTEXT;\n" +
 
-          "ti.position=[boxLeft,boxTop];\n" +
 
-          "ti.width=new UnitValue(boxWidth,'px');\n" +
+          "ti.position=[\n" +
 
-          "ti.height=new UnitValue(boxHeight,'px');\n" +
+          "boxLeft,\n" +
+
+          "boxTop\n" +
+
+          "];\n" +
+
+
+          "ti.width=new UnitValue(\n" +
+
+          "boxWidth,\n" +
+
+          "'px'\n" +
+
+          ");\n" +
+
+
+          "ti.height=new UnitValue(\n" +
+
+          "boxHeight,\n" +
+
+          "'px'\n" +
+
+          ");\n" +
+
 
           "ti.contents=" +
 
@@ -1569,11 +1625,13 @@
 
           ";\n" +
 
+
           "ti.font=" +
 
           jsString(font) +
 
           ";\n" +
+
 
           "ti.size=" +
 
@@ -1581,25 +1639,30 @@
 
           ";\n" +
 
+
           "ti.justification=Justification." +
 
           align +
 
           ";\n" +
 
-          "var c2=new SolidColor();\n" +
 
-          "c2.rgb.hexValue=" +
+          "var paragraphColor=new SolidColor();\n" +
+
+          "paragraphColor.rgb.hexValue=" +
 
           jsString(color) +
 
           ";\n" +
 
-          "ti.color=c2;\n" +
+
+          "ti.color=paragraphColor;\n" +
 
 
           /*
-           * Auto Fit.
+           * -------------------------------------------------
+           * AUTO FIT
+           * -------------------------------------------------
            */
 
           "if(" +
@@ -1608,57 +1671,77 @@
 
           "){\n" +
 
-          "var s=" +
+          "var currentSize=" +
 
           initialSize +
 
           ";\n" +
 
-          "var min=" +
+          "var minimum=" +
 
           minSize +
 
           ";\n" +
 
 
-          "function estimate(str,size,width){\n" +
+          /*
+           * Estimate wrapping by words.
+           *
+           * This is only used to select an initial font size.
+           * Actual wrapping is still performed by Photopea.
+           */
 
-          "var avg=size*0.52;\n" +
+          "function estimateLines(str,size,width){\n" +
 
-          "var max=Math.max(1,Math.floor(width/avg));\n" +
+          "var avgCharWidth=size*0.52;\n" +
 
-          "var parts=str.split(String.fromCharCode(10));\n" +
+          "var maxChars=Math.max(1,Math.floor(width/avgCharWidth));\n" +
 
-          "var lines=0;\n" +
+          "var paragraphs=str.split(String.fromCharCode(10));\n" +
+
+          "var total=0;\n" +
 
 
-          "for(var i=0;i<parts.length;i++){\n" +
+          "for(var p=0;p<paragraphs.length;p++){\n" +
 
-          "var words=parts[i].split(/\\s+/);\n" +
+          "var words=paragraphs[p].split(/\\s+/);\n" +
 
           "var chars=0;\n" +
 
-
-          "for(var j=0;j<words.length;j++){\n" +
-
-          "var w=words[j];\n" +
-
-          "if(!w)continue;\n" +
-
-          "var len=w.length;\n" +
+          "var lines=1;\n" +
 
 
-          "if(len>max){\n" +
+          "for(var w=0;w<words.length;w++){\n" +
 
-          "if(chars>0){lines++;chars=0;}\n" +
+          "var word=words[w];\n" +
 
-          "lines+=Math.ceil(len/max);\n" +
+          "if(!word)continue;\n" +
+
+
+          "var len=word.length;\n" +
+
+
+          "if(len>maxChars){\n" +
+
+          "if(chars>0){\n" +
+
+          "lines++;\n" +
+
+          "chars=0;\n" +
+
+          "}\n" +
+
+          "lines+=Math.ceil(len/maxChars)-1;\n" +
+
+          "chars=len%maxChars;\n" +
+
+          "if(chars===0)chars=maxChars;\n" +
 
           "}else{\n" +
 
           "var needed=len+(chars>0?1:0);\n" +
 
-          "if(chars+needed>max){\n" +
+          "if(chars+needed>maxChars){\n" +
 
           "lines++;\n" +
 
@@ -1675,45 +1758,70 @@
           "}\n" +
 
 
-          "if(chars>0)lines++;\n" +
+          "total+=lines;\n" +
 
           "}\n" +
 
 
-          "return Math.max(1,lines);\n" +
+          "return Math.max(1,total);\n" +
 
           "}\n" +
 
 
-          "while(s>min){\n" +
+          "while(currentSize>minimum){\n" +
 
-          "var lines=estimate(" +
+          "var estimatedLines=estimateLines(\n" +
 
           jsString(text) +
 
-          ",s,boxWidth);\n" +
+          ",\n" +
 
-          "var h=lines*s*1.2;\n" +
+          "currentSize,\n" +
 
-          "if(h<=boxHeight)break;\n" +
+          "boxWidth\n" +
 
-          "s--;\n" +
+          ");\n" +
 
-          "ti.size=s;\n" +
+
+          "var estimatedHeight=\n" +
+
+          "estimatedLines*\n" +
+
+          "currentSize*\n" +
+
+          "1.20;\n" +
+
+
+          "if(estimatedHeight<=boxHeight){\n" +
+
+          "break;\n" +
+
+          "}\n" +
+
+
+          "currentSize--;\n" +
+
+          "ti.size=currentSize;\n" +
 
           "}\n" +
 
           "}\n" +
 
-          "}\n" +
 
+          /*
+           * -------------------------------------------------
+           * FINISH
+           * -------------------------------------------------
+           */
 
           "d.activeLayer=layer;\n" +
 
 
           "app.echoToOE(\n" +
 
-          "'TYPERP_OK:selection='+\n" +
+          "'TYPERP_OK:'+\n" +
+
+          "'selection='+\n" +
 
           "Math.round(left)+','+\n" +
 
@@ -1727,7 +1835,11 @@
 
           "Math.round(boxWidth)+'x'+\n" +
 
-          "Math.round(boxHeight)\n" +
+          "Math.round(boxHeight)+\n" +
+
+          "' | size='+\n" +
+
+          "ti.size\n" +
 
           ");\n" +
 
@@ -1747,6 +1859,10 @@
           "})();";
 
 
+        /*
+         * Send script to Photopea.
+         */
+
         window.parent.postMessage(
           script,
           "*"
@@ -1756,7 +1872,7 @@
 
 
       /* =================================================
-         INSERT LINE BUTTON
+         INSERT LINE
          ================================================= */
 
       insertLineBtn.onclick =
@@ -1796,13 +1912,14 @@
          ================================================= */
 
       setStatus(
-        "Ready (BUILD-015)"
+        "Ready (BUILD-016)"
       );
+
 
     } catch (e) {
 
       alert(
-        "TypeR-P BUILD-015 ERROR:\n\n" +
+        "TypeR-P BUILD-016 ERROR:\n\n" +
         e.message
       );
 
