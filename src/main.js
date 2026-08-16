@@ -37,18 +37,20 @@ document.getElementById("insert").addEventListener("click", function () {
           return;
         }
 
-        // استخراج عدد پیکسلی پیش از ارزیابی صحت عددی
-        function toPx(item) {
+        // استخراج مستقیم عدد از .value پیش از سنجش isNaN
+        function getPx(item) {
           if (item === null || item === undefined) return NaN;
           if (typeof item === "number") return item;
-          if (typeof item === "object" && "value" in item) return Number(item.value);
-          if (typeof item === "object" && typeof item.value !== "undefined") return parseFloat(item.value);
-          var p = parseFloat(String(item));
-          return isNaN(p) ? NaN : p;
+          if (typeof item === "object" && "value" in item) {
+            var v = Number(item.value);
+            if (!isNaN(v)) return v;
+          }
+          var parsed = parseFloat(String(item));
+          return isNaN(parsed) ? NaN : parsed;
         }
 
-        var docW = toPx(d.width) || 800;
-        var docH = toPx(d.height) || 600;
+        var docW = getPx(d.width) || 800;
+        var docH = getPx(d.height) || 600;
 
         var posX = docW / 2;
         var posY = docH / 2;
@@ -60,10 +62,10 @@ document.getElementById("insert").addEventListener("click", function () {
           if (sel && sel.bounds && sel.bounds.length === 4) {
             var b = sel.bounds;
 
-            var l = toPx(b[0]);
-            var t = toPx(b[1]);
-            var r = toPx(b[2]);
-            var bm = toPx(b[3]);
+            var l = getPx(b[0]);
+            var t = getPx(b[1]);
+            var r = getPx(b[2]);
+            var bm = getPx(b[3]);
 
             if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
               posX = (l + r) / 2;
