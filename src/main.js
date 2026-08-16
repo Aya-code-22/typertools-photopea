@@ -1,14 +1,8 @@
 window.addEventListener("message", function (e) {
-  const statusEl = document.getElementById("status");
-  if (!statusEl) return;
-
   if (typeof e.data === "string") {
-    statusEl.textContent = e.data;
-  } else if (e.data) {
-    try {
-      statusEl.textContent = typeof e.data === "object" ? JSON.stringify(e.data) : String(e.data);
-    } catch (err) {
-      statusEl.textContent = "Response received from Photopea";
+    const statusEl = document.getElementById("status");
+    if (statusEl) {
+      statusEl.textContent = e.data;
     }
   }
 });
@@ -36,69 +30,62 @@ document.getElementById("insert").addEventListener("click", function () {
 
   const script = `
     (function() {
-      function send(msg) {
-        if (typeof app !== "undefined" && typeof app.echoToOE === "function") {
-          app.echoToOE(msg);
-        }
-      }
-
       try {
         var d = app.activeDocument;
         if (!d) {
-          send("Error: No document open in Photopea.");
+          app.echoToOE("Error: No document open in Photopea.");
           return;
         }
 
-        // تبدیل تضمینی UnitValue / Number / String به عدد خالص
-        function toNum(val) {
-          if (val === null || val === undefined) return NaN;
-          if (typeof val === "number") return val;
-          if (typeof val.value === "number") return val.value;
-          var n = val * 1;
-          if (!isNaN(n)) return n;
-          n = parseFloat(String(val));
-          return isNaN(n) ? NaN : n;
+        // تبدیل مطمئن UnitValue و رشته‌های واحددار (مثل "200 px") به عدد خالص
+        function getPx(v) {
+          if (v === null || v === undefined) return NaN;
+          if (typeof v === "number") return v;
+          if (typeof v === "object" && "value" in v && typeof v.value === "number") {
+            return v.value;
+          }
+          var str = String(v);
+          var parsed = parseFloat(str);
+          return isNaN(parsed) ? NaN : parsed;
         }
 
-        // ابعاد سند
-        var docW = toNum(d.width);
-        var docH = toNum(d.height);
-        
-        var posX = (!isNaN(docW) && docW > 0) ? docW / 2 : 400;
-        var posY = (!isNaN(docH) && docH > 0) ? docH / 2 : 300;
+        var docW = getPx(d.width);
+        var docH = getPx(d.height);
+        if (isNaN(docW) || docW <= 0) docW = 800;
+        if (isNaN(docH) || docH <= 0) docH = 600;
 
-        var hasSel = false;
-        var selLog = "";
+        var posX = docW / 2;
+        var posY = docH / 2;
+        var inSel = false;
+        var diag = "";
 
-        // استخراج Selection
         try {
           var sel = d.selection;
           if (sel) {
             var b = sel.bounds;
             if (b && b.length === 4) {
-              var l = toNum(b[0]);
-              var t = toNum(b[1]);
-              var r = toNum(b[2]);
-              var bm = toNum(b[3]);
+              diag = "Type:" + (typeof b[0]) + " | Str:" + String(b[0]);
 
-              selLog = "Bounds: [" + l + "," + t + "," + r + "," + bm + "]";
+              var l = getPx(b[0]);
+              var t = getPx(b[1]);
+              var r = getPx(b[2]);
+              var bm = getPx(b[3]);
 
               if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
                 posX = (l + r) / 2;
                 posY = (t + bm) / 2;
-                hasSel = true;
+                inSel = true;
               }
             }
           }
         } catch (selErr) {
-          selLog = "No active selection";
+          diag = "No selection active";
         }
 
-        // جلوگیری از ارسال NaN به موتور متن جهت منع کرش اسکریپت
-        if (isNaN(posX) || !isFinite(posX)) posX = docW / 2 || 400;
-        if (isNaN(posY) || !isFinite(posY)) posY = docH / 2 || 300;
+        // جلوگیری از ارسال NaN به ti.position برای منع کرش موتور متن فوتوپیا
+        if (isNaN(posX) || !isFinite(posX)) posX = docW / 2;
+        if (isNaN(posY) || !isFinite(posY)) posY = docH / 2;
 
-        // ساخت Text Layer
         var layer = d.artLayers.add();
         layer.kind = LayerKind.TEXT;
 
@@ -116,24 +103,17 @@ document.getElementById("insert").addEventListener("click", function () {
         ti.position = [posX, posY];
         d.activeLayer = layer;
 
-        var resultText = (hasSel ? "Placed in Selection" : "Placed in Center") +
-                          " [" + Math.round(posX) + ", " + Math.round(posY) + "]" +
-                          (selLog ? " | " + selLog : "");
+        var statusReport = (inSel ? "Placed in Selection" : "Placed in Center") +
+                            " [" + Math.round(posX) + ", " + Math.round(posY) + "]" +
+                            (diag ? " | " + diag : "");
 
-        send(resultText);
+        app.echoToOE(statusReport);
 
       } catch (err) {
-        send("Script Error: " + err.message);
+        app.echoToOE("Script Error: " + err.message);
       }
     })();
   `;
 
   window.parent.postMessage(script, "*");
-
-  // تایمر خروج از وضعیت معلق در صورت عدم پاسخ از فوتوپیا
-  setTimeout(function() {
-    if (statusEl && statusEl.textContent === "Sending to Photopea...") {
-      statusEl.textContent = "Command sent (Check Canvas)";
-    }
-  }, 1500);
 });
