@@ -97,16 +97,16 @@ function render() {
   const names = Object.keys(state.styles);
 
   document.querySelector("#app").innerHTML = `
-    <header><strong>TypeR-P</strong><span id="status">Waiting for Photopeaâ€¦</span></header>
+    <header><strong>TypeR-P</strong><span id="status">Waiting for Photopea…</span></header>
 
     <section class="panel">
       <label>Script</label>
       <textarea id="script" placeholder="One dialogue per line..."></textarea>
       <div class="row">
         <button id="loadScript">Load</button>
-        <button id="prev">â€¹</button>
+        <button id="prev">‹</button>
         <span id="counter">0 / 0</span>
-        <button id="next">â€º</button>
+        <button id="next">›</button>
       </div>
     </section>
 
@@ -210,19 +210,19 @@ function bind() {
     const text = document.querySelector("#currentText").value.trim();
     if (!text) return;
     try {
-      setStatus("Insertingâ€¦");
+      setStatus("Inserting…");
       await insertText(text, readStyleFromUI());
       setStatus("Inserted");
     } catch (e) { setStatus(e.message); }
   };
 
   document.querySelector("#center").onclick = async () => {
-    try { setStatus("Centeringâ€¦"); await autoCenter(); setStatus("Centered"); }
+    try { setStatus("Centering…"); await autoCenter(); setStatus("Centered"); }
     catch (e) { setStatus(e.message); }
   };
 
   document.querySelector("#fit").onclick = async () => {
-    try { setStatus("Fittingâ€¦"); await fitText(); setStatus("Fitted"); }
+    try { setStatus("Fitting…"); await fitText(); setStatus("Fitted"); }
     catch (e) { setStatus(e.message); }
   };
 
@@ -265,24 +265,13 @@ async function insertText(text, style) {
 
   await sendScript(`
 var d=app.activeDocument;
-d.name="TTP-TEST-"+Math.floor(Math.random()*10000);
-var savedRulerUnits=app.preferences.rulerUnits;
-var savedTypeUnits=app.preferences.typeUnits;
-app.preferences.rulerUnits=Units.PIXELS;
-app.preferences.typeUnits=TypeUnits.PIXELS;
 var layer=d.artLayers.add();
 layer.kind=LayerKind.TEXT;
+layer.name="TTP: ${escapeScriptString(text.slice(0,32))}";
 var t=layer.textItem;
 t.kind=TextType.PARAGRAPHTEXT;
 var box=[100,100,Math.max(300,d.width-200),Math.max(200,d.height-200)];
-try {
-  var b=d.selection.bounds;
-  var nb=[Number(b[0]),Number(b[1]),Number(b[2]),Number(b[3])];
-  var valid=true;
-  for(var i=0;i<4;i++){ if(!isFinite(nb[i])) valid=false; }
-  if(valid && nb[2]>nb[0] && nb[3]>nb[1]) box=nb;
-} catch(e) {}
-layer.name="TTP: ${escapeScriptString(text.slice(0,16))} DBG:"+d.width+"x"+d.height+" box="+box.join(",");
+try { var b=d.selection.bounds; box=[Number(b[0]),Number(b[1]),Number(b[2]),Number(b[3])]; } catch(e) {}
 t.position=[box[0],box[1]];
 t.width=Math.max(10,box[2]-box[0]);
 t.height=Math.max(10,box[3]-box[1]);
@@ -294,32 +283,23 @@ var c=new SolidColor();c.rgb.hexValue=${colorValue};t.color=c;
 try{t.tracking=${Number(style.tracking)||0};}catch(e){}
 try{if(${Number(style.leading)||0}>0)t.leading=${Number(style.leading)};}catch(e){}
 d.activeLayer=layer;
-app.preferences.rulerUnits=savedRulerUnits;
-app.preferences.typeUnits=savedTypeUnits;
 `);
 }
 
 async function autoCenter() {
   await sendScript(`
 var d=app.activeDocument,l=d.activeLayer;
-var savedRulerUnits=app.preferences.rulerUnits;
-app.preferences.rulerUnits=Units.PIXELS;
 if(!l||l.kind!==LayerKind.TEXT)throw new Error("Select a text layer first.");
 var s=d.selection.bounds,b=l.bounds;
 var sx=(Number(s[0])+Number(s[2]))/2,sy=(Number(s[1])+Number(s[3]))/2;
 var lx=(Number(b[0])+Number(b[2]))/2,ly=(Number(b[1])+Number(b[3]))/2;
 l.translate(sx-lx,sy-ly);
-app.preferences.rulerUnits=savedRulerUnits;
 `);
 }
 
 async function fitText() {
   await sendScript(`
 var d=app.activeDocument,l=d.activeLayer;
-var savedRulerUnits=app.preferences.rulerUnits;
-var savedTypeUnits=app.preferences.typeUnits;
-app.preferences.rulerUnits=Units.PIXELS;
-app.preferences.typeUnits=TypeUnits.PIXELS;
 if(!l||l.kind!==LayerKind.TEXT)throw new Error("Select a text layer first.");
 var s=d.selection.bounds,maxW=Number(s[2])-Number(s[0]),maxH=Number(s[3])-Number(s[1]),t=l.textItem;
 for(var i=0;i<40;i++){
@@ -333,8 +313,6 @@ var f=l.bounds;
 var sx=(Number(s[0])+Number(s[2]))/2,sy=(Number(s[1])+Number(s[3]))/2;
 var lx=(Number(f[0])+Number(f[2]))/2,ly=(Number(f[1])+Number(f[3]))/2;
 l.translate(sx-lx,sy-ly);
-app.preferences.rulerUnits=savedRulerUnits;
-app.preferences.typeUnits=savedTypeUnits;
 `);
 }
 
