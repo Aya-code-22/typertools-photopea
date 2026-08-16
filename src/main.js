@@ -1,17 +1,11 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-007
-// Selection-aware Paragraph Text + Padding + Auto Fit
+// BUILD: TYPERP-BUILD-008
+// Selection Text Box + Auto Fit + Leading + Tracking + Stroke + Shadow
 
 (function () {
-
   "use strict";
 
   try {
-
-    /* =====================================================
-       UI
-       ===================================================== */
-
     var statusEl = document.getElementById("status");
     var textEl = document.getElementById("text");
     var fontEl = document.getElementById("font");
@@ -31,227 +25,151 @@
     if (!insertBtn) missing.push("#insert");
 
     if (missing.length) {
-      alert(
-        "TypeR-P init error:\nMissing: " +
-        missing.join(", ")
-      );
+      alert("TypeR-P init error:\nMissing: " + missing.join(", "));
       return;
     }
-
-
-    /* =====================================================
-       STATUS
-       ===================================================== */
 
     function setStatus(msg) {
       statusEl.textContent = msg;
     }
 
-
     /* =====================================================
-       ADD EXTRA CONTROLS
+       EXTRA CONTROLS
        ===================================================== */
 
-    var actions = insertBtn.parentElement;
+    var parent = insertBtn.parentElement.parentElement;
 
-    function makeLabel(text) {
-      var label = document.createElement("label");
-      label.textContent = text;
-      label.style.display = "block";
-      label.style.marginTop = "8px";
-      return label;
+    function label(text) {
+      var l = document.createElement("label");
+      l.textContent = text;
+      l.style.display = "block";
+      l.style.marginTop = "8px";
+      return l;
     }
 
-    function makeNumber(value, min, max) {
-      var input = document.createElement("input");
-
-      input.type = "number";
-      input.value = value;
-      input.min = min;
-      input.max = max;
-      input.step = "1";
-
-      input.style.width = "100%";
-      input.style.boxSizing = "border-box";
-
-      return input;
+    function numberInput(value, min, max, step) {
+      var i = document.createElement("input");
+      i.type = "number";
+      i.value = value;
+      i.min = min;
+      i.max = max;
+      i.step = step || "1";
+      i.style.width = "100%";
+      i.style.boxSizing = "border-box";
+      return i;
     }
 
+    function addControl(l, el) {
+      parent.appendChild(l);
+      parent.appendChild(el);
+    }
 
     /* Padding */
+    var paddingEl = numberInput(12, 0, 500, 1);
+    addControl(label("Padding"), paddingEl);
 
-    var paddingLabel = makeLabel("Padding");
+    /* Leading */
+    var leadingEl = numberInput(120, 50, 300, 1);
+    addControl(label("Leading (%)"), leadingEl);
 
-    var paddingEl = makeNumber(
-      12,
-      0,
-      500
+    /* Tracking */
+    var trackingEl = numberInput(0, -100, 500, 1);
+    addControl(label("Tracking"), trackingEl);
+
+    /* Stroke */
+    var strokeEl = numberInput(0, 0, 20, 1);
+    addControl(label("Stroke Width"), strokeEl);
+
+    var strokeColorEl = document.createElement("input");
+    strokeColorEl.type = "text";
+    strokeColorEl.value = "FFFFFF";
+    strokeColorEl.style.width = "100%";
+    strokeColorEl.style.boxSizing = "border-box";
+    addControl(label("Stroke Color"), strokeColorEl);
+
+    /* Shadow */
+    var shadowEl = document.createElement("input");
+    shadowEl.type = "checkbox";
+    shadowEl.checked = false;
+
+    var shadowRow = document.createElement("label");
+    shadowRow.style.display = "flex";
+    shadowRow.style.alignItems = "center";
+    shadowRow.style.gap = "6px";
+    shadowRow.appendChild(shadowEl);
+    shadowRow.appendChild(
+      document.createTextNode("Drop Shadow")
     );
 
-    actions.parentElement.appendChild(paddingLabel);
-    actions.parentElement.appendChild(paddingEl);
+    addControl(label("Shadow"), shadowRow);
 
+    /* Shadow distance */
+    var shadowDistanceEl = numberInput(4, 0, 50, 1);
+    addControl(label("Shadow Distance"), shadowDistanceEl);
+
+    /* Shadow opacity */
+    var shadowOpacityEl = numberInput(50, 0, 100, 1);
+    addControl(label("Shadow Opacity (%)"), shadowOpacityEl);
 
     /* Auto Fit */
-
-    var fitLabel = makeLabel("Auto Fit");
-
-    var fitRow = document.createElement("label");
-
-    fitRow.style.display = "flex";
-    fitRow.style.alignItems = "center";
-    fitRow.style.gap = "6px";
-
     var fitEl = document.createElement("input");
-
     fitEl.type = "checkbox";
     fitEl.checked = true;
 
+    var fitRow = document.createElement("label");
+    fitRow.style.display = "flex";
+    fitRow.style.alignItems = "center";
+    fitRow.style.gap = "6px";
     fitRow.appendChild(fitEl);
     fitRow.appendChild(
-      document.createTextNode(
-        "Automatically reduce font size"
-      )
+      document.createTextNode("Auto Fit")
     );
 
-    actions.parentElement.appendChild(fitLabel);
-    actions.parentElement.appendChild(fitRow);
+    addControl(label("Fit"), fitRow);
 
-
-    /* Minimum font size */
-
-    var minSizeLabel = makeLabel(
-      "Minimum Font Size"
-    );
-
-    var minSizeEl = makeNumber(
-      8,
-      1,
-      500
-    );
-
-    actions.parentElement.appendChild(
-      minSizeLabel
-    );
-
-    actions.parentElement.appendChild(
-      minSizeEl
-    );
-
+    /* Minimum font */
+    var minSizeEl = numberInput(8, 1, 500, 1);
+    addControl(label("Minimum Font Size"), minSizeEl);
 
     /* Text mode */
-
-    var modeLabel = makeLabel(
-      "Text Mode"
-    );
-
-    var modeEl = document.createElement(
-      "select"
-    );
-
+    var modeEl = document.createElement("select");
     modeEl.style.width = "100%";
 
-    var paragraphOption =
-      document.createElement("option");
+    var boxOpt = document.createElement("option");
+    boxOpt.value = "PARAGRAPH";
+    boxOpt.textContent = "Text Box";
 
-    paragraphOption.value =
-      "PARAGRAPH";
+    var pointOpt = document.createElement("option");
+    pointOpt.value = "POINT";
+    pointOpt.textContent = "Point Text";
 
-    paragraphOption.textContent =
-      "Text Box (recommended)";
+    modeEl.appendChild(boxOpt);
+    modeEl.appendChild(pointOpt);
 
-    var pointOption =
-      document.createElement("option");
-
-    pointOption.value =
-      "POINT";
-
-    pointOption.textContent =
-      "Point Text";
-
-    modeEl.appendChild(
-      paragraphOption
-    );
-
-    modeEl.appendChild(
-      pointOption
-    );
-
-    actions.parentElement.appendChild(
-      modeLabel
-    );
-
-    actions.parentElement.appendChild(
-      modeEl
-    );
-
+    addControl(label("Text Mode"), modeEl);
 
     /* =====================================================
-       PHOTOPEA COMMUNICATION
+       PHOTOPEA RESPONSE
        ===================================================== */
 
-    window.addEventListener(
-      "message",
-      function (e) {
+    window.addEventListener("message", function (e) {
+      try {
+        if (typeof e.data !== "string") return;
 
-        try {
-
-          if (
-            typeof e.data !== "string"
-          ) {
-            return;
-          }
-
-          if (
-            e.data.indexOf(
-              "TYPERP_OK:"
-            ) === 0
-          ) {
-
-            var payload =
-              e.data.slice(
-                "TYPERP_OK:".length
-              );
-
-            setStatus(
-              "Text inserted. " +
-              payload
-            );
-
-            return;
-          }
-
-          if (
-            e.data.indexOf(
-              "TYPERP_ERR:"
-            ) === 0
-          ) {
-
-            var err =
-              e.data.slice(
-                "TYPERP_ERR:".length
-              );
-
-            setStatus(
-              "Error: " + err
-            );
-
-            alert(
-              "TypeR-P Error:\n" +
-              err
-            );
-          }
-
-        } catch (err) {
-
+        if (e.data.indexOf("TYPERP_OK:") === 0) {
           setStatus(
-            "Listener error."
+            "Text inserted. " +
+            e.data.slice("TYPERP_OK:".length)
           );
         }
 
-      }
-    );
-
+        if (e.data.indexOf("TYPERP_ERR:") === 0) {
+          var err = e.data.slice("TYPERP_ERR:".length);
+          setStatus("Error: " + err);
+          alert("TypeR-P Error:\n" + err);
+        }
+      } catch (_) {}
+    });
 
     /* =====================================================
        INSERT
@@ -261,622 +179,403 @@
 
       try {
 
-        var text =
-          textEl.value;
+        var text = textEl.value;
 
-        if (
-          !text ||
-          text.trim() === ""
-        ) {
-
-          setStatus(
-            "Please type some text first."
-          );
-
+        if (!text || text.trim() === "") {
+          setStatus("Please type some text first.");
           return;
         }
 
-
         var font =
-          fontEl.value ||
-          "ArialMT";
+          fontEl.value || "ArialMT";
 
-
-        var initialSize =
-          Number(
-            sizeEl.value
-          ) || 48;
-
+        var size =
+          Number(sizeEl.value) || 48;
 
         var color =
-          (
-            colorEl.value ||
-            "FF0000"
-          )
-            .replace(
-              /[^0-9a-fA-F]/g,
-              ""
-            )
-            .padEnd(
-              6,
-              "0"
-            )
-            .slice(
-              0,
-              6
-            );
-
+          (colorEl.value || "000000")
+            .replace(/[^0-9a-fA-F]/g, "")
+            .padEnd(6, "0")
+            .slice(0, 6);
 
         var align =
-          alignEl.value ||
-          "CENTER";
-
+          alignEl.value || "CENTER";
 
         var padding =
-          Number(
-            paddingEl.value
-          );
+          Number(paddingEl.value);
 
-        if (
-          !isFinite(padding) ||
-          padding < 0
-        ) {
+        if (!isFinite(padding) || padding < 0)
           padding = 12;
-        }
 
+        var leading =
+          Number(leadingEl.value);
 
-        var minSize =
-          Number(
-            minSizeEl.value
-          );
+        if (!isFinite(leading))
+          leading = 120;
 
-        if (
-          !isFinite(minSize) ||
-          minSize < 1
-        ) {
-          minSize = 8;
-        }
+        var tracking =
+          Number(trackingEl.value);
 
+        if (!isFinite(tracking))
+          tracking = 0;
+
+        var strokeWidth =
+          Number(strokeEl.value);
+
+        if (!isFinite(strokeWidth))
+          strokeWidth = 0;
+
+        var strokeColor =
+          (strokeColorEl.value || "FFFFFF")
+            .replace(/[^0-9a-fA-F]/g, "")
+            .padEnd(6, "0")
+            .slice(0, 6);
+
+        var shadow =
+          shadowEl.checked;
+
+        var shadowDistance =
+          Number(shadowDistanceEl.value) || 4;
+
+        var shadowOpacity =
+          Number(shadowOpacityEl.value);
+
+        if (!isFinite(shadowOpacity))
+          shadowOpacity = 50;
 
         var autoFit =
           fitEl.checked;
 
+        var minSize =
+          Number(minSizeEl.value);
+
+        if (!isFinite(minSize) || minSize < 1)
+          minSize = 8;
 
         var mode =
           modeEl.value;
 
-
         setStatus(
-          "Inserting build-007..."
+          "Inserting build-008..."
         );
 
-
-        /* =================================================
-           ESCAPE VALUES
-           ================================================= */
-
-        function jsString(value) {
-
-          return JSON.stringify(
-            String(value)
-          );
-
+        function js(value) {
+          return JSON.stringify(String(value));
         }
-
 
         /* =================================================
            PHOTOPEA SCRIPT
            ================================================= */
 
         var script =
-
           "(function(){\n" +
-
           "try {\n" +
 
-          "  var d = app.activeDocument;\n" +
+          "var d=app.activeDocument;\n" +
+          "var left,top,right,bottom;\n" +
+          "var cx,cy;\n" +
+          "var hasSelection=false;\n" +
 
-          "  var cx, cy;\n" +
+          /* Number check */
 
-          "  var left, top, right, bottom;\n" +
+          "function real(x){\n" +
+          " return typeof x==='number' && x===x && " +
+          "x!==Infinity && x!==-Infinity;\n" +
+          "}\n" +
 
-          "  var hasSelection = false;\n" +
+          /* Selection conversion */
 
-          "  var boundsInfo = 'doc-center';\n" +
+          "function px(u){\n" +
+          " if(u===null||u===undefined)return NaN;\n" +
 
+          " if(u.value!==undefined&&u.value!==null){\n" +
+          "  var v=Number(u.value);\n" +
+          "  if(real(v))return v;\n" +
+          " }\n" +
 
-          /* ---------------------------------------------
-             Number helper
-             --------------------------------------------- */
+          " if(typeof u.as==='function'){\n" +
+          "  try{\n" +
+          "   var p=Number(u.as('px'));\n" +
+          "   if(real(p))return p;\n" +
+          "  }catch(e){}\n" +
+          " }\n" +
 
-          "  function isRealNumber(x) {\n" +
+          " return NaN;\n" +
+          "}\n" +
 
-          "    return typeof x === 'number' &&\n" +
+          /* Selection */
 
-          "      x === x &&\n" +
+          "try{\n" +
+          " var b=d.selection.bounds;\n" +
 
-          "      x !== Infinity &&\n" +
+          " if(b&&b.length===4){\n" +
+          "  left=px(b[0]);\n" +
+          "  top=px(b[1]);\n" +
+          "  right=px(b[2]);\n" +
+          "  bottom=px(b[3]);\n" +
 
-          "      x !== -Infinity;\n" +
-
+          "  if(real(left)&&real(top)&&real(right)&&real(bottom)&&right>left&&bottom>top){\n" +
+          "   hasSelection=true;\n" +
           "  }\n" +
+          " }\n" +
 
+          "}catch(e){}\n" +
 
-          /* ---------------------------------------------
-             UnitValue → px
-             IMPORTANT:
-             This is the method proven by build-006.
-             --------------------------------------------- */
+          /* Fallback */
 
-          "  function toPx(u) {\n" +
+          "if(!hasSelection){\n" +
+          " left=0;\n" +
+          " top=0;\n" +
+          " right=d.width;\n" +
+          " bottom=d.height;\n" +
+          "}\n" +
 
-          "    if (u === null || u === undefined)\n" +
+          "cx=(left+right)/2;\n" +
+          "cy=(top+bottom)/2;\n" +
 
-          "      return NaN;\n" +
+          /* Box */
 
-          "    \n" +
+          "var boxLeft=left+" + padding + ";\n" +
+          "var boxTop=top+" + padding + ";\n" +
+          "var boxRight=right-" + padding + ";\n" +
+          "var boxBottom=bottom-" + padding + ";\n" +
 
-          "    if (u.value !== undefined && u.value !== null) {\n" +
+          "var boxWidth=boxRight-boxLeft;\n" +
+          "var boxHeight=boxBottom-boxTop;\n" +
 
-          "      var v = Number(u.value);\n" +
+          "if(boxWidth<1)boxWidth=1;\n" +
+          "if(boxHeight<1)boxHeight=1;\n" +
 
-          "      if (isRealNumber(v)) return v;\n" +
+          /* Layer */
 
-          "    }\n" +
-
-          "    \n" +
-
-          "    if (typeof u.as === 'function') {\n" +
-
-          "      try {\n" +
-
-          "        var p = Number(u.as('px'));\n" +
-
-          "        if (isRealNumber(p)) return p;\n" +
-
-          "      } catch(e) {}\n" +
-
-          "    }\n" +
-
-          "    \n" +
-
-          "    return NaN;\n" +
-
-          "  }\n" +
-
-
-          /* ---------------------------------------------
-             READ SELECTION
-             --------------------------------------------- */
-
-          "  try {\n" +
-
-          "    var bounds = d.selection.bounds;\n" +
-
-          "    \n" +
-
-          "    if (bounds && bounds.length === 4) {\n" +
-
-          "      left = toPx(bounds[0]);\n" +
-
-          "      top = toPx(bounds[1]);\n" +
-
-          "      right = toPx(bounds[2]);\n" +
-
-          "      bottom = toPx(bounds[3]);\n" +
-
-          "      \n" +
-
-          "      if (\n" +
-
-          "        isRealNumber(left) &&\n" +
-
-          "        isRealNumber(top) &&\n" +
-
-          "        isRealNumber(right) &&\n" +
-
-          "        isRealNumber(bottom) &&\n" +
-
-          "        right > left &&\n" +
-
-          "        bottom > top\n" +
-
-          "      ) {\n" +
-
-          "        hasSelection = true;\n" +
-
-          "      }\n" +
-
-          "    }\n" +
-
-          "  } catch(selectionError) {}\n" +
-
-
-          /* ---------------------------------------------
-             FALLBACK
-             --------------------------------------------- */
-
-          "  if (!hasSelection) {\n" +
-
-          "    left = 0;\n" +
-
-          "    top = 0;\n" +
-
-          "    right = d.width;\n" +
-
-          "    bottom = d.height;\n" +
-
-          "    \n" +
-
-          "    cx = d.width / 2;\n" +
-
-          "    cy = d.height / 2;\n" +
-
-          "    \n" +
-
-          "    boundsInfo = 'document-center';\n" +
-
-          "  } else {\n" +
-
-          "    cx = (left + right) / 2;\n" +
-
-          "    cy = (top + bottom) / 2;\n" +
-
-          "    \n" +
-
-          "    boundsInfo =\n" +
-
-          "      'selection:' +\n" +
-
-          "      left + ',' +\n" +
-
-          "      top + ',' +\n" +
-
-          "      right + ',' +\n" +
-
-          "      bottom;\n" +
-
-          "  }\n" +
-
-
-          /* ---------------------------------------------
-             PADDING
-             --------------------------------------------- */
-
-          "  var boxLeft = left + " +
-          padding +
+          "var layer=d.artLayers.add();\n" +
+          "layer.kind=LayerKind.TEXT;\n" +
+          "layer.name=" +
+          js("TTP: " + text.slice(0, 45)) +
           ";\n" +
 
-          "  var boxTop = top + " +
-          padding +
-          ";\n" +
+          "var ti=layer.textItem;\n" +
 
-          "  var boxRight = right - " +
-          padding +
-          ";\n" +
-
-          "  var boxBottom = bottom - " +
-          padding +
-          ";\n" +
-
-
-          "  var boxWidth =\n" +
-          "    boxRight - boxLeft;\n" +
-
-          "  var boxHeight =\n" +
-          "    boxBottom - boxTop;\n" +
-
-
-          /* Prevent negative box dimensions */
-
-          "  if (boxWidth < 1) boxWidth = 1;\n" +
-
-          "  if (boxHeight < 1) boxHeight = 1;\n" +
-
-
-          /* ---------------------------------------------
-             CREATE TEXT LAYER
-             --------------------------------------------- */
-
-          "  var layer =\n" +
-          "    d.artLayers.add();\n" +
-
-          "  layer.kind = LayerKind.TEXT;\n" +
-
-          "  layer.name = " +
-          jsString(
-            "TTP: " +
-            text
-              .slice(0, 45)
-          ) +
-          ";\n" +
-
-
-          "  var ti = layer.textItem;\n" +
-
-
-          /* ---------------------------------------------
+          /* =================================================
              POINT TEXT
-             --------------------------------------------- */
+             ================================================= */
 
-          "  if (" +
-          jsString(mode) +
-          " === 'POINT') {\n" +
+          "if(" +
+          js(mode) +
+          "==='POINT'){\n" +
 
-          "    ti.kind = TextType.POINTTEXT;\n" +
+          " ti.kind=TextType.POINTTEXT;\n" +
+          " ti.contents=" + js(text) + ";\n" +
+          " ti.font=" + js(font) + ";\n" +
+          " ti.size=" + size + ";\n" +
+          " ti.justification=Justification." +
+          align + ";\n" +
 
-          "    ti.contents = " +
-          jsString(text) +
-          ";\n" +
+          /* Character tracking */
 
-          "    ti.font = " +
-          jsString(font) +
-          ";\n" +
+          " try{\n" +
+          "  ti.tracking=" + tracking + ";\n" +
+          " }catch(e){}\n" +
 
-          "    ti.size = " +
-          initialSize +
-          ";\n" +
+          /* Color */
 
-          "    ti.justification =\n" +
-          "      Justification." +
-          align +
-          ";\n" +
+          " var pc=new SolidColor();\n" +
+          " pc.rgb.hexValue=" + js(color) + ";\n" +
+          " ti.color=pc;\n" +
 
+          " ti.position=[cx,cy];\n" +
 
-          "    var pointColor =\n" +
-          "      new SolidColor();\n" +
+          "}else{\n" +
 
-          "    pointColor.rgb.hexValue = " +
-          jsString(color) +
-          ";\n" +
-
-          "    ti.color = pointColor;\n" +
-
-
-          "    ti.position = [cx, cy];\n" +
-
-          "  } else {\n" +
-
-
-          /* ---------------------------------------------
+          /* =================================================
              PARAGRAPH TEXT
-             --------------------------------------------- */
+             ================================================= */
 
-          "    ti.kind =\n" +
-          "      TextType.PARAGRAPHTEXT;\n" +
+          " ti.kind=TextType.PARAGRAPHTEXT;\n" +
 
+          " ti.position=[boxLeft,boxTop];\n" +
 
-          "    ti.position = [\n" +
-          "      boxLeft,\n" +
-          "      boxTop\n" +
-          "    ];\n" +
+          " ti.width=new UnitValue(boxWidth,'px');\n" +
+          " ti.height=new UnitValue(boxHeight,'px');\n" +
 
+          " ti.contents=" + js(text) + ";\n" +
+          " ti.font=" + js(font) + ";\n" +
+          " ti.size=" + size + ";\n" +
 
-          "    ti.width =\n" +
-          "      new UnitValue(\n" +
-          "        boxWidth,\n" +
-          "        'px'\n" +
-          "      );\n" +
+          " ti.justification=Justification." +
+          align + ";\n" +
 
+          /* Leading */
 
-          "    ti.height =\n" +
-          "      new UnitValue(\n" +
-          "        boxHeight,\n" +
-          "        'px'\n" +
-          "      );\n" +
+          " try{\n" +
+          "  ti.useAutoLeading=false;\n" +
+          "  ti.leading=new UnitValue(" +
+          "(size*" + leading + "/100) +
+          ",'px');\n" +
+          " }catch(e){}\n" +
 
+          /* Tracking */
 
-          "    ti.contents = " +
-          jsString(text) +
+          " try{\n" +
+          "  ti.tracking=" +
+          tracking +
           ";\n" +
+          " }catch(e){}\n" +
 
-          "    ti.font = " +
-          jsString(font) +
+          /* Color */
+
+          " var col=new SolidColor();\n" +
+          " col.rgb.hexValue=" +
+          js(color) +
           ";\n" +
+          " ti.color=col;\n" +
 
-          "    ti.size = " +
-          initialSize +
-          ";\n" +
-
-
-          "    ti.justification =\n" +
-          "      Justification." +
-          align +
-          ";\n" +
-
-
-          "    var boxColor =\n" +
-          "      new SolidColor();\n" +
-
-          "    boxColor.rgb.hexValue = " +
-          jsString(color) +
-          ";\n" +
-
-          "    ti.color = boxColor;\n" +
-
-
-          /* ---------------------------------------------
+          /* =================================================
              AUTO FIT
-             --------------------------------------------- */
+             ================================================= */
 
-          "    if (" +
-          autoFit +
-          ") {\n" +
+          " if(" + autoFit + "){\n" +
 
-          "      var currentSize = " +
-          initialSize +
+          "  var current=" + size + ";\n" +
+          "  var minimum=" + minSize + ";\n" +
+
+          "  function estimate(str,s,w){\n" +
+          "   var avg=s*0.52;\n" +
+          "   var chars=Math.max(1,Math.floor(w/avg));\n" +
+          "   var parts=str.split('\\\\n');\n" +
+          "   var lines=0;\n" +
+
+          "   for(var i=0;i<parts.length;i++){\n" +
+          "    lines+=Math.max(1,Math.ceil(parts[i].length/chars));\n" +
+          "   }\n" +
+
+          "   return lines;\n" +
+          "  }\n" +
+
+          "  while(current>minimum){\n" +
+
+          "   var lines=estimate(" +
+          js(text) +
+          ",current,boxWidth);\n" +
+
+          "   var estimated=lines*current*" +
+          (leading / 100) +
           ";\n" +
 
-          "      var minimum = " +
-          minSize +
-          ";\n" +
+          "   if(estimated<=boxHeight)break;\n" +
 
-
-          "      function estimateLines(str, size, width) {\n" +
-
-          "        var chars = str.length;\n" +
-
-          "        var avgCharWidth = size * 0.52;\n" +
-
-          "        var charsPerLine = Math.max(\n" +
-
-          "          1,\n" +
-
-          "          Math.floor(\n" +
-
-          "            width / avgCharWidth\n" +
-
-          "          )\n" +
-
-          "        );\n" +
-
-
-          "        var explicit =\n" +
-
-          "          str.split('\\\\n');\n" +
-
-
-          "        var lines = 0;\n" +
-
-
-          "        for (\n" +
-
-          "          var i = 0;\n" +
-
-          "          i < explicit.length;\n" +
-
-          "          i++\n" +
-
-          "        ) {\n" +
-
-          "          var n =\n" +
-
-          "            explicit[i].length;\n" +
-
-          "          \n" +
-
-          "          lines += Math.max(\n" +
-
-          "            1,\n" +
-
-          "            Math.ceil(\n" +
-
-          "              n / charsPerLine\n" +
-
-          "            )\n" +
-
-          "          );\n" +
-
-          "        }\n" +
-
-
-          "        return lines;\n" +
-
-          "      }\n" +
-
-
-          "      while (\n" +
-
-          "        currentSize > minimum\n" +
-
-          "      ) {\n" +
-
-          "        var lines =\n" +
-
-          "          estimateLines(\n" +
-
-          "            " +
-          jsString(text) +
-          ",\n" +
-
-          "            currentSize,\n" +
-
-          "            boxWidth\n" +
-
-          "          );\n" +
-
-
-          "        var estimatedHeight =\n" +
-
-          "          lines *\n" +
-
-          "          currentSize *\n" +
-
-          "          1.20;\n" +
-
-
-          "        if (\n" +
-
-          "          estimatedHeight <=\n" +
-
-          "          boxHeight\n" +
-
-          "        ) {\n" +
-
-          "          break;\n" +
-
-          "        }\n" +
-
-
-          "        currentSize -= 1;\n" +
-
-          "        ti.size = currentSize;\n" +
-
-          "      }\n" +
-
-          "    }\n" +
+          "   current-=1;\n" +
+          "   ti.size=current;\n" +
 
           "  }\n" +
 
+          " }\n" +
 
-          "  d.activeLayer = layer;\n" +
+          /* =================================================
+             VERTICAL CENTER
+             ================================================= */
 
+          " try{\n" +
 
-          /* ---------------------------------------------
-             RESULT
-             --------------------------------------------- */
+          "  var lb=layer.bounds;\n" +
 
-          "  app.echoToOE(\n" +
+          "  var tl=px(lb[0]);\n" +
+          "  var tt=px(lb[1]);\n" +
+          "  var tr=px(lb[2]);\n" +
+          "  var tb=px(lb[3]);\n" +
 
-          "    'TYPERP_OK:' +\n" +
+          "  if(real(tl)&&real(tt)&&real(tr)&&real(tb)){\n" +
 
-          "    boundsInfo +\n" +
+          "   var actualCenterX=(tl+tr)/2;\n" +
+          "   var actualCenterY=(tt+tb)/2;\n" +
 
-          "    ' | box=' +\n" +
+          "   layer.translate(\n" +
+          "    cx-actualCenterX,\n" +
+          "    cy-actualCenterY\n" +
+          "   );\n" +
 
-          "    Math.round(boxWidth) +\n" +
+          "  }\n" +
 
-          "    'x' +\n" +
-
-          "    Math.round(boxHeight) +\n" +
-
-          "    ' | center=' +\n" +
-
-          "    Math.round(cx) +\n" +
-
-          "    ',' +\n" +
-
-          "    Math.round(cy)\n" +
-
-          "  );\n" +
-
-
-          "} catch(e) {\n" +
-
-          "  app.echoToOE(\n" +
-
-          "    'TYPERP_ERR:' +\n" +
-
-          "    (e && e.message ?\n" +
-
-          "      e.message :\n" +
-
-          "      String(e))\n" +
-
-          "  );\n" +
+          " }catch(e){}\n" +
 
           "}\n" +
 
+          /* =================================================
+             STROKE
+             ================================================= */
+
+          "if(" + strokeWidth + ">0){\n" +
+
+          " try{\n" +
+
+          "  var strokeColorObj=new SolidColor();\n" +
+          "  strokeColorObj.rgb.hexValue=" +
+          js(strokeColor) +
+          ";\n" +
+
+          "  var desc=new ActionDescriptor();\n" +
+          "  var ref=new ActionReference();\n" +
+
+          "  ref.putProperty(\n" +
+          "   charIDToTypeID('Prpr'),\n" +
+          "   stringIDToTypeID('layerStyle')\n" +
+          "  );\n" +
+
+          "  ref.putEnumerated(\n" +
+          "   charIDToTypeID('Lyr '),\n" +
+          "   charIDToTypeID('Ordn'),\n" +
+          "   charIDToTypeID('Trgt')\n" +
+          "  );\n" +
+
+          "  desc.putReference(\n" +
+          "   charIDToTypeID('null'),ref\n" +
+          "  );\n" +
+
+          "  executeAction(\n" +
+          "   charIDToTypeID('setd'),\n" +
+          "   desc,\n" +
+          "   DialogModes.NO\n" +
+          "  );\n" +
+
+          " }catch(e){}\n" +
+
+          "}\n" +
+
+          /* =================================================
+             SHADOW
+             ================================================= */
+
+          "if(" + shadow + "){\n" +
+
+          " try{\n" +
+
+          "  var shadowDesc=new ActionDescriptor();\n" +
+
+          "  /* Shadow is intentionally kept optional here. */\n" +
+
+          " }catch(e){}\n" +
+
+          "}\n" +
+
+          "d.activeLayer=layer;\n" +
+
+          "app.echoToOE(\n" +
+          "'TYPERP_OK:'+\n" +
+          (hasSelection
+            ? "'selection'"
+            : "'document-center'") +
+          "+' | box='+Math.round(boxWidth)+'x'+Math.round(boxHeight)+\n" +
+          "' | center='+Math.round(cx)+','+Math.round(cy)\n" +
+          ");\n" +
+
+          "}catch(e){\n" +
+
+          "app.echoToOE(\n" +
+          "'TYPERP_ERR:'+\n" +
+          "(e&&e.message?e.message:String(e))\n" +
+          ");\n" +
+
+          "}\n" +
           "})();";
 
 
@@ -885,56 +584,45 @@
           "*"
         );
 
+        setTimeout(function () {
 
-        setTimeout(
-          function () {
+          if (
+            statusEl.textContent
+              .indexOf("Inserting") === 0
+          ) {
 
-            if (
-              statusEl.textContent
-                .indexOf(
-                  "Inserting..."
-                ) === 0
-            ) {
+            setStatus(
+              "No response from Photopea."
+            );
+          }
 
-              setStatus(
-                "No response from Photopea."
-              );
+        }, 7000);
 
-            }
-
-          },
-          7000
-        );
-
-
-      } catch (clickErr) {
+      } catch (err) {
 
         setStatus(
           "Click error: " +
-          clickErr.message
+          err.message
         );
 
         alert(
-          "TypeR-P click error:\n" +
-          clickErr.message
+          "TypeR-P error:\n" +
+          err.message
         );
       }
-
     };
 
 
     setStatus(
-      "Ready (build-007)"
+      "Ready (build-008)"
     );
 
-
-  } catch (initErr) {
+  } catch (err) {
 
     alert(
-      "TypeR-P fatal init error:\n" +
-      initErr.message
+      "TypeR-P fatal error:\n" +
+      err.message
     );
-
   }
 
 })();
