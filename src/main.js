@@ -19,11 +19,15 @@ window.addEventListener("message", function (e) {
 
   if (e.data.indexOf("TYPERP_OK:") === 0) {
     var payload = e.data.slice("TYPERP_OK:".length);
-    setStatus("Text inserted. " + payload);
+    var fullMsg = "Text inserted. " + payload;
+    setStatus(fullMsg);
+    console.log("TypeR-P full message:", fullMsg);
+    alert(fullMsg); // برای اینکه متن کامل، بدون بریدگی، قابل مشاهده و کپی باشد
   } else if (e.data.indexOf("TYPERP_ERR:") === 0) {
     var err = e.data.slice("TYPERP_ERR:".length);
     setStatus("Error: " + err);
     console.error("TypeR-P error from Photopea:", err);
+    alert("Error: " + err);
   }
   // پیام‌های دیگر Photopea (مثل هندشیک اولیه) نادیده گرفته می‌شوند
 });
