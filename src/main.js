@@ -4,21 +4,46 @@
   var statusEl = document.getElementById("status");
   var insertBtn = document.getElementById("insert");
 
-  if (!statusEl || !insertBtn) {
-    return;
-  }
+  if (!statusEl || !insertBtn) return;
 
   function setStatus(text) {
     statusEl.textContent = text;
   }
 
-  function isRealNumber(x) {
+  function real(x) {
     return (
       typeof x === "number" &&
       x === x &&
       x !== Infinity &&
       x !== -Infinity
     );
+  }
+
+  function getNumber(u) {
+    if (u === null || u === undefined) return NaN;
+
+    if (real(u)) return u;
+
+    try {
+      if (u.value !== undefined && u.value !== null) {
+        var v = Number(u.value);
+        if (real(v)) return v;
+      }
+    } catch (e) {}
+
+    try {
+      if (typeof u.as === "function") {
+        var p = Number(u.as("px"));
+        if (real(p)) return p;
+      }
+    } catch (e) {}
+
+    try {
+      var n = Number(u);
+      if (real(n)) return n;
+    } catch (e) {}
+
+    return NaN;
   }
 
   insertBtn.onclick = function () {
@@ -46,7 +71,17 @@
 
       var align = alignEl.value || "CENTER";
 
-      setStatus("Reading selection...");
+      /*
+       * Padding فعلاً داخل خود Selection اعمال می‌شود.
+       * فعلاً مقدار ثابت است؛ در مرحله بعد کنترل UI برایش اضافه می‌کنیم.
+       */
+      var padding = 12;
+
+      setStatus("Creating text box...");
+
+      function js(v) {
+        return JSON.stringify(String(v));
+      }
 
       var script =
         "(function(){" +
@@ -59,30 +94,28 @@
         "}" +
 
         "function px(u){" +
-
         "if(u===null||u===undefined)return NaN;" +
 
         "if(real(u))return u;" +
 
-        "if(u.value!==undefined&&u.value!==null){" +
-        "var v1=Number(u.value);" +
-        "if(real(v1))return v1;" +
-        "}" +
-
-        "if(typeof u.as==='function'){" +
         "try{" +
-        "var v2=Number(u.as('px'));" +
-        "if(real(v2))return v2;" +
-        "}catch(e){}" +
+        "if(u.value!==undefined&&u.value!==null){" +
+        "var v=Number(u.value);" +
+        "if(real(v))return v;" +
         "}" +
+        "}catch(e){}" +
 
-        "var v3=Number(u);" +
-        "if(real(v3))return v3;" +
+        "try{" +
+        "if(typeof u.as==='function'){" +
+        "var p=Number(u.as('px'));" +
+        "if(real(p))return p;" +
+        "}" +
+        "}catch(e){}" +
 
-        "var s=String(u);" +
-        "var m=s.match(/-?\\d+(\\.\\d+)?/);" +
-
-        "if(m)return parseFloat(m[0]);" +
+        "try{" +
+        "var n=Number(u);" +
+        "if(real(n))return n;" +
+        "}catch(e){}" +
 
         "return NaN;" +
         "}" +
@@ -90,7 +123,7 @@
         "var b=d.selection.bounds;" +
 
         "if(!b||b.length!==4){" +
-        "app.echoToOE('TYPERP_ERR:Selection bounds unavailable.');" +
+        "app.echoToOE('TYPERP_ERR:No selection.');" +
         "return;" +
         "}" +
 
@@ -99,69 +132,52 @@
         "var right=px(b[2]);" +
         "var bottom=px(b[3]);" +
 
-        "if(!real(left)||!real(top)||!real(right)||!real(bottom)){" +
-        "app.echoToOE(" +
-        "'TYPERP_ERR:Invalid selection bounds: '+" +
-        "String(left)+','+String(top)+','+" +
-        "String(right)+','+String(bottom)" +
-        ");" +
+        "if(!real(left)||!real(top)||!real(right)||!real(bottom)||right<=left||bottom<=top){" +
+        "app.echoToOE('TYPERP_ERR:Could not read selection.');" +
         "return;" +
         "}" +
 
-        "if(right<=left||bottom<=top){" +
-        "app.echoToOE(" +
-        "'TYPERP_ERR:Invalid selection dimensions: '+" +
-        "String(left)+','+String(top)+','+" +
-        "String(right)+','+String(bottom)" +
-        ");" +
-        "return;" +
-        "}" +
+        "var width=right-left;" +
+        "var height=bottom-top;" +
 
-        "var cx=(left+right)/2;" +
-        "var cy=(top+bottom)/2;" +
+        "var boxLeft=left+" + padding + ";" +
+        "var boxTop=top+" + padding + ";" +
+        "var boxWidth=Math.max(1,width-" + (padding * 2) + ");" +
+        "var boxHeight=Math.max(1,height-" + (padding * 2) + ");" +
 
         "var layer=d.artLayers.add();" +
         "layer.kind=LayerKind.TEXT;" +
+        "layer.name=" + js("TTP: " + text.slice(0,45)) + ";" +
 
         "var ti=layer.textItem;" +
-        "ti.kind=TextType.POINTTEXT;" +
 
-        "ti.contents=" +
-        JSON.stringify(text) +
-        ";" +
+        /*
+         * Paragraph Text = واقعی‌ترین حالت برای Text Box
+         */
+        "ti.kind=TextType.PARAGRAPHTEXT;" +
 
-        "ti.font=" +
-        JSON.stringify(font) +
-        ";" +
+        "ti.contents=" + js(text) + ";" +
+        "ti.font=" + js(font) + ";" +
+        "ti.size=" + size + ";" +
+        "ti.justification=Justification." + align + ";" +
 
-        "ti.size=" +
-        size +
-        ";" +
+        "ti.position=[" +
+        "new UnitValue(boxLeft,'px')," +
+        "new UnitValue(boxTop,'px')" +
+        "];" +
 
-        "ti.justification=Justification." +
-        align +
-        ";" +
+        "ti.width=new UnitValue(boxWidth,'px');" +
+        "ti.height=new UnitValue(boxHeight,'px');" +
 
         "var c=new SolidColor();" +
-        "c.rgb.hexValue=" +
-        JSON.stringify(color) +
-        ";" +
-
+        "c.rgb.hexValue=" + js(color) + ";" +
         "ti.color=c;" +
-
-        "ti.position=[cx,cy];" +
 
         "d.activeLayer=layer;" +
 
         "app.echoToOE(" +
-        "'TYPERP_OK:selection='+" +
-        "Math.round(left)+','+" +
-        "Math.round(top)+','+" +
-        "Math.round(right)+','+" +
-        "Math.round(bottom)+" +
-        "' | center='+" +
-        "Math.round(cx)+','+" +
-        "Math.round(cy)" +
+        "'TYPERP_OK:Text Box | size='+" +
+        "Math.round(boxWidth)+'x'+Math.round(boxHeight)" +
         ");" +
 
         "}catch(e){" +
@@ -182,10 +198,7 @@
   };
 
   window.addEventListener("message", function (e) {
-
-    if (typeof e.data !== "string") {
-      return;
-    }
+    if (typeof e.data !== "string") return;
 
     if (e.data.indexOf("TYPERP_OK:") === 0) {
       setStatus(
@@ -200,9 +213,8 @@
         e.data.substring("TYPERP_ERR:".length)
       );
     }
-
   });
 
-  setStatus("Ready — Selection Text");
+  setStatus("Ready — Text Box");
 
 })();
