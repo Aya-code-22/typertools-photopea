@@ -1,139 +1,203 @@
-(function() {
-    'use strict';
+// TypeR-P - main.js
+// نسخه‌ای که:
+//  1) بدون Selection: متن را در مرکز تصویر می‌سازد (baseline قبلی که کار می‌کرد)
+//  2) با Selection: مختصات را با فرمت واقعی Photopea (UnitValue -> .value) می‌خواند
+//     و متن را در مرکز Selection می‌گذارد
+//  3) اگر خواندن Selection به هر دلیلی شکست بخورد، لایه متن باز هم ساخته می‌شود
+//     (در مرکز تصویر) و هیچ‌وقت ناپدید نمی‌شود
 
-    const statusEl = document.getElementById('status');
-    const textEl = document.getElementById('text');
-    const fontEl = document.getElementById('font');
-    const sizeEl = document.getElementById('size');
-    const colorEl = document.getElementById('color');
-    const alignEl = document.getElementById('align');
-    const insertBtn = document.getElementById('insert');
+(function () {
+  const els = {
+    status: document.getElementById("status"),
+    text: document.getElementById("text"),
+    font: document.getElementById("font"),
+    size: document.getElementById("size"),
+    color: document.getElementById("color"),
+    align: document.getElementById("align"),
+    insert: document.getElementById("insert"),
+  };
 
-    function runPhotopeaScript(scriptText) {
-        return new Promise((resolve, reject) => {
-            const id = 'cmd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-            const handler = function(e) {
-                const data = e.data;
-                if (data && data.id === id) {
-                    window.removeEventListener('message', handler);
-                    if (data.error) reject(new Error(data.error));
-                    else resolve(data.result);
-                }
-            };
-            window.addEventListener('message', handler);
-            window.parent.postMessage({ id: id, script: scriptText }, '*');
-        });
+  function setStatus(msg) {
+    if (els.status) els.status.textContent = msg;
+    console.log("[TypeR-P]", msg);
+  }
+
+  function sendToPhotopea(script) {
+    window.parent.postMessage(script, "*");
+  }
+
+  window.addEventListener("message", function (e) {
+    if (typeof e.data !== "string") return;
+    if (e.data === "done") return;
+
+    console.log("[TypeR-P] raw message from Photopea:", e.data);
+
+    if (e.data.indexOf("TYPERP_OK|") === 0) {
+      const payload = e.data.slice("TYPERP_OK|".length);
+      let parsed = null;
+      try {
+        parsed = JSON.parse(payload);
+      } catch (err) {
+        setStatus("Inserted, but could not parse result payload");
+        return;
+      }
+
+      if (parsed.hasSel) {
+        setStatus(
+          "Inserted inside selection at (" +
+            parsed.cx +
+            ", " +
+            parsed.cy +
+            ")"
+        );
+      } else {
+        setStatus(
+          "Inserted at image center (" +
+            parsed.cx +
+            ", " +
+            parsed.cy +
+            ") — no usable selection found"
+        );
+      }
+
+      console.log("[TypeR-P] selection diagnostics:", parsed.diag);
+      return;
     }
 
-    insertBtn.addEventListener('click', async function() {
-        try {
-            statusEl.textContent = 'Inserting...';
-            insertBtn.disabled = true;
+    if (e.data.indexOf("TYPERP_ERROR|") === 0) {
+      setStatus("Error: " + e.data.slice("TYPERP_ERROR|".length));
+      return;
+    }
+  });
 
-            const text = textEl.value.trim() || 'TypeR-P';
-            const font = fontEl.value || 'ArialMT';
-            const size = parseInt(sizeEl.value) || 48;
-            const color = colorEl.value || 'FF0000';
-            const align = alignEl.value || 'CENTER';
+  function buildScript(opts) {
+    const textJs = JSON.stringify(opts.text);
+    const fontJs = JSON.stringify(opts.font);
+    const colorJs = JSON.stringify(opts.color);
+    const sizeJs = JSON.stringify(opts.size);
+    const alignJs = opts.align;
 
-            // === SCRIPT که با ترجمه (Translate) کار می‌کند ===
-            const script = `
-                try {
-                    var doc = app.activeDocument;
-                    var w = doc.width.value || doc.width;
-                    var h = doc.height.value || doc.height;
-                    
-                    // 1. Create the text layer at the center of the document first (safe fallback)
-                    var layer = doc.artLayers.add();
-                    layer.kind = LayerKind.TEXT;
-                    var ti = layer.textItem;
-                    ti.kind = TextType.POINTTEXT;
-                    ti.contents = \`${text}\`;
-                    ti.font = \`${font}\`;
-                    ti.size = ${size};
-                    ti.justification = Justification.${align};
-                    
-                    var c = new SolidColor();
-                    c.rgb.hexValue = '${color}';
-                    ti.color = c;
-                    
-                    ti.position = [w/2, h/2];
-                    
-                    // 2. Try to move it to selection center using TRANSLATE
-                    var moved = false;
-                    var statusMsg = "Placed at document center (no valid selection)";
-                    
-                    try {
-                        if (doc.selection && doc.selection.bounds) {
-                            var b = doc.selection.bounds;
-                            
-                            // Directly use .value (as your debug showed they are numbers)
-                            // BUT we must convert them to pixels using the document's resolution!
-                            if (b[0] && typeof b[0].value === 'number') {
-                                var left = b[0].value;
-                                var top = b[1].value;
-                                var right = b[2].value;
-                                var bottom = b[3].value;
-                                
-                                // Photopea returns values in POINTS (pt) by default.
-                                // 1 inch = 72 points. We need to convert to pixels.
-                                // Pixels = Points * (DPI / 72)
-                                var dpi = doc.resolution.value || 72; // Get DPI
-                                var factor = dpi / 72;
-                                
-                                var selCX = (left + right) / 2 * factor;
-                                var selCY = (top + bottom) / 2 * factor;
-                                var docCX = w / 2;
-                                var docCY = h / 2;
-                                
-                                // Translate the layer from document center to selection center
-                                layer.translate(selCX - docCX, selCY - docCY);
-                                
-                                moved = true;
-                                statusMsg = "Moved to selection center (Converted Points to Pixels)";
-                            }
-                        }
-                    } catch(e) {
-                        statusMsg = "Selection error: " + e.message + " (fallback to center)";
-                    }
-                    
-                    doc.activeLayer = layer;
-                    
-                    app.echoToOE(JSON.stringify({
-                        success: true,
-                        msg: statusMsg,
-                        moved: moved
-                    }));
-                } catch(e) {
-                    app.echoToOE(JSON.stringify({
-                        success: false,
-                        error: e.toString()
-                    }));
-                }
-            `;
+    return (
+      "(function(){\n" +
+      "  function reportError(msg){ app.echoToOE('TYPERP_ERROR|' + msg); }\n" +
+      "  try {\n" +
+      "    var d = app.activeDocument;\n" +
+      "    var hasSel = false;\n" +
+      "    var cx = d.width / 2;\n" +
+      "    var cy = d.height / 2;\n" +
+      "    var diag = {};\n" +
+      "\n" +
+      "    try {\n" +
+      "      var sel = d.selection;\n" +
+      "      var b = sel.bounds;\n" +
+      "\n" +
+      "      diag.typeofBounds = typeof b;\n" +
+      "      diag.boundsLength = (b && typeof b.length === 'number') ? b.length : null;\n" +
+      "      try { diag.stringBounds = String(b); } catch(e0) { diag.stringBounds = 'ERR:' + String(e0); }\n" +
+      "      try { diag.jsonBounds = JSON.stringify(b); } catch(e1) { diag.jsonBounds = 'ERR:' + String(e1); }\n" +
+      "\n" +
+      "      if (b && b.length === 4) {\n" +
+      "        diag.typeofB0 = typeof b[0];\n" +
+      "        try { diag.stringB0 = String(b[0]); } catch(e2) { diag.stringB0 = 'ERR:' + String(e2); }\n" +
+      "        try { diag.b0HasValue = (typeof b[0].value === 'number'); } catch(e3) { diag.b0HasValue = 'ERR'; }\n" +
+      "        try { diag.b0HasAs = (typeof b[0].as === 'function'); } catch(e4) { diag.b0HasAs = 'ERR'; }\n" +
+      "        try { diag.b0ValueRaw = b[0].value; } catch(e5) { diag.b0ValueRaw = 'ERR:' + String(e5); }\n" +
+      "        try { diag.b0AsPx = b[0].as ? b[0].as('px') : undefined; } catch(e6) { diag.b0AsPx = 'ERR:' + String(e6); }\n" +
+      "\n" +
+      "        var vals = [];\n" +
+      "        for (var i = 0; i < 4; i++) {\n" +
+      "          var raw = b[i];\n" +
+      "          var num = NaN;\n" +
+      "          if (typeof raw === 'number') {\n" +
+      "            num = raw;\n" +
+      "          } else if (raw && typeof raw.value === 'number') {\n" +
+      "            num = raw.value;\n" +
+      "          } else if (raw && typeof raw.as === 'function') {\n" +
+      "            try { num = raw.as('px'); } catch (eAs) { num = NaN; }\n" +
+      "          } else {\n" +
+      "            num = Number(raw);\n" +
+      "          }\n" +
+      "          vals.push(num);\n" +
+      "        }\n" +
+      "        diag.parsedVals = vals.join(',');\n" +
+      "\n" +
+      "        var allValid = true;\n" +
+      "        for (var k = 0; k < vals.length; k++) {\n" +
+      "          if (typeof vals[k] !== 'number' || isNaN(vals[k])) { allValid = false; }\n" +
+      "        }\n" +
+      "\n" +
+      "        if (allValid) {\n" +
+      "          var left = vals[0], top = vals[1], right = vals[2], bottom = vals[3];\n" +
+      "          if (right > left && bottom > top) {\n" +
+      "            cx = (left + right) / 2;\n" +
+      "            cy = (top + bottom) / 2;\n" +
+      "            hasSel = true;\n" +
+      "          }\n" +
+      "        }\n" +
+      "      }\n" +
+      "    } catch (selErr) {\n" +
+      "      diag.selectionError = String(selErr);\n" +
+      "    }\n" +
+      "\n" +
+      "    var layer = d.artLayers.add();\n" +
+      "    layer.kind = LayerKind.TEXT;\n" +
+      "\n" +
+      "    var ti = layer.textItem;\n" +
+      "    ti.kind = TextType.POINTTEXT;\n" +
+      "    ti.contents = " + textJs + ";\n" +
+      "    ti.font = " + fontJs + ";\n" +
+      "    ti.size = " + sizeJs + ";\n" +
+      "    ti.justification = Justification." + alignJs + ";\n" +
+      "\n" +
+      "    var c = new SolidColor();\n" +
+      "    c.rgb.hexValue = " + colorJs + ";\n" +
+      "    ti.color = c;\n" +
+      "\n" +
+      "    ti.position = [cx, cy];\n" +
+      "    d.activeLayer = layer;\n" +
+      "\n" +
+      "    var result = { hasSel: hasSel, cx: Math.round(cx), cy: Math.round(cy), diag: diag };\n" +
+      "    app.echoToOE('TYPERP_OK|' + JSON.stringify(result));\n" +
+      "  } catch (mainErr) {\n" +
+      "    reportError(String(mainErr));\n" +
+      "  }\n" +
+      "})();"
+    );
+  }
 
-            const resultStr = await runPhotopeaScript(script);
-            const result = JSON.parse(resultStr);
+  function onInsertClick() {
+    const text = (els.text.value || "").trim();
+    if (!text) {
+      setStatus("لطفاً ابتدا متنی وارد کنید");
+      return;
+    }
 
-            if (result.success) {
-                statusEl.textContent = '✅ ' + result.msg;
-            } else {
-                statusEl.textContent = '❌ ' + result.error;
-            }
+    const font = els.font.value || "ArialMT";
+    const size = Number(els.size.value) || 48;
+    let color = (els.color.value || "FF0000").replace("#", "").trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(color)) color = "FF0000";
 
-        } catch (err) {
-            statusEl.textContent = '❌ Plugin Error: ' + err.message;
-        } finally {
-            insertBtn.disabled = false;
-        }
+    const alignRaw = (els.align.value || "CENTER").toUpperCase();
+    const align = ["LEFT", "CENTER", "RIGHT"].includes(alignRaw)
+      ? alignRaw
+      : "CENTER";
+
+    setStatus("Inserting...");
+
+    const script = buildScript({
+      text: text,
+      font: font,
+      size: size,
+      color: color,
+      align: align,
     });
 
-    statusEl.textContent = 'Connecting...';
-    window.addEventListener('message', function(e) {
-        if (e.data && e.data === 'photopea-ready') {
-            statusEl.textContent = 'Connected ✔️';
-        }
-    });
-    window.parent.postMessage('plugin-ready', '*');
+    sendToPhotopea(script);
+  }
 
+  if (els.insert) {
+    els.insert.addEventListener("click", onInsertClick);
+  }
+
+  setStatus("Ready");
 })();
