@@ -1,31 +1,140 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>TypeR-P</title>
-  <link rel="stylesheet" href="./src/style.css">
+
+  <link
+    rel="stylesheet"
+    href="./src/style.css"
+  >
+
 </head>
+
 
 <body>
 
+  <!-- =====================================================
+       HEADER
+       ===================================================== -->
+
   <header>
+
     <strong>TypeR-P</strong>
-    <span id="status">Waiting for Photopea...</span>
+
+    <span id="status">
+      Waiting for Photopea...
+    </span>
+
   </header>
 
+
+  <!-- =====================================================
+       TEXT WORKFLOW
+       ===================================================== -->
+
   <section class="panel">
-    <label for="text">Text</label>
+
+    <label for="fullText">
+      Full Text
+    </label>
 
     <textarea
-      id="text"
-      placeholder="Type text here..."
+      id="fullText"
+      placeholder="Paste the complete text here..."
     ></textarea>
+
+
+    <button
+      id="loadLines"
+      type="button"
+    >
+      LOAD LINES
+    </button>
+
+
+    <label
+      for="currentLine"
+      style="margin-top: 10px;"
+    >
+      Current Line
+    </label>
+
+    <textarea
+      id="currentLine"
+      placeholder="Current line..."
+    ></textarea>
+
+
+    <div
+      id="lineInfo"
+      style="
+        text-align: center;
+        margin: 6px 0;
+        font-size: 12px;
+      "
+    >
+      No lines loaded.
+    </div>
+
+
+    <div
+      class="row"
+      style="
+        display: flex;
+        gap: 6px;
+      "
+    >
+
+      <button
+        id="previousLine"
+        type="button"
+        style="flex: 1;"
+      >
+        PREVIOUS
+      </button>
+
+
+      <button
+        id="nextLine"
+        type="button"
+        style="flex: 1;"
+      >
+        NEXT
+      </button>
+
+
+      <button
+        id="insertLine"
+        type="button"
+        class="primary"
+        style="flex: 1;"
+      >
+        INSERT LINE
+      </button>
+
+    </div>
+
   </section>
+
+
+  <!-- =====================================================
+       TEXT SETTINGS
+       ===================================================== -->
 
   <section class="panel">
 
-    <label for="font">Font</label>
+    <label for="font">
+      Font
+    </label>
 
     <input
       id="font"
@@ -33,68 +142,113 @@
       value="ArialMT"
     >
 
+
     <div class="row">
 
       <div>
-        <label for="size">Size</label>
+
+        <label for="size">
+          Size
+        </label>
+
         <input
           id="size"
           type="number"
           value="48"
           min="1"
         >
+
       </div>
 
+
       <div>
-        <label for="color">Color</label>
+
+        <label for="color">
+          Color
+        </label>
+
         <input
           id="color"
           type="text"
           value="FF0000"
           maxlength="6"
         >
+
       </div>
 
     </div>
+
 
     <div class="row">
 
       <div>
-        <label for="align">Alignment</label>
+
+        <label for="align">
+          Alignment
+        </label>
 
         <select id="align">
-          <option value="LEFT">Left</option>
-          <option value="CENTER" selected>Center</option>
-          <option value="RIGHT">Right</option>
+
+          <option value="LEFT">
+            Left
+          </option>
+
+          <option
+            value="CENTER"
+            selected
+          >
+            Center
+          </option>
+
+          <option value="RIGHT">
+            Right
+          </option>
+
         </select>
+
       </div>
 
     </div>
 
   </section>
 
-  <section class="actions">
 
-    <button
-      id="insert"
-      class="primary"
-    >
-      INSERT TEXT
-    </button>
-
-  </section>
+  <!-- =====================================================
+       MAIN SCRIPT
+       ===================================================== -->
 
   <script>
-    var s = document.createElement("script");
-    s.src = "./src/main.js?v=" + Date.now(); // خودکار همیشه نسخهٔ تازه می‌گیرد
 
-    s.onerror = function () {
-      document.getElementById("status").textContent = "MAIN.JS FAILED TO LOAD";
-      alert("MAIN.JS FAILED TO LOAD");
-    };
+    var s =
+      document.createElement("script");
+
+
+    s.src =
+      "./src/main.js?v=" +
+      Date.now();
+
+
+    s.onerror =
+      function () {
+
+        document
+          .getElementById("status")
+          .textContent =
+          "MAIN.JS FAILED TO LOAD";
+
+
+        alert(
+          "MAIN.JS FAILED TO LOAD"
+        );
+
+      };
+
 
     document.body.appendChild(s);
+
   </script>
 
+
 </body>
+
 </html>
