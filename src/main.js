@@ -1,8 +1,5 @@
 window.addEventListener("message", function (e) {
-  if (typeof e.data === "string") {
-    // نادیده گرفتن پیام سیستمی done از طرف Photopea
-    if (e.data === "done") return;
-
+  if (typeof e.data === "string" && e.data !== "done") {
     const statusEl = document.getElementById("status");
     if (statusEl) {
       statusEl.textContent = e.data;
@@ -13,7 +10,7 @@ window.addEventListener("message", function (e) {
 document.getElementById("insert").addEventListener("click", function () {
   const statusEl = document.getElementById("status");
   if (statusEl) {
-    statusEl.textContent = "Inserting Text...";
+    statusEl.textContent = "Processing...";
   }
 
   const textVal = document.getElementById("text").value || "Text";
@@ -40,45 +37,48 @@ document.getElementById("insert").addEventListener("click", function () {
           return;
         }
 
-        // استخراج عدد پیکسلی خالص از ویژگی .value
-        function getPx(item) {
-          if (!item) return NaN;
+        // استخراج عدد پیکسلی پیش از ارزیابی صحت عددی
+        function toPx(item) {
+          if (item === null || item === undefined) return NaN;
           if (typeof item === "number") return item;
-          if (typeof item.value === "number") return item.value;
-          if (typeof item.value !== "undefined") return parseFloat(item.value);
-          return parseFloat(String(item));
+          if (typeof item === "object" && "value" in item) return Number(item.value);
+          if (typeof item === "object" && typeof item.value !== "undefined") return parseFloat(item.value);
+          var p = parseFloat(String(item));
+          return isNaN(p) ? NaN : p;
         }
 
-        var docW = getPx(d.width) || 800;
-        var docH = getPx(d.height) || 600;
+        var docW = toPx(d.width) || 800;
+        var docH = toPx(d.height) || 600;
 
         var posX = docW / 2;
         var posY = docH / 2;
-        var placedInSel = false;
-        var debugMsg = "";
+        var inSel = false;
+        var info = "";
 
         try {
           var sel = d.selection;
           if (sel && sel.bounds && sel.bounds.length === 4) {
             var b = sel.bounds;
 
-            var l = getPx(b[0]);
-            var t = getPx(b[1]);
-            var r = getPx(b[2]);
-            var bm = getPx(b[3]);
+            var l = toPx(b[0]);
+            var t = toPx(b[1]);
+            var r = toPx(b[2]);
+            var bm = toPx(b[3]);
 
             if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
               posX = (l + r) / 2;
               posY = (t + bm) / 2;
-              placedInSel = true;
-              debugMsg = "Selection Center: [" + Math.round(posX) + ", " + Math.round(posY) + "]";
+              inSel = true;
+              info = "Selection Center: [" + Math.round(posX) + ", " + Math.round(posY) + "]";
             }
           }
         } catch(selErr) {
-          debugMsg = "Selection error: " + selErr.message;
+          info = "Selection error: " + selErr.message;
         }
 
-        // ساخت Text Layer
+        if (isNaN(posX) || !isFinite(posX)) posX = docW / 2;
+        if (isNaN(posY) || !isFinite(posY)) posY = docH / 2;
+
         var layer = d.artLayers.add();
         layer.kind = LayerKind.TEXT;
 
@@ -96,10 +96,8 @@ document.getElementById("insert").addEventListener("click", function () {
         ti.position = [posX, posY];
         d.activeLayer = layer;
 
-        var resultMsg = (placedInSel ? "Placed in Selection" : "Placed in Doc Center") +
-                        " | " + debugMsg;
-
-        app.echoToOE(resultMsg);
+        var report = (inSel ? "Placed in Selection" : "Placed in Doc Center") + " | " + info;
+        app.echoToOE(report);
 
       } catch(err) {
         app.echoToOE("Error: " + err.message);
