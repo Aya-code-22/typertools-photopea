@@ -4,7 +4,7 @@
 
 (function () {
   "use strict";
-
+  alert("TYPERP BUILD 008 LOADED");
   try {
     var statusEl = document.getElementById("status");
     var textEl = document.getElementById("text");
