@@ -1,7 +1,7 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-010
+// BUILD: TYPERP-BUILD-011
 // Selection-aware Paragraph Text + Padding + Smart Auto Fit
-// + Long Word Breaking + Saved Styles
+// + Real Long-Word Breaking + Saved Styles
 
 (function () {
 
@@ -901,12 +901,12 @@
 
 
           setStatus(
-            "Inserting build-010..."
+            "Inserting build-011..."
           );
 
 
           /* =================================================
-             ESCAPE
+             SAFE STRING
              ================================================= */
 
           function jsString(value) {
@@ -983,6 +983,10 @@
             "  }\n" +
 
 
+            /* =================================================
+               GET SELECTION
+               ================================================= */
+
             "  try {\n" +
 
             "    var bounds = d.selection.bounds;\n" +
@@ -1022,6 +1026,10 @@
             "  } catch(selectionError) {}\n" +
 
 
+            /* =================================================
+               DOCUMENT FALLBACK
+               ================================================= */
+
             "  if (!hasSelection) {\n" +
 
             "    left = 0;\n" +
@@ -1059,6 +1067,10 @@
             "  }\n" +
 
 
+            /* =================================================
+               BOX
+               ================================================= */
+
             "  var boxLeft = left + " +
             padding +
             ";\n" +
@@ -1085,6 +1097,10 @@
 
             "  if (boxHeight < 1) boxHeight = 1;\n" +
 
+
+            /* =================================================
+               CREATE TEXT LAYER
+               ================================================= */
 
             "  var layer = d.artLayers.add();\n" +
 
@@ -1208,7 +1224,7 @@
 
 
             /* =================================================
-               SMART AUTO FIT
+               AUTO FIT
                ================================================= */
 
             "    if (" +
@@ -1231,7 +1247,7 @@
 
 
             /* -------------------------------------------------
-               Estimate lines without modifying normal text
+               Estimate wrapped lines
                ------------------------------------------------- */
 
             "      function estimateLines(str, size, width) {\n" +
@@ -1247,7 +1263,9 @@
             "        );\n" +
 
 
-            "        var explicit = str.split(/\\r?\\n/);\n" +
+            "        var newline = String.fromCharCode(10);\n" +
+
+            "        var explicit = str.split(newline);\n" +
 
             "        var lines = 0;\n" +
 
@@ -1327,11 +1345,10 @@
 
 
             /* -------------------------------------------------
-               Add invisible break opportunities ONLY to
-               extremely long words.
+               REAL LONG-WORD BREAKING
                ------------------------------------------------- */
 
-            "      function splitLongWords(str, size, width) {\n" +
+            "      function breakLongWords(str, size, width) {\n" +
 
             "        var avgCharWidth = size * 0.52;\n" +
 
@@ -1344,23 +1361,25 @@
             "        );\n" +
 
 
-            "        var lines = str.split(/\\r?\\n/);\n" +
+            "        var newline = String.fromCharCode(10);\n" +
+
+            "        var explicit = str.split(newline);\n" +
 
             "        var output = [];\n" +
 
 
-            "        for (var i = 0; i < lines.length; i++) {\n" +
+            "        for (var i = 0; i < explicit.length; i++) {\n" +
 
-            "          var line = lines[i];\n" +
+            "          var line = explicit[i];\n" +
 
-            "          var words = line.split(/(\\s+)/);\n" +
+            "          var parts = line.split(/(\\s+)/);\n" +
 
             "          var rebuilt = '';\n" +
 
 
-            "          for (var j = 0; j < words.length; j++) {\n" +
+            "          for (var j = 0; j < parts.length; j++) {\n" +
 
-            "            var part = words[j];\n" +
+            "            var part = parts[j];\n" +
 
 
             "            if (/^\\s+$/.test(part)) {\n" +
@@ -1374,15 +1393,34 @@
 
             "            if (part.length > charsPerLine) {\n" +
 
-            "              for (var k = 0; k < part.length; k++) {\n" +
+            "              var start = 0;\n" +
 
-            "                rebuilt += part.charAt(k);\n" +
+            "              var firstChunk = true;\n" +
 
-            "                if (k < part.length - 1) {\n" +
 
-            "                  rebuilt += '\\u200B';\n" +
+            "              while (start < part.length) {\n" +
+
+            "                var chunk = part.substr(\n" +
+
+            "                  start,\n" +
+
+            "                  charsPerLine\n" +
+
+            "                );\n" +
+
+
+            "                if (!firstChunk) {\n" +
+
+            "                  rebuilt += newline;\n" +
 
             "                }\n" +
+
+
+            "                rebuilt += chunk;\n" +
+
+            "                start += charsPerLine;\n" +
+
+            "                firstChunk = false;\n" +
 
             "              }\n" +
 
@@ -1400,18 +1438,18 @@
             "        }\n" +
 
 
-            "        return output.join('\\n');\n" +
+            "        return output.join(newline);\n" +
 
             "      }\n" +
 
 
             /* -------------------------------------------------
-               Auto Fit
+               FONT SIZE FITTING
                ------------------------------------------------- */
 
             "      while (currentSize > minimum) {\n" +
 
-            "        var lines = estimateLines(\n" +
+            "        var estimatedLines = estimateLines(\n" +
 
             jsString(text) +
 
@@ -1426,7 +1464,7 @@
 
             "        var estimatedHeight =\n" +
 
-            "          lines * currentSize * 1.20;\n" +
+            "          estimatedLines * currentSize * 1.20;\n" +
 
 
             "        if (estimatedHeight <= boxHeight) {\n" +
@@ -1444,10 +1482,10 @@
 
 
             /* -------------------------------------------------
-               Long-word processing AFTER font fitting
+               ONLY NOW BREAK EXTREMELY LONG WORDS
                ------------------------------------------------- */
 
-            "      var processedText = splitLongWords(\n" +
+            "      var processedText = breakLongWords(\n" +
 
             jsString(text) +
 
@@ -1571,7 +1609,7 @@
        ===================================================== */
 
     setStatus(
-      "Ready (build-010)"
+      "Ready (build-011)"
     );
 
 
