@@ -1,6 +1,7 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-008
+// BUILD: TYPERP-BUILD-009
 // Selection-aware Paragraph Text + Padding + Auto Fit + Saved Styles
+// FIX: rulerUnits/typeUnits = PIXELS + عدد خام به‌جای UnitValue برای width/height (رفع باگ wrap در اسناد با DPI بالا)
 
 (function () {
 
@@ -192,7 +193,7 @@
 
     var STYLES_KEY = "typerp_styles_v1";
 
-    var memoryStyles = {}; // اگر localStorage در دسترس نبود، fallback حافظه‌ای موقت
+    var memoryStyles = {};
 
     function loadStyles() {
       try {
@@ -539,7 +540,7 @@
 
 
         setStatus(
-          "Inserting build-008..."
+          "Inserting build-009..."
         );
 
 
@@ -567,6 +568,8 @@
           "try {\n" +
 
           "  var d = app.activeDocument;\n" +
+
+          "  try { app.preferences.rulerUnits = Units.PIXELS; app.preferences.typeUnits = TypeUnits.PIXELS; } catch(eUnits) {}\n" +
 
           "  var cx, cy;\n" +
 
@@ -808,18 +811,9 @@
           "    ];\n" +
 
 
-          "    ti.width =\n" +
-          "      new UnitValue(\n" +
-          "        boxWidth,\n" +
-          "        'px'\n" +
-          "      );\n" +
+          "    ti.width = boxWidth;\n" +
 
-
-          "    ti.height =\n" +
-          "      new UnitValue(\n" +
-          "        boxHeight,\n" +
-          "        'px'\n" +
-          "      );\n" +
+          "    ti.height = boxHeight;\n" +
 
 
           "    ti.contents = " +
@@ -1072,7 +1066,7 @@
 
 
     setStatus(
-      "Ready (build-008)"
+      "Ready (build-009)"
     );
 
 
