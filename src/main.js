@@ -1,21 +1,10 @@
-// TypeR-P
-// BUILD: TYPERP-BUILD-009
-// Selection -> Paragraph Text Box
-
 (function () {
   "use strict";
 
   var statusEl = document.getElementById("status");
-  var textEl = document.getElementById("text");
-  var fontEl = document.getElementById("font");
-  var sizeEl = document.getElementById("size");
-  var colorEl = document.getElementById("color");
-  var alignEl = document.getElementById("align");
   var insertBtn = document.getElementById("insert");
 
-  if (!statusEl || !textEl || !fontEl || !sizeEl ||
-      !colorEl || !alignEl || !insertBtn) {
-    alert("TypeR-P: Required HTML elements are missing.");
+  if (!statusEl || !insertBtn) {
     return;
   }
 
@@ -23,15 +12,26 @@
     statusEl.textContent = text;
   }
 
-  function js(value) {
-    return JSON.stringify(value);
+  function isRealNumber(x) {
+    return (
+      typeof x === "number" &&
+      x === x &&
+      x !== Infinity &&
+      x !== -Infinity
+    );
   }
 
   insertBtn.onclick = function () {
     try {
+      var textEl = document.getElementById("text");
+      var fontEl = document.getElementById("font");
+      var sizeEl = document.getElementById("size");
+      var colorEl = document.getElementById("color");
+      var alignEl = document.getElementById("align");
+
       var text = textEl.value;
 
-      if (!text || !text.trim()) {
+      if (!text || text.trim() === "") {
         setStatus("Please type some text first.");
         return;
       }
@@ -48,193 +48,161 @@
 
       setStatus("Reading selection...");
 
-      /*
-       * This code runs inside Photopea.
-       * The important part is that Photoshop/Photopea
-       * UnitValue objects are converted with .as("px").
-       */
-
       var script =
-        "(function () {" +
-        "try {" +
+        "(function(){" +
+        "try{" +
 
-        "var d = app.activeDocument;" +
+        "var d=app.activeDocument;" +
 
-        "var b = null;" +
-        "var left, top, right, bottom;" +
-
-        /*
-         * Get selection bounds
-         */
-        "try {" +
-          "b = d.selection.bounds;" +
-        "} catch (e) {" +
-          "b = null;" +
+        "function real(x){" +
+        "return typeof x==='number'&&x===x&&x!==Infinity&&x!==-Infinity;" +
         "}" +
 
-        "if (!b || b.length !== 4) {" +
-          "app.echoToOE('TYPERP_ERR:No active selection.');" +
-          "return;" +
+        "function px(u){" +
+
+        "if(u===null||u===undefined)return NaN;" +
+
+        "if(real(u))return u;" +
+
+        "if(u.value!==undefined&&u.value!==null){" +
+        "var v1=Number(u.value);" +
+        "if(real(v1))return v1;" +
         "}" +
 
-        /*
-         * Convert UnitValue / number to pixels.
-         */
-        "function px(v) {" +
-
-          "if (typeof v === 'number') {" +
-            "return v;" +
-          "}" +
-
-          "try {" +
-            "return Number(v.as('px'));" +
-          "} catch (e) {}" +
-
-          "try {" +
-            "return Number(v.value);" +
-          "} catch (e) {}" +
-
-          "return NaN;" +
+        "if(typeof u.as==='function'){" +
+        "try{" +
+        "var v2=Number(u.as('px'));" +
+        "if(real(v2))return v2;" +
+        "}catch(e){}" +
         "}" +
 
-        "left = px(b[0]);" +
-        "top = px(b[1]);" +
-        "right = px(b[2]);" +
-        "bottom = px(b[3]);" +
+        "var v3=Number(u);" +
+        "if(real(v3))return v3;" +
 
-        /*
-         * Validate bounds.
-         */
-        "if (" +
-          "!isFinite(left) || " +
-          "!isFinite(top) || " +
-          "!isFinite(right) || " +
-          "!isFinite(bottom) || " +
-          "right <= left || " +
-          "bottom <= top" +
-        ") {" +
+        "var s=String(u);" +
+        "var m=s.match(/-?\\d+(\\.\\d+)?/);" +
 
-          "app.echoToOE(" +
-            "'TYPERP_ERR:Invalid selection bounds: ' +" +
-            "left + ',' + top + ',' + right + ',' + bottom" +
-          ");" +
+        "if(m)return parseFloat(m[0]);" +
 
-          "return;" +
+        "return NaN;" +
         "}" +
 
-        /*
-         * Selection dimensions.
-         */
-        "var width = right - left;" +
-        "var height = bottom - top;" +
+        "var b=d.selection.bounds;" +
 
-        /*
-         * Create text layer.
-         */
-        "var layer = d.artLayers.add();" +
-        "layer.kind = LayerKind.TEXT;" +
-        "layer.name = " + js("TTP: " + text.slice(0, 40)) + ";" +
+        "if(!b||b.length!==4){" +
+        "app.echoToOE('TYPERP_ERR:Selection bounds unavailable.');" +
+        "return;" +
+        "}" +
 
-        "var ti = layer.textItem;" +
+        "var left=px(b[0]);" +
+        "var top=px(b[1]);" +
+        "var right=px(b[2]);" +
+        "var bottom=px(b[3]);" +
 
-        /*
-         * IMPORTANT:
-         * Paragraph text uses position + width/height.
-         */
-        "ti.kind = TextType.PARAGRAPHTEXT;" +
-
-        "ti.position = [" +
-          "new UnitValue(left, 'px')," +
-          "new UnitValue(top, 'px')" +
-        "];" +
-
-        "ti.width = new UnitValue(width, 'px');" +
-        "ti.height = new UnitValue(height, 'px');" +
-
-        "ti.contents = " + js(text) + ";" +
-        "ti.font = " + js(font) + ";" +
-        "ti.size = " + size + ";" +
-
-        "ti.justification = Justification." + align + ";" +
-
-        /*
-         * Text color.
-         */
-        "var c = new SolidColor();" +
-        "c.rgb.hexValue = " + js(color) + ";" +
-        "ti.color = c;" +
-
-        "d.activeLayer = layer;" +
-
-        /*
-         * Report exact selection.
-         */
+        "if(!real(left)||!real(top)||!real(right)||!real(bottom)){" +
         "app.echoToOE(" +
-          "'TYPERP_OK:' +" +
-          "'selection=' +" +
-          "Math.round(left) + ',' +" +
-          "Math.round(top) + ',' +" +
-          "Math.round(right) + ',' +" +
-          "Math.round(bottom) +" +
-          "' | size=' +" +
-          "Math.round(width) + 'x' +" +
-          "Math.round(height)" +
+        "'TYPERP_ERR:Invalid selection bounds: '+" +
+        "String(left)+','+String(top)+','+" +
+        "String(right)+','+String(bottom)" +
+        ");" +
+        "return;" +
+        "}" +
+
+        "if(right<=left||bottom<=top){" +
+        "app.echoToOE(" +
+        "'TYPERP_ERR:Invalid selection dimensions: '+" +
+        "String(left)+','+String(top)+','+" +
+        "String(right)+','+String(bottom)" +
+        ");" +
+        "return;" +
+        "}" +
+
+        "var cx=(left+right)/2;" +
+        "var cy=(top+bottom)/2;" +
+
+        "var layer=d.artLayers.add();" +
+        "layer.kind=LayerKind.TEXT;" +
+
+        "var ti=layer.textItem;" +
+        "ti.kind=TextType.POINTTEXT;" +
+
+        "ti.contents=" +
+        JSON.stringify(text) +
+        ";" +
+
+        "ti.font=" +
+        JSON.stringify(font) +
+        ";" +
+
+        "ti.size=" +
+        size +
+        ";" +
+
+        "ti.justification=Justification." +
+        align +
+        ";" +
+
+        "var c=new SolidColor();" +
+        "c.rgb.hexValue=" +
+        JSON.stringify(color) +
+        ";" +
+
+        "ti.color=c;" +
+
+        "ti.position=[cx,cy];" +
+
+        "d.activeLayer=layer;" +
+
+        "app.echoToOE(" +
+        "'TYPERP_OK:selection='+" +
+        "Math.round(left)+','+" +
+        "Math.round(top)+','+" +
+        "Math.round(right)+','+" +
+        "Math.round(bottom)+" +
+        "' | center='+" +
+        "Math.round(cx)+','+" +
+        "Math.round(cy)" +
         ");" +
 
-        "} catch (e) {" +
+        "}catch(e){" +
 
-          "app.echoToOE(" +
-            "'TYPERP_ERR:' +" +
-            "(e && e.message ? e.message : String(e))" +
-          ");" +
+        "app.echoToOE(" +
+        "'TYPERP_ERR:'+" +
+        "(e&&e.message?e.message:String(e))" +
+        ");" +
 
         "}" +
         "})();";
 
-      /*
-       * Send script to Photopea.
-       */
       window.parent.postMessage(script, "*");
 
-    } catch (e) {
-      setStatus("Error: " + e.message);
-      alert("TypeR-P error: " + e.message);
+    } catch (err) {
+      setStatus("Error: " + err.message);
     }
   };
 
-  /*
-   * Receive Photopea response.
-   */
-  window.addEventListener("message", function (event) {
+  window.addEventListener("message", function (e) {
 
-    try {
+    if (typeof e.data !== "string") {
+      return;
+    }
 
-      if (typeof event.data !== "string") {
-        return;
-      }
+    if (e.data.indexOf("TYPERP_OK:") === 0) {
+      setStatus(
+        "Text inserted. " +
+        e.data.substring("TYPERP_OK:".length)
+      );
+    }
 
-      if (event.data.indexOf("TYPERP_OK:") === 0) {
-
-        setStatus(
-          "Text inserted. " +
-          event.data.substring("TYPERP_OK:".length)
-        );
-
-      } else if (event.data.indexOf("TYPERP_ERR:") === 0) {
-
-        setStatus(
-          "Error: " +
-          event.data.substring("TYPERP_ERR:".length)
-        );
-
-      }
-
-    } catch (e) {
-      setStatus("Response error: " + e.message);
+    if (e.data.indexOf("TYPERP_ERR:") === 0) {
+      setStatus(
+        "Error: " +
+        e.data.substring("TYPERP_ERR:".length)
+      );
     }
 
   });
 
-  setStatus("Ready (build-009)");
+  setStatus("Ready — Selection Text");
 
 })();
