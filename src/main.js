@@ -10,7 +10,7 @@ window.addEventListener("message", function (e) {
 document.getElementById("insert").addEventListener("click", function () {
   const statusEl = document.getElementById("status");
   if (statusEl) {
-    statusEl.textContent = "Processing...";
+    statusEl.textContent = "Analyzing Selection...";
   }
 
   const textVal = document.getElementById("text").value || "Text";
@@ -33,85 +33,73 @@ document.getElementById("insert").addEventListener("click", function () {
       try {
         var d = app.activeDocument;
         if (!d) {
-          app.echoToOE("Error: No document open in Photopea.");
+          app.echoToOE("Error: No document open.");
           return;
         }
 
-        // تابع جامع تبدیل انواع اشیاء Photopea به عدد پیکسلی خالص
-        function forceNumber(v) {
-          if (v === null || v === undefined) return NaN;
-          if (typeof v === "number") return v;
-          try { if (typeof v.value === "number") return v.value; } catch(e){}
-          try { var val1 = parseFloat(v.value); if (!isNaN(val1)) return val1; } catch(e){}
-          try { if (typeof v.as === "function") return v.as("px"); } catch(e){}
-          try { var str = String(v); var val2 = parseFloat(str); if (!isNaN(val2)) return val2; } catch(e){}
-          try { var n = v * 1; if (!isNaN(n)) return n; } catch(e){}
-          return NaN;
-        }
-
-        var docW = forceNumber(d.width) || 800;
-        var docH = forceNumber(d.height) || 600;
+        var docW = 800, docH = 600;
+        try {
+          docW = typeof d.width === "object" ? d.width.value : Number(d.width);
+          docH = typeof d.height === "object" ? d.height.value : Number(d.height);
+        } catch(e) {}
 
         var posX = docW / 2;
         var posY = docH / 2;
-        var hasSel = false;
-        var diagInfo = "";
+        var successSel = false;
+        var diagMsg = "";
 
-        var l = NaN, t = NaN, r = NaN, bm = NaN;
-        var selSource = "";
-
-        // روش اول: بررسی DOM standard selection.bounds
         try {
           var sel = d.selection;
-          if (sel && sel.bounds) {
+          if (!sel) {
+            diagMsg = "d.selection is undefined";
+          } else {
             var b = sel.bounds;
-            l = forceNumber(b[0]);
-            t = forceNumber(b[1]);
-            r = forceNumber(b[2]);
-            bm = forceNumber(b[3]);
-            selSource = "DOM";
-          }
-        } catch(e1) {
-          diagInfo += "DOM fail; ";
-        }
+            if (!b) {
+              diagMsg = "sel.bounds is undefined";
+            } else if (b.length !== 4) {
+              diagMsg = "bounds length is " + b.length;
+            } else {
+              var b0 = b[0];
+              var b0Type = typeof b0;
+              var b0Str = String(b0);
+              var b0Val = (b0 && typeof b0 === "object" && "value" in b0) ? b0.value : "no-value-key";
 
-        // روش دوم: پشتیبان نیتیو Photopea (ActionDescriptor) در صورت ناموفق بودن روش اول
-        if (isNaN(l) || isNaN(t) || isNaN(r) || isNaN(bm)) {
-          try {
-            var ref = new ActionReference();
-            ref.putProperty(charIDToTypeID("Prpr"), stringIDToTypeID("selection"));
-            ref.putEnumerated(charIDToTypeID("Dcmn"), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
-            var desc = executeActionGet(ref);
-            if (desc && desc.hasKey(stringIDToTypeID("selection"))) {
-              var selObj = desc.getObjectValue(stringIDToTypeID("selection"));
-              l = selObj.getUnitDoubleValue(stringIDToTypeID("left"));
-              t = selObj.getUnitDoubleValue(stringIDToTypeID("top"));
-              r = selObj.getUnitDoubleValue(stringIDToTypeID("right"));
-              bm = selObj.getUnitDoubleValue(stringIDToTypeID("bottom"));
-              selSource = "ActionDesc";
+              diagMsg = "b[0] Type:" + b0Type + " | Str:'" + b0Str + "' | .val:" + b0Val;
+
+              function parseVal(v) {
+                if (v === null || v === undefined) return NaN;
+                if (typeof v === "number") return v;
+                if (typeof v === "object") {
+                  if ("value" in v && typeof v.value === "number") return v.value;
+                  if ("_value" in v && typeof v._value === "number") return v._value;
+                  if (typeof v.as === "function") return v.as("px");
+                }
+                var p = parseFloat(String(v));
+                return isNaN(p) ? NaN : p;
+              }
+
+              var l = parseVal(b[0]);
+              var t = parseVal(b[1]);
+              var r = parseVal(b[2]);
+              var bm = parseVal(b[3]);
+
+              if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
+                posX = (l + r) / 2;
+                posY = (t + bm) / 2;
+                successSel = true;
+                diagMsg = "SUCCESS! Sel Center: [" + Math.round(posX) + "," + Math.round(posY) + "] | Bounds: [" + Math.round(l) + "," + Math.round(t) + "," + Math.round(r) + "," + Math.round(bm) + "]";
+              } else {
+                diagMsg += " -> Parsed NaN [" + l + "," + t + "," + r + "," + bm + "]";
+              }
             }
-          } catch(e2) {
-            diagInfo += "ActionDesc fail; ";
           }
+        } catch(selError) {
+          diagMsg = "Sel Exception: " + selError.message;
         }
 
-        // محاسبه مرکز Selection
-        if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm)) {
-          var w = r - l;
-          var h = bm - t;
-          if (w > 0 && h > 0) {
-            posX = l + (w / 2);
-            posY = t + (h / 2);
-            hasSel = true;
-            diagInfo = "Src:" + selSource + " [" + Math.round(l) + "," + Math.round(t) + "," + Math.round(r) + "," + Math.round(bm) + "]";
-          }
-        }
-
-        // ایمنی در برابر NaN
         if (isNaN(posX) || !isFinite(posX)) posX = docW / 2;
         if (isNaN(posY) || !isFinite(posY)) posY = docH / 2;
 
-        // ساخت Text Layer
         var layer = d.artLayers.add();
         layer.kind = LayerKind.TEXT;
 
@@ -129,14 +117,11 @@ document.getElementById("insert").addEventListener("click", function () {
         ti.position = [posX, posY];
         d.activeLayer = layer;
 
-        var report = (hasSel ? "Placed in Selection" : "Placed in Center") +
-                     " (" + Math.round(posX) + ", " + Math.round(posY) + ")" +
-                     (diagInfo ? " | " + diagInfo : "");
+        var finalStatus = (successSel ? "Placed in Selection" : "Placed in Center (Fallback)") + " | " + diagMsg;
+        app.echoToOE(finalStatus);
 
-        app.echoToOE(report);
-
-      } catch (err) {
-        app.echoToOE("Script Error: " + err.message);
+      } catch(err) {
+        app.echoToOE("Critical Script Error: " + err.message);
       }
     })();
   `;
