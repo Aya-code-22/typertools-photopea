@@ -1,5 +1,5 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-020
+// BUILD: TYPERP-BUILD-021
 //
 // Full Text -> Lines -> Current Line
 // Selection-aware Paragraph Text
@@ -16,22 +16,52 @@
   "use strict";
 
   /* =====================================================
+     BUILD
+     ===================================================== */
+
+  var BUILD = "BUILD-021";
+
+
+  /* =====================================================
      UI
      ===================================================== */
 
-  var statusEl = document.getElementById("status");
-  var fullTextEl = document.getElementById("fullText");
-  var loadLinesBtn = document.getElementById("loadLines");
-  var currentLineEl = document.getElementById("currentLine");
-  var lineInfoEl = document.getElementById("lineInfo");
-  var previousLineBtn = document.getElementById("previousLine");
-  var nextLineBtn = document.getElementById("nextLine");
-  var insertLineBtn = document.getElementById("insertLine");
+  var statusEl =
+    document.getElementById("status");
 
-  var fontEl = document.getElementById("font");
-  var sizeEl = document.getElementById("size");
-  var colorEl = document.getElementById("color");
-  var alignEl = document.getElementById("align");
+  var fullTextEl =
+    document.getElementById("fullText");
+
+  var loadLinesBtn =
+    document.getElementById("loadLines");
+
+  var currentLineEl =
+    document.getElementById("currentLine");
+
+  var lineInfoEl =
+    document.getElementById("lineInfo");
+
+  var previousLineBtn =
+    document.getElementById("previousLine");
+
+  var nextLineBtn =
+    document.getElementById("nextLine");
+
+  var insertLineBtn =
+    document.getElementById("insertLine");
+
+  var fontEl =
+    document.getElementById("font");
+
+  var sizeEl =
+    document.getElementById("size");
+
+  var colorEl =
+    document.getElementById("color");
+
+  var alignEl =
+    document.getElementById("align");
+
 
   var required = [
     ["#status", statusEl],
@@ -48,19 +78,26 @@
     ["#align", alignEl]
   ];
 
+
   var missing = [];
 
   for (var i = 0; i < required.length; i++) {
+
     if (!required[i][1]) {
       missing.push(required[i][0]);
     }
+
   }
 
+
   if (missing.length) {
+
     alert(
-      "TypeR-P BUILD-020 UI ERROR\n\nMissing:\n" +
+      "TypeR-P " + BUILD +
+      " UI ERROR\n\nMissing:\n" +
       missing.join("\n")
     );
+
     return;
   }
 
@@ -69,8 +106,11 @@
      STATUS
      ===================================================== */
 
-  function setStatus(msg) {
-    statusEl.textContent = msg;
+  function setStatus(message) {
+
+    statusEl.textContent =
+      String(message);
+
   }
 
 
@@ -79,25 +119,33 @@
      ===================================================== */
 
   var lines = [];
+
   var currentIndex = 0;
+
 
   function updateLine() {
 
     if (!lines.length) {
 
       currentLineEl.value = "";
-      lineInfoEl.textContent = "No lines loaded.";
+
+      lineInfoEl.textContent =
+        "No lines loaded.";
 
       return;
     }
 
-    currentLineEl.value = lines[currentIndex];
+
+    currentLineEl.value =
+      lines[currentIndex];
+
 
     lineInfoEl.textContent =
       "Line " +
       (currentIndex + 1) +
       " / " +
       lines.length;
+
   }
 
 
@@ -109,6 +157,7 @@
 
     lines[currentIndex] =
       currentLineEl.value;
+
   }
 
 
@@ -118,11 +167,14 @@
 
   loadLinesBtn.onclick = function () {
 
-    var text = fullTextEl.value || "";
+    var text =
+      fullTextEl.value || "";
+
 
     if (!text.trim()) {
 
       lines = [];
+
       currentIndex = 0;
 
       updateLine();
@@ -134,38 +186,53 @@
       return;
     }
 
-    text = text.replace(/\r\n/g, "\n");
-    text = text.replace(/\r/g, "\n");
 
-    lines = text.split("\n");
+    text =
+      text.replace(/\r\n/g, "\n");
+
+    text =
+      text.replace(/\r/g, "\n");
+
+
+    lines =
+      text.split("\n");
+
 
     while (
       lines.length > 0 &&
-      lines[lines.length - 1].trim() === ""
+      lines[lines.length - 1]
+        .trim() === ""
     ) {
+
       lines.pop();
+
     }
+
 
     currentIndex = 0;
 
     updateLine();
+
 
     setStatus(
       "Loaded " +
       lines.length +
       " line(s)."
     );
+
   };
 
 
   /* =====================================================
-     CURRENT LINE
+     CURRENT LINE EDIT
      ===================================================== */
 
   currentLineEl.addEventListener(
     "input",
     function () {
+
       saveCurrentLine();
+
     }
   );
 
@@ -178,18 +245,24 @@
 
     if (!lines.length) {
 
-      setStatus("Load lines first.");
+      setStatus(
+        "Load lines first."
+      );
 
       return;
     }
 
+
     saveCurrentLine();
+
 
     if (currentIndex > 0) {
       currentIndex--;
     }
 
+
     updateLine();
+
   };
 
 
@@ -201,18 +274,29 @@
 
     if (!lines.length) {
 
-      setStatus("Load lines first.");
+      setStatus(
+        "Load lines first."
+      );
 
       return;
     }
 
+
     saveCurrentLine();
 
-    if (currentIndex < lines.length - 1) {
+
+    if (
+      currentIndex <
+      lines.length - 1
+    ) {
+
       currentIndex++;
+
     }
 
+
     updateLine();
+
   };
 
 
@@ -223,8 +307,10 @@
   var settingsPanel =
     fontEl.closest(".panel");
 
+
   if (!settingsPanel) {
-    settingsPanel = fontEl.parentElement;
+    settingsPanel =
+      fontEl.parentElement;
   }
 
 
@@ -235,10 +321,14 @@
 
     label.textContent = text;
 
-    label.style.display = "block";
-    label.style.marginTop = "8px";
+    label.style.display =
+      "block";
+
+    label.style.marginTop =
+      "8px";
 
     return label;
+
   }
 
 
@@ -252,16 +342,29 @@
     var input =
       document.createElement("input");
 
-    input.type = "number";
-    input.value = value;
-    input.min = min;
-    input.max = max;
-    input.step = step || "1";
+    input.type =
+      "number";
 
-    input.style.width = "100%";
-    input.style.boxSizing = "border-box";
+    input.value =
+      value;
+
+    input.min =
+      min;
+
+    input.max =
+      max;
+
+    input.step =
+      step || "1";
+
+    input.style.width =
+      "100%";
+
+    input.style.boxSizing =
+      "border-box";
 
     return input;
+
   }
 
 
@@ -273,6 +376,7 @@
     makeLabel("Padding")
   );
 
+
   var paddingEl =
     makeNumber(
       12,
@@ -280,6 +384,7 @@
       500,
       1
     );
+
 
   settingsPanel.appendChild(
     paddingEl
@@ -294,26 +399,43 @@
     makeLabel("Auto Fit")
   );
 
+
   var fitRow =
     document.createElement("label");
 
-  fitRow.style.display = "flex";
-  fitRow.style.alignItems = "center";
-  fitRow.style.gap = "6px";
+
+  fitRow.style.display =
+    "flex";
+
+  fitRow.style.alignItems =
+    "center";
+
+  fitRow.style.gap =
+    "6px";
+
 
   var fitEl =
     document.createElement("input");
 
-  fitEl.type = "checkbox";
-  fitEl.checked = true;
 
-  fitRow.appendChild(fitEl);
+  fitEl.type =
+    "checkbox";
+
+  fitEl.checked =
+    true;
+
+
+  fitRow.appendChild(
+    fitEl
+  );
+
 
   fitRow.appendChild(
     document.createTextNode(
       "Automatically reduce font size"
     )
   );
+
 
   settingsPanel.appendChild(
     fitRow
@@ -330,6 +452,7 @@
     )
   );
 
+
   var minSizeEl =
     makeNumber(
       8,
@@ -337,6 +460,7 @@
       500,
       1
     );
+
 
   settingsPanel.appendChild(
     minSizeEl
@@ -353,36 +477,48 @@
     )
   );
 
+
   var modeEl =
     document.createElement("select");
 
-  modeEl.style.width = "100%";
+
+  modeEl.style.width =
+    "100%";
+
 
   var paragraphOption =
     document.createElement("option");
 
+
   paragraphOption.value =
     "PARAGRAPH";
+
 
   paragraphOption.textContent =
     "Text Box (recommended)";
 
+
   var pointOption =
     document.createElement("option");
+
 
   pointOption.value =
     "POINT";
 
+
   pointOption.textContent =
     "Point Text";
+
 
   modeEl.appendChild(
     paragraphOption
   );
 
+
   modeEl.appendChild(
     pointOption
   );
+
 
   settingsPanel.appendChild(
     modeEl
@@ -399,6 +535,7 @@
     )
   );
 
+
   var trackingEl =
     makeNumber(
       0,
@@ -406,6 +543,7 @@
       10000,
       10
     );
+
 
   settingsPanel.appendChild(
     trackingEl
@@ -422,6 +560,7 @@
     )
   );
 
+
   var leadingEl =
     makeNumber(
       0,
@@ -429,6 +568,7 @@
       1000,
       1
     );
+
 
   settingsPanel.appendChild(
     leadingEl
@@ -445,6 +585,7 @@
     )
   );
 
+
   var horizontalScaleEl =
     makeNumber(
       100,
@@ -452,6 +593,7 @@
       1000,
       1
     );
+
 
   settingsPanel.appendChild(
     horizontalScaleEl
@@ -467,10 +609,12 @@
     function (event) {
 
       if (
-        typeof event.data !== "string"
+        typeof event.data !==
+        "string"
       ) {
         return;
       }
+
 
       if (
         event.data.indexOf(
@@ -487,6 +631,7 @@
         return;
       }
 
+
       if (
         event.data.indexOf(
           "TYPERP_ERR:"
@@ -498,32 +643,40 @@
             "TYPERP_ERR:".length
           );
 
+
         setStatus(
           "Error: " + error
         );
 
+
         alert(
-          "TypeR-P BUILD-020\n\n" +
+          "TypeR-P " +
+          BUILD +
+          "\n\n" +
           error
         );
+
       }
+
     }
   );
 
 
   /* =====================================================
-     SAFE STRING
+     SAFE JAVASCRIPT STRING
      ===================================================== */
 
   function jsString(value) {
+
     return JSON.stringify(
       String(value)
     );
+
   }
 
 
   /* =====================================================
-     INSERT
+     INSERT LINE
      ===================================================== */
 
   insertLineBtn.onclick =
@@ -538,10 +691,13 @@
         return;
       }
 
+
       saveCurrentLine();
+
 
       var text =
         lines[currentIndex];
+
 
       if (
         !text ||
@@ -556,16 +712,19 @@
       }
 
 
-      /* -----------------------------------------------
+      /* =================================================
          SETTINGS
-         ----------------------------------------------- */
+         ================================================= */
 
       var font =
         fontEl.value ||
         "ArialMT";
 
+
       var initialSize =
-        Number(sizeEl.value) || 48;
+        Number(sizeEl.value) ||
+        48;
+
 
       var color =
         (
@@ -578,72 +737,108 @@
           )
           .slice(0, 6);
 
-      while (color.length < 6) {
+
+      while (
+        color.length < 6
+      ) {
+
         color += "0";
+
       }
+
 
       var align =
         alignEl.value ||
         "CENTER";
 
+
       var padding =
-        Number(paddingEl.value);
+        Number(
+          paddingEl.value
+        );
+
 
       if (
         !isFinite(padding) ||
         padding < 0
       ) {
+
         padding = 12;
+
       }
 
+
       var minSize =
-        Number(minSizeEl.value);
+        Number(
+          minSizeEl.value
+        );
+
 
       if (
         !isFinite(minSize) ||
         minSize < 1
       ) {
+
         minSize = 8;
+
       }
 
+
       var autoFit =
-        fitEl.checked;
+        !!fitEl.checked;
+
 
       var mode =
-        modeEl.value;
+        modeEl.value ||
+        "PARAGRAPH";
+
 
       var tracking =
-        Number(trackingEl.value);
+        Number(
+          trackingEl.value
+        );
+
 
       if (!isFinite(tracking)) {
         tracking = 0;
       }
 
+
       var leading =
-        Number(leadingEl.value);
+        Number(
+          leadingEl.value
+        );
+
 
       if (
         !isFinite(leading) ||
         leading < 0
       ) {
+
         leading = 0;
+
       }
+
 
       var horizontalScale =
         Number(
           horizontalScaleEl.value
         );
 
+
       if (
-        !isFinite(horizontalScale)
+        !isFinite(horizontalScale) ||
+        horizontalScale <= 0
       ) {
+
         horizontalScale = 100;
+
       }
 
 
-      /* -----------------------------------------------
+      /* =================================================
          STATUS
-         ----------------------------------------------- */
+         ================================================= */
 
       setStatus(
         "Checking active selection..."
@@ -655,6 +850,7 @@
          ================================================= */
 
       var script =
+
         "(function(){\n" +
 
         "try{\n" +
@@ -664,7 +860,9 @@
         "if(!d){throw new Error('No active document.');}\n" +
 
 
-        /* SELECTION */
+        /* ---------------------------------------------
+           SELECTION
+           --------------------------------------------- */
 
         "var b;\n" +
 
@@ -678,6 +876,7 @@
 
         "}\n" +
 
+
         "if(!b||b.length!==4){\n" +
 
         "throw new Error('No active selection. Please make a selection first.');\n" +
@@ -685,11 +884,13 @@
         "}\n" +
 
 
-        /* CONVERT UNITS */
+        /* ---------------------------------------------
+           UNIT CONVERSION
+           --------------------------------------------- */
 
         "function px(v){\n" +
 
-        "if(typeof v==='number')return v;\n" +
+        "if(typeof v==='number'&&isFinite(v))return v;\n" +
 
         "try{\n" +
 
@@ -721,8 +922,11 @@
 
 
         "var L=px(b[0]);\n" +
+
         "var T=px(b[1]);\n" +
+
         "var R=px(b[2]);\n" +
+
         "var B=px(b[3]);\n" +
 
 
@@ -740,7 +944,9 @@
         "}\n" +
 
 
-        /* BOX */
+        /* ---------------------------------------------
+           TEXT BOX
+           --------------------------------------------- */
 
         "var boxLeft=L+" +
         padding +
@@ -758,6 +964,7 @@
         padding +
         ";\n" +
 
+
         "var boxWidth=boxRight-boxLeft;\n" +
 
         "var boxHeight=boxBottom-boxTop;\n" +
@@ -770,7 +977,9 @@
         "}\n" +
 
 
-        /* LAYER */
+        /* ---------------------------------------------
+           CREATE TEXT LAYER
+           --------------------------------------------- */
 
         "var layer=d.artLayers.add();\n" +
 
@@ -785,11 +994,12 @@
 
         ";\n" +
 
+
         "var ti=layer.textItem;\n" +
 
 
         /* =================================================
-           PARAGRAPH
+           PARAGRAPH TEXT
            ================================================= */
 
         "if(" +
@@ -798,30 +1008,39 @@
 
         "ti.kind=TextType.PARAGRAPHTEXT;\n" +
 
+
         "ti.position=[boxLeft,boxTop];\n" +
+
 
         "ti.width=new UnitValue(boxWidth,'px');\n" +
 
+
         "ti.height=new UnitValue(boxHeight,'px');\n" +
+
 
         "ti.contents=" +
         jsString(text) +
         ";\n" +
 
+
         "ti.font=" +
         jsString(font) +
         ";\n" +
 
+
         "ti.size=" +
         initialSize +
         ";\n" +
+
 
         "ti.justification=Justification." +
         align +
         ";\n" +
 
 
-        /* COLOR */
+        /* ---------------------------------------------
+           COLOR
+           --------------------------------------------- */
 
         "var c=new SolidColor();\n" +
 
@@ -832,7 +1051,9 @@
         "ti.color=c;\n" +
 
 
-        /* TRACKING */
+        /* ---------------------------------------------
+           LETTER SPACING
+           --------------------------------------------- */
 
         "try{\n" +
 
@@ -843,7 +1064,9 @@
         "}catch(e){}\n" +
 
 
-        /* LEADING */
+        /* ---------------------------------------------
+           LINE SPACING
+           --------------------------------------------- */
 
         "try{\n" +
 
@@ -866,7 +1089,9 @@
         "}catch(e){}\n" +
 
 
-        /* HORIZONTAL SCALE */
+        /* ---------------------------------------------
+           HORIZONTAL SCALE
+           --------------------------------------------- */
 
         "try{\n" +
 
@@ -877,33 +1102,46 @@
         "}catch(e){}\n" +
 
 
-        /* AUTO FIT */
+        /* =================================================
+           AUTO FIT
+           ================================================= */
 
         "if(" +
         autoFit +
         "){\n" +
 
+
         "function estimateLines(str,size,width,track,scale){\n" +
 
-        "var avg=size*0.52*(scale/100);\n" +
+
+        "var charWidth=size*0.52*(scale/100);\n" +
+
 
         "var trackingPx=(track/1000)*size;\n" +
 
-        "avg+=trackingPx;\n" +
 
-        "if(avg<0.1)avg=0.1;\n" +
+        "charWidth+=trackingPx;\n" +
 
-        "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
+
+        "if(charWidth<0.1)charWidth=0.1;\n" +
+
+
+        "var charsPerLine=Math.max(1,Math.floor(width/charWidth));\n" +
+
 
         "var paragraphs=str.split(String.fromCharCode(10));\n" +
 
+
         "var total=0;\n" +
+
 
         "for(var p=0;p<paragraphs.length;p++){\n" +
 
+
         "var paragraph=paragraphs[p];\n" +
 
-        "if(paragraph.trim()===''){\n" +
+
+        "if(paragraph.length===0){\n" +
 
         "total++;\n" +
 
@@ -911,76 +1149,121 @@
 
         "}\n" +
 
-        "var words=paragraph.trim().split(/\\s+/);\n" +
 
-        "var chars=0;\n" +
+        "var words=paragraph.split(/\\s+/);\n" +
 
-        "var lineCount=1;\n" +
+
+        "var used=0;\n" +
+
+        "var count=1;\n" +
+
 
         "for(var w=0;w<words.length;w++){\n" +
+
 
         "var word=words[w];\n" +
 
         "var len=word.length;\n" +
 
-        "if(len>maxChars){\n" +
 
-        "if(chars>0){lineCount++;chars=0;}\n" +
+        "if(!len)continue;\n" +
 
-        "lineCount+=Math.floor(len/maxChars);\n" +
 
-        "chars=len%maxChars;\n" +
+        /* Long word */
 
-        "if(chars===0){chars=maxChars;lineCount--;}\n" +
+        "if(len>charsPerLine){\n" +
+
+        "if(used>0){\n" +
+
+        "count++;\n" +
+
+        "used=0;\n" +
+
+        "}\n" +
+
+
+        "count+=Math.floor(len/charsPerLine);\n" +
+
+
+        "used=len%charsPerLine;\n" +
+
+
+        "if(used===0){\n" +
+
+        "used=charsPerLine;\n" +
+
+        "count--;\n" +
+
+        "}\n" +
+
 
         "continue;\n" +
 
         "}\n" +
 
-        "var needed=len+(chars>0?1:0);\n" +
 
-        "if(chars+needed>maxChars){\n" +
+        /* Normal word */
 
-        "lineCount++;\n" +
+        "var required=len+(used>0?1:0);\n" +
 
-        "chars=len;\n" +
+
+        "if(used+required>charsPerLine){\n" +
+
+        "count++;\n" +
+
+        "used=len;\n" +
 
         "}else{\n" +
 
-        "chars+=needed;\n" +
+        "used+=required;\n" +
 
         "}\n" +
 
-        "}\n" +
-
-        "total+=lineCount;\n" +
 
         "}\n" +
+
+
+        "total+=count;\n" +
+
+
+        "}\n" +
+
 
         "return Math.max(1,total);\n" +
 
         "}\n" +
 
 
-        "var current=" +
+        "var currentSize=" +
         initialSize +
         ";\n" +
+
 
         "var minimum=" +
         minSize +
         ";\n" +
 
-        "while(current>minimum){\n" +
 
-        "var estimated=estimateLines(" +
+        "while(currentSize>minimum){\n" +
+
+
+        "var estimatedLines=estimateLines(" +
+
         jsString(text) +
-        ",current,boxWidth," +
+
+        ",currentSize,boxWidth," +
+
         tracking +
+
         "," +
+
         horizontalScale +
+
         ");\n" +
 
+
         "var lineHeight;\n" +
+
 
         "if(" +
         leading +
@@ -992,19 +1275,29 @@
 
         "}else{\n" +
 
-        "lineHeight=current*1.20;\n" +
+        "lineHeight=currentSize*1.20;\n" +
 
         "}\n" +
 
-        "var neededHeight=estimated*lineHeight;\n" +
 
-        "if(neededHeight<=boxHeight){break;}\n" +
+        "var requiredHeight=estimatedLines*lineHeight;\n" +
 
-        "current--;\n" +
 
-        "ti.size=current;\n" +
+        "if(requiredHeight<=boxHeight){\n" +
+
+        "break;\n" +
 
         "}\n" +
+
+
+        "currentSize--;\n" +
+
+
+        "ti.size=currentSize;\n" +
+
+
+        "}\n" +
+
 
         "}\n" +
 
@@ -1015,35 +1308,49 @@
 
         "}else{\n" +
 
+
         "ti.kind=TextType.POINTTEXT;\n" +
+
 
         "ti.contents=" +
         jsString(text) +
         ";\n" +
 
+
         "ti.font=" +
         jsString(font) +
         ";\n" +
+
 
         "ti.size=" +
         initialSize +
         ";\n" +
 
+
         "ti.justification=Justification." +
         align +
         ";\n" +
 
+
         "var pc=new SolidColor();\n" +
+
 
         "pc.rgb.hexValue=" +
         jsString(color) +
         ";\n" +
 
+
         "ti.color=pc;\n" +
 
-        "try{ti.tracking=" +
+
+        "try{\n" +
+
+        "ti.tracking=" +
         tracking +
-        ";}catch(e){}\n" +
+        ";\n" +
+
+        "}catch(e){}\n" +
+
 
         "try{\n" +
 
@@ -1061,6 +1368,7 @@
 
         "}catch(e){}\n" +
 
+
         "try{\n" +
 
         "ti.horizontalScale=" +
@@ -1069,52 +1377,74 @@
 
         "}catch(e){}\n" +
 
+
         "ti.position=[(L+R)/2,(T+B)/2];\n" +
+
 
         "}\n" +
 
 
-        /* FINISH */
+        /* =================================================
+           FINISH
+           ================================================= */
 
         "d.activeLayer=layer;\n" +
 
+
         "app.echoToOE(" +
+
 
         "'TYPERP_OK:TEXT INSERTED | selection='+" +
 
         "Math.round(L)+','+" +
+
         "Math.round(T)+','+" +
+
         "Math.round(R)+','+" +
+
         "Math.round(B)+" +
+
 
         "' | box='+" +
 
         "Math.round(boxWidth)+'x'+Math.round(boxHeight)+" +
 
+
         "' | size='+ti.size+" +
+
 
         "' | tracking='+" +
         tracking +
 
+
         "' | leading='+" +
         leading +
 
-        "' | scale='+" +
-        horizontalScale" +
 
-        ");\n" +
+        "' | scale='+" +
+        horizontalScale +
+
+
+        "');\n" +
+
 
         "}catch(e){\n" +
 
+
         "app.echoToOE(" +
+
 
         "'TYPERP_ERR:'+" +
 
+
         "(e&&e.message?e.message:String(e))" +
+
 
         ");\n" +
 
+
         "}\n" +
+
 
         "})();";
 
@@ -1128,17 +1458,21 @@
         "*"
       );
 
+
     };
 
 
   /* =====================================================
-     READY
+     INITIAL STATE
      ===================================================== */
 
   updateLine();
 
+
   setStatus(
-    "Ready (BUILD-020)"
+    "Ready (" +
+    BUILD +
+    ")"
   );
 
 
