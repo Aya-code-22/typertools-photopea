@@ -9,13 +9,13 @@
     const alignEl = document.getElementById('align');
     const insertBtn = document.getElementById('insert');
 
-    // ===== Photopea Plugin API (official) =====
-    function photopeaExec(script) {
+    // === Photopea official plugin method ===
+    function runPhotopeaScript(scriptText) {
         return new Promise((resolve, reject) => {
-            // Unique ID for this request
-            const id = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            // Generate unique ID
+            const id = 'cmd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
             
-            // Listener for response
+            // Response handler
             const handler = function(e) {
                 const data = e.data;
                 if (data && data.id === id) {
@@ -29,18 +29,18 @@
             };
             window.addEventListener('message', handler);
             
-            // Send to Photopea via official API
+            // Send script to Photopea (this is the official way)
             window.parent.postMessage({
                 id: id,
-                script: script
+                script: scriptText
             }, '*');
         });
     }
 
-    // ===== Main Click Handler =====
+    // === Insert handler ===
     insertBtn.addEventListener('click', async function() {
         try {
-            statusEl.textContent = 'Running script...';
+            statusEl.textContent = 'Sending to Photopea...';
             insertBtn.disabled = true;
 
             const text = textEl.value.trim() || 'TypeR-P';
@@ -49,78 +49,78 @@
             const color = colorEl.value || 'FF0000';
             const align = alignEl.value || 'CENTER';
 
-            // ====== PHOTOPEA SCRIPT (runs inside Photopea) ======
+            // === Photopea script (uses app.echoToOE for response) ===
             const script = `
-                var doc = app.activeDocument;
-                var w = doc.width;
-                var h = doc.height;
-                
-                // Default center
-                var cx = w / 2;
-                var cy = h / 2;
-                var statusMsg = 'No selection, using center';
-                
-                // Try to get selection bounds
                 try {
-                    if (doc.selection && doc.selection.bounds) {
-                        var b = doc.selection.bounds;
-                        // PHOTOPEA returns UnitValue objects - extract .value
-                        if (b[0] && typeof b[0].value === 'number') {
-                            var left = b[0].value;
-                            var top = b[1].value;
-                            var right = b[2].value;
-                            var bottom = b[3].value;
-                            
-                            // Verify valid numbers
-                            if (isFinite(left) && isFinite(right)) {
-                                cx = (left + right) / 2;
-                                cy = (top + bottom) / 2;
-                                statusMsg = 'Selection found: ' + left + ',' + top + ',' + right + ',' + bottom;
-                            } else {
-                                statusMsg = 'Selection bounds invalid (NaN)';
+                    var doc = app.activeDocument;
+                    var w = doc.width.value || doc.width;
+                    var h = doc.height.value || doc.height;
+                    
+                    var cx = w / 2;
+                    var cy = h / 2;
+                    var msg = 'No selection, center used';
+                    
+                    // Try selection
+                    try {
+                        if (doc.selection && doc.selection.bounds) {
+                            var b = doc.selection.bounds;
+                            // Photopea returns UnitValues
+                            if (b[0] && b[0].value !== undefined) {
+                                var left = b[0].value;
+                                var top = b[1].value;
+                                var right = b[2].value;
+                                var bottom = b[3].value;
+                                
+                                if (isFinite(left) && isFinite(right)) {
+                                    cx = (left + right) / 2;
+                                    cy = (top + bottom) / 2;
+                                    msg = 'Selection: ' + left + ',' + top + ',' + right + ',' + bottom;
+                                }
                             }
-                        } else {
-                            statusMsg = 'Selection bounds format unexpected';
                         }
+                    } catch(e) {
+                        msg = 'Selection error: ' + e.message;
                     }
+                    
+                    // Create text layer
+                    var layer = doc.artLayers.add();
+                    layer.kind = LayerKind.TEXT;
+                    var ti = layer.textItem;
+                    ti.kind = TextType.POINTTEXT;
+                    ti.contents = \`${text}\`;
+                    ti.font = \`${font}\`;
+                    ti.size = ${size};
+                    ti.justification = Justification.${align};
+                    
+                    var c = new SolidColor();
+                    c.rgb.hexValue = '${color}';
+                    ti.color = c;
+                    
+                    ti.position = [cx, cy];
+                    doc.activeLayer = layer;
+                    
+                    // RETURN RESULT TO PLUGIN (OFFICIAL PHOTOPEA METHOD)
+                    app.echoToOE(JSON.stringify({
+                        success: true,
+                        msg: msg,
+                        centerX: cx,
+                        centerY: cy
+                    }));
                 } catch(e) {
-                    statusMsg = 'Selection error: ' + e.toString();
+                    app.echoToOE(JSON.stringify({
+                        success: false,
+                        error: e.toString()
+                    }));
                 }
-                
-                // Create text layer
-                var layer = doc.artLayers.add();
-                layer.kind = LayerKind.TEXT;
-                var ti = layer.textItem;
-                ti.kind = TextType.POINTTEXT;
-                ti.contents = \`${text}\`;
-                ti.font = \`${font}\`;
-                ti.size = ${size};
-                ti.justification = Justification.${align};
-                
-                var c = new SolidColor();
-                c.rgb.hexValue = '${color}';
-                ti.color = c;
-                
-                ti.position = [cx, cy];
-                doc.activeLayer = layer;
-                
-                // Return result to plugin
-                JSON.stringify({
-                    success: true,
-                    status: statusMsg,
-                    centerX: cx,
-                    centerY: cy
-                });
             `;
 
-            // Execute and get result
-            const resultStr = await photopeaExec(script);
+            const resultStr = await runPhotopeaScript(script);
             const result = JSON.parse(resultStr);
 
             if (result.success) {
-                statusEl.textContent = '✅ ' + result.status + ' | Center: (' + Math.round(result.centerX) + ', ' + Math.round(result.centerY) + ')';
+                statusEl.textContent = '✅ ' + result.msg + ' | Center: (' + Math.round(result.centerX) + ', ' + Math.round(result.centerY) + ')';
             } else {
-                statusEl.textContent = '❌ Error: ' + result.error;
+                statusEl.textContent = '❌ Photopea error: ' + result.error;
             }
 
         } catch (err) {
@@ -130,7 +130,7 @@
         }
     });
 
-    // ===== Connection Status =====
+    // === Connect status ===
     statusEl.textContent = 'Waiting for Photopea...';
     window.addEventListener('message', function(e) {
         if (e.data && e.data === 'photopea-ready') {
