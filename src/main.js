@@ -1,11 +1,3 @@
-// TypeR-P - main.js
-// نسخه‌ای که:
-//  1) بدون Selection: متن را در مرکز تصویر می‌سازد (baseline قبلی که کار می‌کرد)
-//  2) با Selection: مختصات را با فرمت واقعی Photopea (UnitValue -> .value) می‌خواند
-//     و متن را در مرکز Selection می‌گذارد
-//  3) اگر خواندن Selection به هر دلیلی شکست بخورد، لایه متن باز هم ساخته می‌شود
-//     (در مرکز تصویر) و هیچ‌وقت ناپدید نمی‌شود
-
 (function () {
   const els = {
     status: document.getElementById("status"),
@@ -17,9 +9,18 @@
     insert: document.getElementById("insert"),
   };
 
+  let pendingTimeout = null;
+
   function setStatus(msg) {
     if (els.status) els.status.textContent = msg;
     console.log("[TypeR-P]", msg);
+  }
+
+  function clearPending() {
+    if (pendingTimeout) {
+      clearTimeout(pendingTimeout);
+      pendingTimeout = null;
+    }
   }
 
   function sendToPhotopea(script) {
@@ -33,38 +34,27 @@
     console.log("[TypeR-P] raw message from Photopea:", e.data);
 
     if (e.data.indexOf("TYPERP_OK|") === 0) {
+      clearPending();
       const payload = e.data.slice("TYPERP_OK|".length);
       let parsed = null;
       try {
         parsed = JSON.parse(payload);
       } catch (err) {
-        setStatus("Inserted, but could not parse result payload");
+        setStatus("Inserted (could not parse result payload)");
         return;
       }
 
       if (parsed.hasSel) {
-        setStatus(
-          "Inserted inside selection at (" +
-            parsed.cx +
-            ", " +
-            parsed.cy +
-            ")"
-        );
+        setStatus("Inserted inside selection at (" + parsed.cx + ", " + parsed.cy + ")");
       } else {
-        setStatus(
-          "Inserted at image center (" +
-            parsed.cx +
-            ", " +
-            parsed.cy +
-            ") — no usable selection found"
-        );
+        setStatus("Inserted at image center (" + parsed.cx + ", " + parsed.cy + ") — no usable selection");
       }
-
       console.log("[TypeR-P] selection diagnostics:", parsed.diag);
       return;
     }
 
     if (e.data.indexOf("TYPERP_ERROR|") === 0) {
+      clearPending();
       setStatus("Error: " + e.data.slice("TYPERP_ERROR|".length));
       return;
     }
@@ -79,7 +69,7 @@
 
     return (
       "(function(){\n" +
-      "  function reportError(msg){ app.echoToOE('TYPERP_ERROR|' + msg); }\n" +
+      "  function reportError(msg){ try{ app.echoToOE('TYPERP_ERROR|' + msg); }catch(eR){} try{ alert('TypeR-P error: ' + msg); }catch(eA){} }\n" +
       "  try {\n" +
       "    var d = app.activeDocument;\n" +
       "    var hasSel = false;\n" +
@@ -93,17 +83,8 @@
       "\n" +
       "      diag.typeofBounds = typeof b;\n" +
       "      diag.boundsLength = (b && typeof b.length === 'number') ? b.length : null;\n" +
-      "      try { diag.stringBounds = String(b); } catch(e0) { diag.stringBounds = 'ERR:' + String(e0); }\n" +
-      "      try { diag.jsonBounds = JSON.stringify(b); } catch(e1) { diag.jsonBounds = 'ERR:' + String(e1); }\n" +
       "\n" +
       "      if (b && b.length === 4) {\n" +
-      "        diag.typeofB0 = typeof b[0];\n" +
-      "        try { diag.stringB0 = String(b[0]); } catch(e2) { diag.stringB0 = 'ERR:' + String(e2); }\n" +
-      "        try { diag.b0HasValue = (typeof b[0].value === 'number'); } catch(e3) { diag.b0HasValue = 'ERR'; }\n" +
-      "        try { diag.b0HasAs = (typeof b[0].as === 'function'); } catch(e4) { diag.b0HasAs = 'ERR'; }\n" +
-      "        try { diag.b0ValueRaw = b[0].value; } catch(e5) { diag.b0ValueRaw = 'ERR:' + String(e5); }\n" +
-      "        try { diag.b0AsPx = b[0].as ? b[0].as('px') : undefined; } catch(e6) { diag.b0AsPx = 'ERR:' + String(e6); }\n" +
-      "\n" +
       "        var vals = [];\n" +
       "        for (var i = 0; i < 4; i++) {\n" +
       "          var raw = b[i];\n" +
@@ -157,7 +138,9 @@
       "    d.activeLayer = layer;\n" +
       "\n" +
       "    var result = { hasSel: hasSel, cx: Math.round(cx), cy: Math.round(cy), diag: diag };\n" +
-      "    app.echoToOE('TYPERP_OK|' + JSON.stringify(result));\n" +
+      "    var resultStr = JSON.stringify(result);\n" +
+      "    try { app.echoToOE('TYPERP_OK|' + resultStr); } catch (eEcho) {}\n" +
+      "    alert('TypeR-P: ' + (hasSel ? 'inserted in selection' : 'inserted at image center') + '\\ncx=' + Math.round(cx) + ' cy=' + Math.round(cy) + '\\n' + resultStr);\n" +
       "  } catch (mainErr) {\n" +
       "    reportError(String(mainErr));\n" +
       "  }\n" +
@@ -178,20 +161,15 @@
     if (!/^[0-9a-fA-F]{6}$/.test(color)) color = "FF0000";
 
     const alignRaw = (els.align.value || "CENTER").toUpperCase();
-    const align = ["LEFT", "CENTER", "RIGHT"].includes(alignRaw)
-      ? alignRaw
-      : "CENTER";
+    const align = ["LEFT", "CENTER", "RIGHT"].includes(alignRaw) ? alignRaw : "CENTER";
 
     setStatus("Inserting...");
+    clearPending();
+    pendingTimeout = setTimeout(function () {
+      setStatus("No message came back from Photopea — check the alert dialog that appeared on canvas, or the browser console.");
+    }, 6000);
 
-    const script = buildScript({
-      text: text,
-      font: font,
-      size: size,
-      color: color,
-      align: align,
-    });
-
+    const script = buildScript({ text, font, size, color, align });
     sendToPhotopea(script);
   }
 
