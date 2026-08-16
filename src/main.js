@@ -1,5 +1,5 @@
 // TypeR-P — main.js
-// build-tag: TYPERP-BUILD-007 (Paragraph Text در Selection + fallback به Point Text)
+// build-tag: TYPERP-BUILD-008 (Paragraph Text در Selection + fallback به Point Text)
 
 (function () {
   try {
@@ -129,6 +129,27 @@
           "\n" +
           "  if (mode === 'paragraph') {\n" +
           "    ti.kind = TextType.PARAGRAPHTEXT;\n" +
+          "\n" +
+          "    var sizeSetErr = '';\n" +
+          "    var actualW = 'unread', actualH = 'unread';\n" +
+          "    try {\n" +
+          "      ti.width = UnitValue(boxWidth, 'px');\n" +
+          "      ti.height = UnitValue(boxHeight, 'px');\n" +
+          "    } catch (eSizeUnit) {\n" +
+          "      try {\n" +
+          "        ti.width = boxWidth;\n" +
+          "        ti.height = boxHeight;\n" +
+          "      } catch (eSizePlain) {\n" +
+          "        sizeSetErr = ' | width/height-set-failed: ' + eSizePlain.message;\n" +
+          "      }\n" +
+          "    }\n" +
+          "    try {\n" +
+          "      var wRead = ti.width;\n" +
+          "      var hRead = ti.height;\n" +
+          "      actualW = (wRead && wRead.value !== undefined) ? wRead.value : wRead;\n" +
+          "      actualH = (hRead && hRead.value !== undefined) ? hRead.value : hRead;\n" +
+          "    } catch (eRead) { actualW = 'read-error'; actualH = eRead.message; }\n" +
+          "\n" +
           "    ti.contents = " + JSON.stringify(text) + ";\n" +
           "    ti.font = " + JSON.stringify(font) + ";\n" +
           "    ti.size = " + size + ";\n" +
@@ -140,19 +161,7 @@
           "\n" +
           "    ti.position = [boxLeft, boxTop];\n" +
           "\n" +
-          "    var sizeSetErr = '';\n" +
-          "    try {\n" +
-          "      ti.width = boxWidth;\n" +
-          "      ti.height = boxHeight;\n" +
-          "    } catch (eSizePlain) {\n" +
-          "      try {\n" +
-          "        ti.width = UnitValue(boxWidth, 'px');\n" +
-          "        ti.height = UnitValue(boxHeight, 'px');\n" +
-          "      } catch (eSizeUnit) {\n" +
-          "        sizeSetErr = ' | width/height-set-failed: ' + eSizeUnit.message;\n" +
-          "      }\n" +
-          "    }\n" +
-          "    boundsInfo += ' | box=' + boxLeft + ',' + boxTop + ',' + boxWidth + ',' + boxHeight + sizeSetErr;\n" +
+          "    boundsInfo += ' | requestedBox=' + boxWidth + 'x' + boxHeight + ' | actualBox=' + actualW + 'x' + actualH + sizeSetErr;\n" +
           "  } else {\n" +
           "    ti.kind = TextType.POINTTEXT;\n" +
           "    ti.contents = " + JSON.stringify(text) + ";\n" +
@@ -182,7 +191,7 @@
       }
     };
 
-    setStatus("Ready (build-007)");
+    setStatus("Ready (build-008)");
 
   } catch (initErr) {
     alert("TypeR-P FATAL init error: " + initErr.message);
