@@ -1,111 +1,139 @@
-window.addEventListener("message", function (e) {
-  if (typeof e.data === "string" && e.data !== "done") {
-    const statusEl = document.getElementById("status");
-    if (statusEl) {
-      statusEl.textContent = e.data;
+(function() {
+    'use strict';
+
+    const statusEl = document.getElementById('status');
+    const textEl = document.getElementById('text');
+    const fontEl = document.getElementById('font');
+    const sizeEl = document.getElementById('size');
+    const colorEl = document.getElementById('color');
+    const alignEl = document.getElementById('align');
+    const insertBtn = document.getElementById('insert');
+
+    function runPhotopeaScript(scriptText) {
+        return new Promise((resolve, reject) => {
+            const id = 'cmd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            const handler = function(e) {
+                const data = e.data;
+                if (data && data.id === id) {
+                    window.removeEventListener('message', handler);
+                    if (data.error) reject(new Error(data.error));
+                    else resolve(data.result);
+                }
+            };
+            window.addEventListener('message', handler);
+            window.parent.postMessage({ id: id, script: scriptText }, '*');
+        });
     }
-  }
-});
 
-document.getElementById("insert").addEventListener("click", function () {
-  const statusEl = document.getElementById("status");
-  if (statusEl) {
-    statusEl.textContent = "Processing...";
-  }
-
-  const textVal = document.getElementById("text").value || "Text";
-  const fontVal = document.getElementById("font").value || "ArialMT";
-  const sizeVal = parseFloat(document.getElementById("size").value) || 48;
-  const colorVal = document.getElementById("color").value || "FF0000";
-  const alignVal = document.getElementById("align").value || "CENTER";
-
-  const escapedText = textVal
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, "\\n")
-    .replace(/\r/g, "\\r");
-
-  const escapedFont = fontVal.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  const escapedColor = colorVal.replace(/[^0-9A-Fa-f]/g, "");
-
-  const script = `
-    (function() {
-      try {
-        var d = app.activeDocument;
-        if (!d) {
-          app.echoToOE("Error: No document open.");
-          return;
-        }
-
-        // استخراج مستقیم عدد از .value پیش از سنجش isNaN
-        function getPx(item) {
-          if (item === null || item === undefined) return NaN;
-          if (typeof item === "number") return item;
-          if (typeof item === "object" && "value" in item) {
-            var v = Number(item.value);
-            if (!isNaN(v)) return v;
-          }
-          var parsed = parseFloat(String(item));
-          return isNaN(parsed) ? NaN : parsed;
-        }
-
-        var docW = getPx(d.width) || 800;
-        var docH = getPx(d.height) || 600;
-
-        var posX = docW / 2;
-        var posY = docH / 2;
-        var inSel = false;
-        var info = "";
-
+    insertBtn.addEventListener('click', async function() {
         try {
-          var sel = d.selection;
-          if (sel && sel.bounds && sel.bounds.length === 4) {
-            var b = sel.bounds;
+            statusEl.textContent = 'Inserting...';
+            insertBtn.disabled = true;
 
-            var l = getPx(b[0]);
-            var t = getPx(b[1]);
-            var r = getPx(b[2]);
-            var bm = getPx(b[3]);
+            const text = textEl.value.trim() || 'TypeR-P';
+            const font = fontEl.value || 'ArialMT';
+            const size = parseInt(sizeEl.value) || 48;
+            const color = colorEl.value || 'FF0000';
+            const align = alignEl.value || 'CENTER';
 
-            if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
-              posX = (l + r) / 2;
-              posY = (t + bm) / 2;
-              inSel = true;
-              info = "Selection Center: [" + Math.round(posX) + ", " + Math.round(posY) + "]";
+            // === SCRIPT که با ترجمه (Translate) کار می‌کند ===
+            const script = `
+                try {
+                    var doc = app.activeDocument;
+                    var w = doc.width.value || doc.width;
+                    var h = doc.height.value || doc.height;
+                    
+                    // 1. Create the text layer at the center of the document first (safe fallback)
+                    var layer = doc.artLayers.add();
+                    layer.kind = LayerKind.TEXT;
+                    var ti = layer.textItem;
+                    ti.kind = TextType.POINTTEXT;
+                    ti.contents = \`${text}\`;
+                    ti.font = \`${font}\`;
+                    ti.size = ${size};
+                    ti.justification = Justification.${align};
+                    
+                    var c = new SolidColor();
+                    c.rgb.hexValue = '${color}';
+                    ti.color = c;
+                    
+                    ti.position = [w/2, h/2];
+                    
+                    // 2. Try to move it to selection center using TRANSLATE
+                    var moved = false;
+                    var statusMsg = "Placed at document center (no valid selection)";
+                    
+                    try {
+                        if (doc.selection && doc.selection.bounds) {
+                            var b = doc.selection.bounds;
+                            
+                            // Directly use .value (as your debug showed they are numbers)
+                            // BUT we must convert them to pixels using the document's resolution!
+                            if (b[0] && typeof b[0].value === 'number') {
+                                var left = b[0].value;
+                                var top = b[1].value;
+                                var right = b[2].value;
+                                var bottom = b[3].value;
+                                
+                                // Photopea returns values in POINTS (pt) by default.
+                                // 1 inch = 72 points. We need to convert to pixels.
+                                // Pixels = Points * (DPI / 72)
+                                var dpi = doc.resolution.value || 72; // Get DPI
+                                var factor = dpi / 72;
+                                
+                                var selCX = (left + right) / 2 * factor;
+                                var selCY = (top + bottom) / 2 * factor;
+                                var docCX = w / 2;
+                                var docCY = h / 2;
+                                
+                                // Translate the layer from document center to selection center
+                                layer.translate(selCX - docCX, selCY - docCY);
+                                
+                                moved = true;
+                                statusMsg = "Moved to selection center (Converted Points to Pixels)";
+                            }
+                        }
+                    } catch(e) {
+                        statusMsg = "Selection error: " + e.message + " (fallback to center)";
+                    }
+                    
+                    doc.activeLayer = layer;
+                    
+                    app.echoToOE(JSON.stringify({
+                        success: true,
+                        msg: statusMsg,
+                        moved: moved
+                    }));
+                } catch(e) {
+                    app.echoToOE(JSON.stringify({
+                        success: false,
+                        error: e.toString()
+                    }));
+                }
+            `;
+
+            const resultStr = await runPhotopeaScript(script);
+            const result = JSON.parse(resultStr);
+
+            if (result.success) {
+                statusEl.textContent = '✅ ' + result.msg;
+            } else {
+                statusEl.textContent = '❌ ' + result.error;
             }
-          }
-        } catch(selErr) {
-          info = "Selection error: " + selErr.message;
+
+        } catch (err) {
+            statusEl.textContent = '❌ Plugin Error: ' + err.message;
+        } finally {
+            insertBtn.disabled = false;
         }
+    });
 
-        if (isNaN(posX) || !isFinite(posX)) posX = docW / 2;
-        if (isNaN(posY) || !isFinite(posY)) posY = docH / 2;
+    statusEl.textContent = 'Connecting...';
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data === 'photopea-ready') {
+            statusEl.textContent = 'Connected ✔️';
+        }
+    });
+    window.parent.postMessage('plugin-ready', '*');
 
-        var layer = d.artLayers.add();
-        layer.kind = LayerKind.TEXT;
-
-        var ti = layer.textItem;
-        ti.kind = TextType.POINTTEXT;
-        ti.contents = "${escapedText}";
-        ti.font = "${escapedFont}";
-        ti.size = ${sizeVal};
-        ti.justification = Justification.${alignVal};
-
-        var c = new SolidColor();
-        c.rgb.hexValue = "${escapedColor}";
-        ti.color = c;
-
-        ti.position = [posX, posY];
-        d.activeLayer = layer;
-
-        var report = (inSel ? "Placed in Selection" : "Placed in Doc Center") + " | " + info;
-        app.echoToOE(report);
-
-      } catch(err) {
-        app.echoToOE("Error: " + err.message);
-      }
-    })();
-  `;
-
-  window.parent.postMessage(script, "*");
-});
+})();
