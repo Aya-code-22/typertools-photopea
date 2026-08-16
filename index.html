@@ -85,11 +85,17 @@
   </section>
 
   <script>
-     document.getElementById("status").textContent = "HTML TEST WORKS";
-     alert("INDEX.HTML IS RUNNING");
+    var s = document.createElement("script");
+    s.src = "./src/main.js?v=999";
+    s.onload = function () {
+      document.getElementById("status").textContent = "MAIN.JS LOADED";
+    };
+    s.onerror = function () {
+      document.getElementById("status").textContent = "MAIN.JS FAILED TO LOAD";
+      alert("MAIN.JS FAILED TO LOAD");
+    };
+    document.body.appendChild(s);
   </script>
-
-  <script src="src/main.js?v=008"></script>
 
 </body>
 </html>
