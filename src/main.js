@@ -10,7 +10,7 @@ window.addEventListener("message", function (e) {
 document.getElementById("insert").addEventListener("click", function () {
   const statusEl = document.getElementById("status");
   if (statusEl) {
-    statusEl.textContent = "Sending to Photopea...";
+    statusEl.textContent = "Processing...";
   }
 
   const textVal = document.getElementById("text").value || "Text";
@@ -37,55 +37,81 @@ document.getElementById("insert").addEventListener("click", function () {
           return;
         }
 
-        // تبدیل مطمئن UnitValue و رشته‌های واحددار (مثل "200 px") به عدد خالص
-        function getPx(v) {
+        // تابع جامع تبدیل انواع اشیاء Photopea به عدد پیکسلی خالص
+        function forceNumber(v) {
           if (v === null || v === undefined) return NaN;
           if (typeof v === "number") return v;
-          if (typeof v === "object" && "value" in v && typeof v.value === "number") {
-            return v.value;
-          }
-          var str = String(v);
-          var parsed = parseFloat(str);
-          return isNaN(parsed) ? NaN : parsed;
+          try { if (typeof v.value === "number") return v.value; } catch(e){}
+          try { var val1 = parseFloat(v.value); if (!isNaN(val1)) return val1; } catch(e){}
+          try { if (typeof v.as === "function") return v.as("px"); } catch(e){}
+          try { var str = String(v); var val2 = parseFloat(str); if (!isNaN(val2)) return val2; } catch(e){}
+          try { var n = v * 1; if (!isNaN(n)) return n; } catch(e){}
+          return NaN;
         }
 
-        var docW = getPx(d.width);
-        var docH = getPx(d.height);
-        if (isNaN(docW) || docW <= 0) docW = 800;
-        if (isNaN(docH) || docH <= 0) docH = 600;
+        var docW = forceNumber(d.width) || 800;
+        var docH = forceNumber(d.height) || 600;
 
         var posX = docW / 2;
         var posY = docH / 2;
-        var inSel = false;
-        var diag = "";
+        var hasSel = false;
+        var diagInfo = "";
 
+        var l = NaN, t = NaN, r = NaN, bm = NaN;
+        var selSource = "";
+
+        // روش اول: بررسی DOM standard selection.bounds
         try {
           var sel = d.selection;
-          if (sel) {
+          if (sel && sel.bounds) {
             var b = sel.bounds;
-            if (b && b.length === 4) {
-              diag = "Type:" + (typeof b[0]) + " | Str:" + String(b[0]);
-
-              var l = getPx(b[0]);
-              var t = getPx(b[1]);
-              var r = getPx(b[2]);
-              var bm = getPx(b[3]);
-
-              if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
-                posX = (l + r) / 2;
-                posY = (t + bm) / 2;
-                inSel = true;
-              }
-            }
+            l = forceNumber(b[0]);
+            t = forceNumber(b[1]);
+            r = forceNumber(b[2]);
+            bm = forceNumber(b[3]);
+            selSource = "DOM";
           }
-        } catch (selErr) {
-          diag = "No selection active";
+        } catch(e1) {
+          diagInfo += "DOM fail; ";
         }
 
-        // جلوگیری از ارسال NaN به ti.position برای منع کرش موتور متن فوتوپیا
+        // روش دوم: پشتیبان نیتیو Photopea (ActionDescriptor) در صورت ناموفق بودن روش اول
+        if (isNaN(l) || isNaN(t) || isNaN(r) || isNaN(bm)) {
+          try {
+            var ref = new ActionReference();
+            ref.putProperty(charIDToTypeID("Prpr"), stringIDToTypeID("selection"));
+            ref.putEnumerated(charIDToTypeID("Dcmn"), charIDToTypeID("Ordn"), charIDToTypeID("Trgt"));
+            var desc = executeActionGet(ref);
+            if (desc && desc.hasKey(stringIDToTypeID("selection"))) {
+              var selObj = desc.getObjectValue(stringIDToTypeID("selection"));
+              l = selObj.getUnitDoubleValue(stringIDToTypeID("left"));
+              t = selObj.getUnitDoubleValue(stringIDToTypeID("top"));
+              r = selObj.getUnitDoubleValue(stringIDToTypeID("right"));
+              bm = selObj.getUnitDoubleValue(stringIDToTypeID("bottom"));
+              selSource = "ActionDesc";
+            }
+          } catch(e2) {
+            diagInfo += "ActionDesc fail; ";
+          }
+        }
+
+        // محاسبه مرکز Selection
+        if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm)) {
+          var w = r - l;
+          var h = bm - t;
+          if (w > 0 && h > 0) {
+            posX = l + (w / 2);
+            posY = t + (h / 2);
+            hasSel = true;
+            diagInfo = "Src:" + selSource + " [" + Math.round(l) + "," + Math.round(t) + "," + Math.round(r) + "," + Math.round(bm) + "]";
+          }
+        }
+
+        // ایمنی در برابر NaN
         if (isNaN(posX) || !isFinite(posX)) posX = docW / 2;
         if (isNaN(posY) || !isFinite(posY)) posY = docH / 2;
 
+        // ساخت Text Layer
         var layer = d.artLayers.add();
         layer.kind = LayerKind.TEXT;
 
@@ -103,11 +129,11 @@ document.getElementById("insert").addEventListener("click", function () {
         ti.position = [posX, posY];
         d.activeLayer = layer;
 
-        var statusReport = (inSel ? "Placed in Selection" : "Placed in Center") +
-                            " [" + Math.round(posX) + ", " + Math.round(posY) + "]" +
-                            (diag ? " | " + diag : "");
+        var report = (hasSel ? "Placed in Selection" : "Placed in Center") +
+                     " (" + Math.round(posX) + ", " + Math.round(posY) + ")" +
+                     (diagInfo ? " | " + diagInfo : "");
 
-        app.echoToOE(statusReport);
+        app.echoToOE(report);
 
       } catch (err) {
         app.echoToOE("Script Error: " + err.message);
