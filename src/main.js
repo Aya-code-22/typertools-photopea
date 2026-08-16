@@ -1,12 +1,18 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-018
+// BUILD: TYPERP-BUILD-019
 //
 // Selection-aware Paragraph Text
 // Full Text -> Lines -> Current Line
 // Word-aware wrapping
 // Auto Fit
 // Padding
-// Saved basic settings
+// Letter Spacing
+// Line Spacing
+// Horizontal Scale
+// Point Text
+//
+// IMPORTANT:
+// This build keeps the BUILD-018 selection system intact.
 
 (function () {
 
@@ -86,7 +92,7 @@
   if (missing.length) {
 
     alert(
-      "TypeR-P BUILD-018 UI ERROR\n\n" +
+      "TypeR-P BUILD-019 UI ERROR\n\n" +
       "Missing:\n" +
       missing.join("\n")
     );
@@ -96,9 +102,7 @@
 
 
   function setStatus(text) {
-
     statusEl.textContent = text;
-
   }
 
 
@@ -107,7 +111,6 @@
      ===================================================== */
 
   var lines = [];
-
   var currentIndex = 0;
 
 
@@ -160,7 +163,6 @@
       if (!text.trim()) {
 
         lines = [];
-
         currentIndex = 0;
 
         updateLine();
@@ -183,10 +185,6 @@
       lines =
         text.split("\n");
 
-
-      /*
-       * Remove empty lines at the end.
-       */
 
       while (
         lines.length > 0 &&
@@ -248,9 +246,7 @@
 
 
       if (currentIndex > 0) {
-
         currentIndex--;
-
       }
 
 
@@ -303,7 +299,8 @@
 
 
   if (!settingsPanel) {
-    settingsPanel = fontEl.parentElement;
+    settingsPanel =
+      fontEl.parentElement;
   }
 
 
@@ -314,9 +311,11 @@
 
     label.textContent = text;
 
-    label.style.display = "block";
+    label.style.display =
+      "block";
 
-    label.style.marginTop = "8px";
+    label.style.marginTop =
+      "8px";
 
     return label;
 
@@ -326,23 +325,30 @@
   function makeNumber(
     value,
     min,
-    max
+    max,
+    step
   ) {
 
     var input =
       document.createElement("input");
 
-    input.type = "number";
+    input.type =
+      "number";
 
-    input.value = value;
+    input.value =
+      value;
 
-    input.min = min;
+    input.min =
+      min;
 
-    input.max = max;
+    input.max =
+      max;
 
-    input.step = "1";
+    input.step =
+      step || "1";
 
-    input.style.width = "100%";
+    input.style.width =
+      "100%";
 
     input.style.boxSizing =
       "border-box";
@@ -365,7 +371,8 @@
     makeNumber(
       12,
       0,
-      500
+      500,
+      1
     );
 
 
@@ -426,7 +433,7 @@
 
 
   /* =====================================================
-     MINIMUM SIZE
+     MINIMUM FONT SIZE
      ===================================================== */
 
   settingsPanel.appendChild(
@@ -440,7 +447,8 @@
     makeNumber(
       8,
       1,
-      500
+      500,
+      1
     );
 
 
@@ -511,6 +519,87 @@
 
 
   /* =====================================================
+     LETTER SPACING
+     ===================================================== */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Letter Spacing"
+    )
+  );
+
+
+  var trackingEl =
+    makeNumber(
+      0,
+      -1000,
+      10000,
+      10
+    );
+
+
+  settingsPanel.appendChild(
+    trackingEl
+  );
+
+
+  /* =====================================================
+     LINE SPACING
+     ===================================================== */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Line Spacing"
+    )
+  );
+
+
+  var leadingEl =
+    makeNumber(
+      0,
+      0,
+      1000,
+      1
+    );
+
+
+  settingsPanel.appendChild(
+    leadingEl
+  );
+
+
+  /*
+   * 0 = automatic leading.
+   * Positive value = explicit leading in points.
+   */
+
+
+  /* =====================================================
+     HORIZONTAL SCALE
+     ===================================================== */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Horizontal Scale (%)"
+    )
+  );
+
+
+  var horizontalScaleEl =
+    makeNumber(
+      100,
+      10,
+      1000,
+      1
+    );
+
+
+  settingsPanel.appendChild(
+    horizontalScaleEl
+  );
+
+
+  /* =====================================================
      PHOTOPEA MESSAGE LISTENER
      ===================================================== */
 
@@ -560,7 +649,7 @@
 
 
         alert(
-          "TypeR-P BUILD-018\n\n" +
+          "TypeR-P BUILD-019\n\n" +
           error
         );
 
@@ -698,6 +787,79 @@
       modeEl.value;
 
 
+    var tracking =
+      Number(
+        trackingEl.value
+      );
+
+
+    if (
+      !isFinite(tracking)
+    ) {
+
+      tracking = 0;
+
+    }
+
+
+    if (tracking < -1000) {
+      tracking = -1000;
+    }
+
+    if (tracking > 10000) {
+      tracking = 10000;
+    }
+
+
+    var leading =
+      Number(
+        leadingEl.value
+      );
+
+
+    if (
+      !isFinite(leading) ||
+      leading < 0
+    ) {
+
+      leading = 0;
+
+    }
+
+
+    var horizontalScale =
+      Number(
+        horizontalScaleEl.value
+      );
+
+
+    if (
+      !isFinite(horizontalScale)
+    ) {
+
+      horizontalScale = 100;
+
+    }
+
+
+    if (
+      horizontalScale < 10
+    ) {
+
+      horizontalScale = 10;
+
+    }
+
+
+    if (
+      horizontalScale > 1000
+    ) {
+
+      horizontalScale = 1000;
+
+    }
+
+
     setStatus(
       "Checking active selection..."
     );
@@ -718,11 +880,9 @@
       "if(!d){throw new Error('No active document.');}\n" +
 
 
-      /*
-       * -------------------------------------------------
-       * GET SELECTION
-       * -------------------------------------------------
-       */
+      /* -------------------------------------------------
+         SELECTION
+         ------------------------------------------------- */
 
       "var b;\n" +
 
@@ -743,10 +903,6 @@
 
       "}\n" +
 
-
-      /*
-       * Convert UnitValue / number
-       */
 
       "function px(v){\n" +
 
@@ -804,11 +960,9 @@
       "}\n" +
 
 
-      /*
-       * -------------------------------------------------
-       * INNER TEXT BOX
-       * -------------------------------------------------
-       */
+      /* -------------------------------------------------
+         BOX
+         ------------------------------------------------- */
 
       "var boxLeft=L+" +
       padding +
@@ -839,11 +993,9 @@
       "}\n" +
 
 
-      /*
-       * -------------------------------------------------
-       * CREATE LAYER
-       * -------------------------------------------------
-       */
+      /* -------------------------------------------------
+         CREATE TEXT LAYER
+         ------------------------------------------------- */
 
       "var layer=d.artLayers.add();\n" +
 
@@ -863,11 +1015,9 @@
       "var ti=layer.textItem;\n" +
 
 
-      /*
-       * -------------------------------------------------
-       * PARAGRAPH TEXT
-       * -------------------------------------------------
-       */
+      /* -------------------------------------------------
+         PARAGRAPH
+         ------------------------------------------------- */
 
       "if(" +
 
@@ -900,10 +1050,6 @@
       ";\n" +
 
 
-      /*
-       * Start at requested size.
-       */
-
       "ti.size=" +
       initialSize +
       ";\n" +
@@ -913,6 +1059,10 @@
       align +
       ";\n" +
 
+
+      /* -------------------------------------------------
+         COLOR
+         ------------------------------------------------- */
 
       "var c=new SolidColor();\n" +
 
@@ -925,24 +1075,82 @@
       "ti.color=c;\n" +
 
 
-      /*
-       * -------------------------------------------------
-       * WORD-AWARE AUTO FIT
-       * -------------------------------------------------
-       *
-       * We calculate a conservative font size based
-       * on words instead of blindly splitting every
-       * character.
-       */
+      /* -------------------------------------------------
+         LETTER SPACING
+         ------------------------------------------------- */
+
+      "try{\n" +
+
+      "ti.tracking=" +
+      tracking +
+      ";\n" +
+
+      "}catch(e){\n" +
+
+      "}\n" +
+
+
+      /* -------------------------------------------------
+         LINE SPACING
+         ------------------------------------------------- */
+
+      "try{\n" +
+
+      "if(" +
+      leading +
+      ">0){\n" +
+
+      "ti.useAutoLeading=false;\n" +
+
+      "ti.leading=new UnitValue(" +
+      leading +
+      ",'pt');\n" +
+
+      "}else{\n" +
+
+      "ti.useAutoLeading=true;\n" +
+
+      "}\n" +
+
+      "}catch(e){\n" +
+
+      "}\n" +
+
+
+      /* -------------------------------------------------
+         HORIZONTAL SCALE
+         ------------------------------------------------- */
+
+      "try{\n" +
+
+      "ti.horizontalScale=" +
+      horizontalScale +
+      ";\n" +
+
+      "}catch(e){\n" +
+
+      "}\n" +
+
+
+      /* -------------------------------------------------
+         AUTO FIT
+         ------------------------------------------------- */
 
       "if(" +
       autoFit +
       "){\n" +
 
 
-      "function estimateLines(str,size,width){\n" +
+      "function estimateLines(str,size,width,track,scale){\n" +
 
-      "var avg=size*0.52;\n" +
+      "var avg=size*0.52*(scale/100);\n" +
+
+      "var trackingPx=(track/1000)*size;\n" +
+
+      "avg+=trackingPx;\n" +
+
+      "if(avg<0.1)avg=0.1;\n" +
+
 
       "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
 
@@ -954,6 +1162,7 @@
       "for(var p=0;p<paragraphs.length;p++){\n" +
 
       "var paragraph=paragraphs[p];\n" +
+
 
       "if(paragraph.trim()===''){\n" +
 
@@ -978,12 +1187,6 @@
       "var len=word.length;\n" +
 
 
-      /*
-       * A word wider than the entire line
-       * is the only case where character
-       * breaking is allowed.
-       */
-
       "if(len>maxChars){\n" +
 
       "if(chars>0){\n" +
@@ -999,6 +1202,7 @@
 
       "chars=len%maxChars;\n" +
 
+
       "if(chars===0){\n" +
 
       "chars=maxChars;\n" +
@@ -1011,10 +1215,6 @@
 
       "}\n" +
 
-
-      /*
-       * Normal word wrapping.
-       */
 
       "var needed=len+(chars>0?1:0);\n" +
 
@@ -1044,10 +1244,6 @@
       "}\n" +
 
 
-      /*
-       * Approximate line height.
-       */
-
       "var current=" +
       initialSize +
       ";\n" +
@@ -1063,10 +1259,30 @@
 
       jsString(text) +
 
-      ",current,boxWidth);\n" +
+      ",current,boxWidth," +
+      tracking +
+      "," +
+      horizontalScale +
+      ");\n" +
 
 
-      "var lineHeight=current*1.20;\n" +
+      "var lineHeight;\n" +
+
+
+      "if(" +
+      leading +
+      ">0){\n" +
+
+      "lineHeight=" +
+      leading +
+      ";\n" +
+
+      "}else{\n" +
+
+      "lineHeight=current*1.20;\n" +
+
+      "}\n" +
+
 
       "var neededHeight=estimated*lineHeight;\n" +
 
@@ -1091,11 +1307,9 @@
       "}else{\n" +
 
 
-      /*
-       * -------------------------------------------------
-       * POINT TEXT
-       * -------------------------------------------------
-       */
+      /* -------------------------------------------------
+         POINT TEXT
+         ------------------------------------------------- */
 
       "ti.kind=TextType.POINTTEXT;\n" +
 
@@ -1135,6 +1349,41 @@
       "ti.color=pc;\n" +
 
 
+      "try{\n" +
+
+      "ti.tracking=" +
+      tracking +
+      ";\n" +
+
+      "}catch(e){}\n" +
+
+
+      "try{\n" +
+
+      "if(" +
+      leading +
+      ">0){\n" +
+
+      "ti.useAutoLeading=false;\n" +
+
+      "ti.leading=new UnitValue(" +
+      leading +
+      ",'pt');\n" +
+
+      "}\n" +
+
+      "}catch(e){}\n" +
+
+
+      "try{\n" +
+
+      "ti.horizontalScale=" +
+      horizontalScale +
+      ";\n" +
+
+      "}catch(e){}\n" +
+
+
       "ti.position=[\n" +
 
       "(L+R)/2,\n" +
@@ -1147,11 +1396,9 @@
       "}\n" +
 
 
-      /*
-       * -------------------------------------------------
-       * FINISH
-       * -------------------------------------------------
-       */
+      /* -------------------------------------------------
+         FINISH
+         ------------------------------------------------- */
 
       "d.activeLayer=layer;\n" +
 
@@ -1160,9 +1407,7 @@
 
       "'TYPERP_OK:TEXT INSERTED | selection='+\n" +
 
-      "Math.round(L)+','+\n" +
-
-      "Math.round(T)+','+\n" +
+      "Math.round(L)+','+\n      "Math.round(T)+','+\n" +
 
       "Math.round(R)+','+\n" +
 
@@ -1176,7 +1421,19 @@
 
       "' | size='+\n" +
 
-      "ti.size\n" +
+      "ti.size+\n" +
+
+      "' | tracking='+\n" +
+
+      tracking+\n" +
+
+      "' | leading='+\n" +
+
+      leading+\n" +
+
+      "' | scale='+\n" +
+
+      horizontalScale\n" +
 
       ");\n" +
 
@@ -1205,7 +1462,7 @@
 
 
   /* =====================================================
-     INSERT BUTTON
+     INSERT
      ===================================================== */
 
   insertLineBtn.onclick =
@@ -1219,7 +1476,8 @@
   updateLine();
 
   setStatus(
-    "Ready (BUILD-018)"
+    "Ready (BUILD-019)"
   );
+
 
 })();
