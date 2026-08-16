@@ -1,10 +1,20 @@
+// TypeR-P — main.js
+// BUILD: TYPERP-BUILD-018
+//
+// Selection-aware Paragraph Text
+// Full Text -> Lines -> Current Line
+// Word-aware wrapping
+// Auto Fit
+// Padding
+// Saved basic settings
+
 (function () {
 
   "use strict";
 
+
   /* =====================================================
-     TypeR-P
-     BUILD: TYPERP-BUILD-017
+     UI
      ===================================================== */
 
   var statusEl =
@@ -45,7 +55,7 @@
 
 
   /* =====================================================
-     CHECK UI
+     UI CHECK
      ===================================================== */
 
   var required = [
@@ -65,10 +75,10 @@
 
   var missing = [];
 
-  for (var r = 0; r < required.length; r++) {
+  for (var i = 0; i < required.length; i++) {
 
-    if (!required[r][1]) {
-      missing.push(required[r][0]);
+    if (!required[i][1]) {
+      missing.push(required[i][0]);
     }
 
   }
@@ -76,7 +86,7 @@
   if (missing.length) {
 
     alert(
-      "TypeR-P BUILD-017 UI ERROR\n\n" +
+      "TypeR-P BUILD-018 UI ERROR\n\n" +
       "Missing:\n" +
       missing.join("\n")
     );
@@ -121,6 +131,7 @@
       (currentIndex + 1) +
       " / " +
       lines.length;
+
   }
 
 
@@ -132,6 +143,7 @@
 
     lines[currentIndex] =
       currentLineEl.value;
+
   }
 
 
@@ -160,23 +172,33 @@
         return;
       }
 
+
       text =
         text.replace(/\r\n/g, "\n");
 
       text =
         text.replace(/\r/g, "\n");
 
+
       lines =
         text.split("\n");
 
+
+      /*
+       * Remove empty lines at the end.
+       */
+
       while (
-        lines.length &&
-        lines[lines.length - 1].trim() === ""
+        lines.length > 0 &&
+        lines[
+          lines.length - 1
+        ].trim() === ""
       ) {
 
         lines.pop();
 
       }
+
 
       currentIndex = 0;
 
@@ -192,7 +214,7 @@
 
 
   /* =====================================================
-     EDIT CURRENT LINE
+     CURRENT LINE EDIT
      ===================================================== */
 
   currentLineEl.addEventListener(
@@ -221,13 +243,16 @@
         return;
       }
 
+
       saveCurrentLine();
+
 
       if (currentIndex > 0) {
 
         currentIndex--;
 
       }
+
 
       updateLine();
 
@@ -250,7 +275,9 @@
         return;
       }
 
+
       saveCurrentLine();
+
 
       if (
         currentIndex <
@@ -260,6 +287,7 @@
         currentIndex++;
 
       }
+
 
       updateLine();
 
@@ -279,82 +307,111 @@
   }
 
 
-  function label(text) {
+  function makeLabel(text) {
 
-    var el =
+    var label =
       document.createElement("label");
 
-    el.textContent = text;
+    label.textContent = text;
 
-    el.style.display = "block";
-    el.style.marginTop = "8px";
+    label.style.display = "block";
 
-    return el;
+    label.style.marginTop = "8px";
+
+    return label;
+
   }
 
 
-  function numberInput(
+  function makeNumber(
     value,
     min,
     max
   ) {
 
-    var el =
+    var input =
       document.createElement("input");
 
-    el.type = "number";
-    el.value = value;
-    el.min = min;
-    el.max = max;
-    el.step = "1";
+    input.type = "number";
 
-    el.style.width = "100%";
-    el.style.boxSizing = "border-box";
+    input.value = value;
 
-    return el;
+    input.min = min;
+
+    input.max = max;
+
+    input.step = "1";
+
+    input.style.width = "100%";
+
+    input.style.boxSizing =
+      "border-box";
+
+    return input;
+
   }
 
 
-  /* Padding */
+  /* =====================================================
+     PADDING
+     ===================================================== */
 
   settingsPanel.appendChild(
-    label("Padding")
+    makeLabel("Padding")
   );
 
+
   var paddingEl =
-    numberInput(
+    makeNumber(
       12,
       0,
       500
     );
+
 
   settingsPanel.appendChild(
     paddingEl
   );
 
 
-  /* Auto Fit */
+  /* =====================================================
+     AUTO FIT
+     ===================================================== */
 
   settingsPanel.appendChild(
-    label("Auto Fit")
+    makeLabel("Auto Fit")
   );
+
 
   var fitRow =
     document.createElement("label");
 
-  fitRow.style.display = "flex";
-  fitRow.style.alignItems = "center";
-  fitRow.style.gap = "6px";
+
+  fitRow.style.display =
+    "flex";
+
+  fitRow.style.alignItems =
+    "center";
+
+  fitRow.style.gap =
+    "6px";
 
 
   var fitEl =
     document.createElement("input");
 
-  fitEl.type = "checkbox";
-  fitEl.checked = true;
+
+  fitEl.type =
+    "checkbox";
+
+  fitEl.checked =
+    true;
 
 
-  fitRow.appendChild(fitEl);
+  fitRow.appendChild(
+    fitEl
+  );
+
 
   fitRow.appendChild(
     document.createTextNode(
@@ -368,54 +425,84 @@
   );
 
 
-  /* Minimum size */
+  /* =====================================================
+     MINIMUM SIZE
+     ===================================================== */
 
   settingsPanel.appendChild(
-    label("Minimum Font Size")
+    makeLabel(
+      "Minimum Font Size"
+    )
   );
 
+
   var minSizeEl =
-    numberInput(
+    makeNumber(
       8,
       1,
       500
     );
+
 
   settingsPanel.appendChild(
     minSizeEl
   );
 
 
-  /* Text mode */
+  /* =====================================================
+     TEXT MODE
+     ===================================================== */
 
   settingsPanel.appendChild(
-    label("Text Mode")
+    makeLabel(
+      "Text Mode"
+    )
   );
 
+
   var modeEl =
-    document.createElement("select");
+    document.createElement(
+      "select"
+    );
 
-  modeEl.style.width = "100%";
+
+  modeEl.style.width =
+    "100%";
 
 
-  var paragraph =
-    document.createElement("option");
+  var paragraphOption =
+    document.createElement(
+      "option"
+    );
 
-  paragraph.value = "PARAGRAPH";
-  paragraph.textContent =
+
+  paragraphOption.value =
+    "PARAGRAPH";
+
+  paragraphOption.textContent =
     "Text Box (recommended)";
 
 
-  var point =
-    document.createElement("option");
+  var pointOption =
+    document.createElement(
+      "option"
+    );
 
-  point.value = "POINT";
-  point.textContent =
+
+  pointOption.value =
+    "POINT";
+
+  pointOption.textContent =
     "Point Text";
 
 
-  modeEl.appendChild(paragraph);
-  modeEl.appendChild(point);
+  modeEl.appendChild(
+    paragraphOption
+  );
+
+  modeEl.appendChild(
+    pointOption
+  );
 
 
   settingsPanel.appendChild(
@@ -435,7 +522,9 @@
         typeof event.data !==
         "string"
       ) {
+
         return;
+
       }
 
 
@@ -446,12 +535,11 @@
       ) {
 
         setStatus(
-          event.data.substring(
-            10
-          )
+          event.data.substring(10)
         );
 
         return;
+
       }
 
 
@@ -462,17 +550,17 @@
       ) {
 
         var error =
-          event.data.substring(
-            11
-          );
+          event.data.substring(11);
+
 
         setStatus(
           "Error: " +
           error
         );
 
+
         alert(
-          "TypeR-P BUILD-017\n\n" +
+          "TypeR-P BUILD-018\n\n" +
           error
         );
 
@@ -483,7 +571,7 @@
 
 
   /* =====================================================
-     STRING ESCAPE
+     SAFE JS STRING
      ===================================================== */
 
   function jsString(value) {
@@ -496,7 +584,7 @@
 
 
   /* =====================================================
-     INSERT
+     INSERT CURRENT LINE
      ===================================================== */
 
   function insertCurrentLine() {
@@ -536,7 +624,7 @@
       "ArialMT";
 
 
-    var size =
+    var initialSize =
       Number(sizeEl.value) ||
       48;
 
@@ -550,11 +638,18 @@
           /[^0-9a-fA-F]/g,
           ""
         )
-        .slice(0, 6);
+        .slice(
+          0,
+          6
+        );
 
 
-    while (color.length < 6) {
+    while (
+      color.length < 6
+    ) {
+
       color += "0";
+
     }
 
 
@@ -579,33 +674,38 @@
     }
 
 
-    var mode =
-      modeEl.value;
+    var minSize =
+      Number(
+        minSizeEl.value
+      );
+
+
+    if (
+      !isFinite(minSize) ||
+      minSize < 1
+    ) {
+
+      minSize = 8;
+
+    }
 
 
     var autoFit =
       fitEl.checked;
 
 
-    var minimum =
-      Number(
-        minSizeEl.value
-      ) || 8;
+    var mode =
+      modeEl.value;
 
-
-    /* =================================================
-       IMPORTANT:
-
-       First we ONLY test whether Photopea can read
-       the active selection.
-
-       Nothing else happens before this.
-       ================================================= */
 
     setStatus(
       "Checking active selection..."
     );
 
+
+    /* =================================================
+       PHOTOPEA SCRIPT
+       ================================================= */
 
     var script =
 
@@ -615,18 +715,16 @@
 
       "var d=app.activeDocument;\n" +
 
-      "if(!d){\n" +
-
-      "throw new Error('No active document.');\n" +
-
-      "}\n" +
+      "if(!d){throw new Error('No active document.');}\n" +
 
 
       /*
-       * READ SELECTION
+       * -------------------------------------------------
+       * GET SELECTION
+       * -------------------------------------------------
        */
 
-      "var b=null;\n" +
+      "var b;\n" +
 
       "try{\n" +
 
@@ -634,126 +732,117 @@
 
       "}catch(e){\n" +
 
-      "throw new Error('No active selection.');\n" +
+      "throw new Error('No active selection. Please make a selection first.');\n" +
 
       "}\n" +
 
 
-      "if(!b){\n" +
+      "if(!b||b.length!==4){\n" +
 
-      "throw new Error('No active selection.');\n" +
-
-      "}\n" +
-
-
-      "if(!b.length || b.length!==4){\n" +
-
-      "throw new Error('Selection bounds could not be read.');\n" +
+      "throw new Error('No active selection. Please make a selection first.');\n" +
 
       "}\n" +
 
 
       /*
-       * CONVERT VALUES
+       * Convert UnitValue / number
        */
 
-      "function num(v){\n" +
+      "function px(v){\n" +
 
       "if(typeof v==='number')return v;\n" +
 
-      "if(v && typeof v.as==='function'){\n" +
+      "try{\n" +
 
-      "return Number(v.as('px'));\n" +
+      "if(v&&typeof v.as==='function'){\n" +
+
+      "var a=Number(v.as('px'));\n" +
+
+      "if(isFinite(a))return a;\n" +
+
+      "}\n" +
+
+      "}catch(e){}\n" +
+
+      "try{\n" +
+
+      "if(v&&v.value!==undefined){\n" +
+
+      "var n=Number(v.value);\n" +
+
+      "if(isFinite(n))return n;\n" +
 
       "}\n" +
 
-      "if(v && v.value!==undefined){\n" +
-
-      "return Number(v.value);\n" +
-
-      "}\n" +
+      "}catch(e){}\n" +
 
       "return NaN;\n" +
 
       "}\n" +
 
 
-      "var L=num(b[0]);\n" +
-      "var T=num(b[1]);\n" +
-      "var R=num(b[2]);\n" +
-      "var B=num(b[3]);\n" +
+      "var L=px(b[0]);\n" +
+
+      "var T=px(b[1]);\n" +
+
+      "var R=px(b[2]);\n" +
+
+      "var B=px(b[3]);\n" +
 
 
       "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){\n" +
 
-      "throw new Error('Selection coordinates are invalid.');\n" +
+      "throw new Error('Could not read selection coordinates.');\n" +
 
       "}\n" +
 
 
       "if(R<=L||B<=T){\n" +
 
-      "throw new Error('Selection has invalid size.');\n" +
+      "throw new Error('Selection has invalid dimensions.');\n" +
 
       "}\n" +
 
 
       /*
-       * SEND SELECTION BACK IMMEDIATELY
-       *
-       * This proves the selection itself works
-       * before we create anything.
+       * -------------------------------------------------
+       * INNER TEXT BOX
+       * -------------------------------------------------
        */
 
-      "app.echoToOE(\n" +
-
-      "'TYPERP_OK:SELECTION='+\n" +
-
-      "Math.round(L)+','+\n" +
-
-      "Math.round(T)+','+\n" +
-
-      "Math.round(R)+','+\n" +
-
-      "Math.round(B)\n" +
-
-      ");\n" +
-
-
-      /*
-       * BOX
-       */
-
-      "var left=L+" +
+      "var boxLeft=L+" +
       padding +
       ";\n" +
 
-      "var top=T+" +
+      "var boxTop=T+" +
       padding +
       ";\n" +
 
-      "var right=R-" +
+      "var boxRight=R-" +
       padding +
       ";\n" +
 
-      "var bottom=B-" +
+      "var boxBottom=B-" +
       padding +
       ";\n" +
 
 
-      "var width=right-left;\n" +
-      "var height=bottom-top;\n" +
+      "var boxWidth=boxRight-boxLeft;\n" +
+
+      "var boxHeight=boxBottom-boxTop;\n" +
 
 
-      "if(width<1||height<1){\n" +
+      "if(boxWidth<1||boxHeight<1){\n" +
 
-      "throw new Error('Padding is too large for this selection.');\n" +
+      "throw new Error('Padding is too large for the selection.');\n" +
 
       "}\n" +
 
 
       /*
-       * CREATE TEXT
+       * -------------------------------------------------
+       * CREATE LAYER
+       * -------------------------------------------------
        */
 
       "var layer=d.artLayers.add();\n" +
@@ -765,7 +854,7 @@
 
       jsString(
         "TTP: " +
-        text.substring(0, 45)
+        text.substring(0,45)
       ) +
 
       ";\n" +
@@ -775,7 +864,9 @@
 
 
       /*
-       * PARAGRAPH
+       * -------------------------------------------------
+       * PARAGRAPH TEXT
+       * -------------------------------------------------
        */
 
       "if(" +
@@ -787,12 +878,12 @@
       "ti.kind=TextType.PARAGRAPHTEXT;\n" +
 
 
-      "ti.position=[left,top];\n" +
+      "ti.position=[boxLeft,boxTop];\n" +
 
 
-      "ti.width=new UnitValue(width,'px');\n" +
+      "ti.width=new UnitValue(boxWidth,'px');\n" +
 
-      "ti.height=new UnitValue(height,'px');\n" +
+      "ti.height=new UnitValue(boxHeight,'px');\n" +
 
 
       "ti.contents=" +
@@ -809,8 +900,12 @@
       ";\n" +
 
 
+      /*
+       * Start at requested size.
+       */
+
       "ti.size=" +
-      size +
+      initialSize +
       ";\n" +
 
 
@@ -831,36 +926,164 @@
 
 
       /*
-       * AUTO FIT
-
-       * This version intentionally does NOT
-       * use complicated line estimation yet.
+       * -------------------------------------------------
+       * WORD-AWARE AUTO FIT
+       * -------------------------------------------------
        *
-       * We first make sure selection placement
-       * is 100% correct.
+       * We calculate a conservative font size based
+       * on words instead of blindly splitting every
+       * character.
        */
 
       "if(" +
       autoFit +
       "){\n" +
 
-      "var s=" +
-      size +
+
+      "function estimateLines(str,size,width){\n" +
+
+      "var avg=size*0.52;\n" +
+
+      "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
+
+      "var paragraphs=str.split(String.fromCharCode(10));\n" +
+
+      "var total=0;\n" +
+
+
+      "for(var p=0;p<paragraphs.length;p++){\n" +
+
+      "var paragraph=paragraphs[p];\n" +
+
+      "if(paragraph.trim()===''){\n" +
+
+      "total++;\n" +
+
+      "continue;\n" +
+
+      "}\n" +
+
+
+      "var words=paragraph.trim().split(/\\s+/);\n" +
+
+      "var chars=0;\n" +
+
+      "var lineCount=1;\n" +
+
+
+      "for(var w=0;w<words.length;w++){\n" +
+
+      "var word=words[w];\n" +
+
+      "var len=word.length;\n" +
+
+
+      /*
+       * A word wider than the entire line
+       * is the only case where character
+       * breaking is allowed.
+       */
+
+      "if(len>maxChars){\n" +
+
+      "if(chars>0){\n" +
+
+      "lineCount++;\n" +
+
+      "chars=0;\n" +
+
+      "}\n" +
+
+
+      "lineCount+=Math.floor(len/maxChars);\n" +
+
+      "chars=len%maxChars;\n" +
+
+      "if(chars===0){\n" +
+
+      "chars=maxChars;\n" +
+
+      "lineCount--;\n" +
+
+      "}\n" +
+
+      "continue;\n" +
+
+      "}\n" +
+
+
+      /*
+       * Normal word wrapping.
+       */
+
+      "var needed=len+(chars>0?1:0);\n" +
+
+
+      "if(chars+needed>maxChars){\n" +
+
+      "lineCount++;\n" +
+
+      "chars=len;\n" +
+
+      "}else{\n" +
+
+      "chars+=needed;\n" +
+
+      "}\n" +
+
+      "}\n" +
+
+
+      "total+=lineCount;\n" +
+
+      "}\n" +
+
+
+      "return Math.max(1,total);\n" +
+
+      "}\n" +
+
+
+      /*
+       * Approximate line height.
+       */
+
+      "var current=" +
+      initialSize +
       ";\n" +
 
-      "var min=" +
-      minimum +
+      "var minimum=" +
+      minSize +
       ";\n" +
 
-      "while(s>min){\n" +
 
-      "ti.size=s;\n" +
+      "while(current>minimum){\n" +
 
-      "s--;\n" +
+      "var estimated=estimateLines(\n" +
+
+      jsString(text) +
+
+      ",current,boxWidth);\n" +
+
+
+      "var lineHeight=current*1.20;\n" +
+
+      "var neededHeight=estimated*lineHeight;\n" +
+
+
+      "if(neededHeight<=boxHeight){\n" +
 
       "break;\n" +
 
       "}\n" +
+
+
+      "current--;\n" +
+
+      "ti.size=current;\n" +
+
+      "}\n" +
+
 
       "}\n" +
 
@@ -869,7 +1092,9 @@
 
 
       /*
+       * -------------------------------------------------
        * POINT TEXT
+       * -------------------------------------------------
        */
 
       "ti.kind=TextType.POINTTEXT;\n" +
@@ -887,11 +1112,15 @@
       ";\n" +
 
       "ti.size=" +
-      size +
+
+      initialSize +
+
       ";\n" +
 
       "ti.justification=Justification." +
+
       align +
+
       ";\n" +
 
 
@@ -918,6 +1147,12 @@
       "}\n" +
 
 
+      /*
+       * -------------------------------------------------
+       * FINISH
+       * -------------------------------------------------
+       */
+
       "d.activeLayer=layer;\n" +
 
 
@@ -931,7 +1166,17 @@
 
       "Math.round(R)+','+\n" +
 
-      "Math.round(B)\n" +
+      "Math.round(B)+\n" +
+
+      "' | box='+\n" +
+
+      "Math.round(boxWidth)+'x'+\n" +
+
+      "Math.round(boxHeight)+\n" +
+
+      "' | size='+\n" +
+
+      "ti.size\n" +
 
       ");\n" +
 
@@ -974,7 +1219,7 @@
   updateLine();
 
   setStatus(
-    "Ready (BUILD-017)"
+    "Ready (BUILD-018)"
   );
 
 })();
