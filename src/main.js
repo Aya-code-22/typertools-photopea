@@ -1,6 +1,6 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-008
-// Selection-aware Paragraph Text + Padding + Auto Fit + Saved Styles
+// BUILD: TYPERP-BUILD-009
+// Selection-aware Paragraph Text + Padding + Smart Auto Fit + Long Word Handling + Saved Styles
 
 (function () {
 
@@ -108,6 +108,7 @@
     fitEl.checked = true;
 
     fitRow.appendChild(fitEl);
+
     fitRow.appendChild(
       document.createTextNode(
         "Automatically reduce font size"
@@ -192,188 +193,505 @@
 
     var STYLES_KEY = "typerp_styles_v1";
 
-    var memoryStyles = {}; // اگر localStorage در دسترس نبود، fallback حافظه‌ای موقت
+    var memoryStyles = {};
 
     function loadStyles() {
+
       try {
-        var raw = localStorage.getItem(STYLES_KEY);
+
+        var raw =
+          localStorage.getItem(
+            STYLES_KEY
+          );
+
         if (!raw) return {};
-        var parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") return parsed;
+
+        var parsed =
+          JSON.parse(raw);
+
+        if (
+          parsed &&
+          typeof parsed === "object"
+        ) {
+          return parsed;
+        }
+
         return {};
+
       } catch (e) {
+
         return memoryStyles;
+
       }
+
     }
+
 
     function saveStylesObj(obj) {
+
       try {
-        localStorage.setItem(STYLES_KEY, JSON.stringify(obj));
+
+        localStorage.setItem(
+          STYLES_KEY,
+          JSON.stringify(obj)
+        );
+
       } catch (e) {
+
         memoryStyles = obj;
+
       }
+
     }
 
-    var stylesLabel = makeLabel("Saved Styles");
-    actions.parentElement.appendChild(stylesLabel);
 
-    var styleSelectRow = document.createElement("div");
-    styleSelectRow.style.display = "flex";
-    styleSelectRow.style.gap = "6px";
-    styleSelectRow.style.marginTop = "4px";
+    var stylesLabel =
+      makeLabel("Saved Styles");
 
-    var styleSelectEl = document.createElement("select");
-    styleSelectEl.style.flex = "1";
+    actions.parentElement.appendChild(
+      stylesLabel
+    );
 
-    var applyStyleBtn = document.createElement("button");
-    applyStyleBtn.type = "button";
-    applyStyleBtn.textContent = "Apply";
 
-    var deleteStyleBtn = document.createElement("button");
-    deleteStyleBtn.type = "button";
-    deleteStyleBtn.textContent = "Delete";
+    var styleSelectRow =
+      document.createElement("div");
 
-    styleSelectRow.appendChild(styleSelectEl);
-    styleSelectRow.appendChild(applyStyleBtn);
-    styleSelectRow.appendChild(deleteStyleBtn);
+    styleSelectRow.style.display =
+      "flex";
 
-    actions.parentElement.appendChild(styleSelectRow);
+    styleSelectRow.style.gap =
+      "6px";
 
-    var styleSaveRow = document.createElement("div");
-    styleSaveRow.style.display = "flex";
-    styleSaveRow.style.gap = "6px";
-    styleSaveRow.style.marginTop = "6px";
+    styleSelectRow.style.marginTop =
+      "4px";
 
-    var styleNameEl = document.createElement("input");
-    styleNameEl.type = "text";
-    styleNameEl.placeholder = "Style name...";
-    styleNameEl.style.flex = "1";
-    styleNameEl.style.boxSizing = "border-box";
 
-    var saveStyleBtn = document.createElement("button");
-    saveStyleBtn.type = "button";
-    saveStyleBtn.textContent = "Save Style";
+    var styleSelectEl =
+      document.createElement("select");
 
-    styleSaveRow.appendChild(styleNameEl);
-    styleSaveRow.appendChild(saveStyleBtn);
+    styleSelectEl.style.flex =
+      "1";
 
-    actions.parentElement.appendChild(styleSaveRow);
 
-    function refreshStyleSelect(selectName) {
-      var styles = loadStyles();
-      var names = Object.keys(styles).sort(function (a, b) {
-        return a.localeCompare(b);
-      });
+    var applyStyleBtn =
+      document.createElement("button");
 
-      styleSelectEl.innerHTML = "";
+    applyStyleBtn.type =
+      "button";
+
+    applyStyleBtn.textContent =
+      "Apply";
+
+
+    var deleteStyleBtn =
+      document.createElement("button");
+
+    deleteStyleBtn.type =
+      "button";
+
+    deleteStyleBtn.textContent =
+      "Delete";
+
+
+    styleSelectRow.appendChild(
+      styleSelectEl
+    );
+
+    styleSelectRow.appendChild(
+      applyStyleBtn
+    );
+
+    styleSelectRow.appendChild(
+      deleteStyleBtn
+    );
+
+    actions.parentElement.appendChild(
+      styleSelectRow
+    );
+
+
+    var styleSaveRow =
+      document.createElement("div");
+
+    styleSaveRow.style.display =
+      "flex";
+
+    styleSaveRow.style.gap =
+      "6px";
+
+    styleSaveRow.style.marginTop =
+      "6px";
+
+
+    var styleNameEl =
+      document.createElement("input");
+
+    styleNameEl.type =
+      "text";
+
+    styleNameEl.placeholder =
+      "Style name...";
+
+    styleNameEl.style.flex =
+      "1";
+
+    styleNameEl.style.boxSizing =
+      "border-box";
+
+
+    var saveStyleBtn =
+      document.createElement("button");
+
+    saveStyleBtn.type =
+      "button";
+
+    saveStyleBtn.textContent =
+      "Save Style";
+
+
+    styleSaveRow.appendChild(
+      styleNameEl
+    );
+
+    styleSaveRow.appendChild(
+      saveStyleBtn
+    );
+
+    actions.parentElement.appendChild(
+      styleSaveRow
+    );
+
+
+    function refreshStyleSelect(
+      selectName
+    ) {
+
+      var styles =
+        loadStyles();
+
+      var names =
+        Object.keys(styles).sort(
+          function (a, b) {
+            return a.localeCompare(b);
+          }
+        );
+
+      styleSelectEl.innerHTML =
+        "";
 
       if (names.length === 0) {
-        var emptyOpt = document.createElement("option");
-        emptyOpt.value = "";
-        emptyOpt.textContent = "(no styles saved)";
-        styleSelectEl.appendChild(emptyOpt);
+
+        var emptyOpt =
+          document.createElement(
+            "option"
+          );
+
+        emptyOpt.value =
+          "";
+
+        emptyOpt.textContent =
+          "(no styles saved)";
+
+        styleSelectEl.appendChild(
+          emptyOpt
+        );
+
         return;
       }
 
-      for (var i = 0; i < names.length; i++) {
-        var opt = document.createElement("option");
-        opt.value = names[i];
-        opt.textContent = names[i];
-        styleSelectEl.appendChild(opt);
+
+      for (
+        var i = 0;
+        i < names.length;
+        i++
+      ) {
+
+        var opt =
+          document.createElement(
+            "option"
+          );
+
+        opt.value =
+          names[i];
+
+        opt.textContent =
+          names[i];
+
+        styleSelectEl.appendChild(
+          opt
+        );
+
       }
 
-      if (selectName && styles[selectName]) {
-        styleSelectEl.value = selectName;
+
+      if (
+        selectName &&
+        styles[selectName]
+      ) {
+
+        styleSelectEl.value =
+          selectName;
+
       }
+
     }
+
 
     function currentSettingsSnapshot() {
+
       return {
-        font: fontEl.value || "ArialMT",
-        size: Number(sizeEl.value) || 48,
-        color: colorEl.value || "FF0000",
-        align: alignEl.value || "CENTER",
-        padding: Number(paddingEl.value),
-        minSize: Number(minSizeEl.value),
-        autoFit: !!fitEl.checked,
-        mode: modeEl.value
+
+        font:
+          fontEl.value ||
+          "ArialMT",
+
+        size:
+          Number(sizeEl.value) ||
+          48,
+
+        color:
+          colorEl.value ||
+          "FF0000",
+
+        align:
+          alignEl.value ||
+          "CENTER",
+
+        padding:
+          Number(paddingEl.value),
+
+        minSize:
+          Number(minSizeEl.value),
+
+        autoFit:
+          !!fitEl.checked,
+
+        mode:
+          modeEl.value
+
       };
+
     }
+
 
     function applySettingsSnapshot(s) {
+
       if (!s) return;
-      if (s.font !== undefined) fontEl.value = s.font;
-      if (s.size !== undefined) sizeEl.value = s.size;
-      if (s.color !== undefined) colorEl.value = s.color;
-      if (s.align !== undefined) alignEl.value = s.align;
-      if (s.padding !== undefined) paddingEl.value = s.padding;
-      if (s.minSize !== undefined) minSizeEl.value = s.minSize;
-      if (s.autoFit !== undefined) fitEl.checked = !!s.autoFit;
-      if (s.mode !== undefined) modeEl.value = s.mode;
+
+      if (
+        s.font !== undefined
+      ) {
+        fontEl.value =
+          s.font;
+      }
+
+      if (
+        s.size !== undefined
+      ) {
+        sizeEl.value =
+          s.size;
+      }
+
+      if (
+        s.color !== undefined
+      ) {
+        colorEl.value =
+          s.color;
+      }
+
+      if (
+        s.align !== undefined
+      ) {
+        alignEl.value =
+          s.align;
+      }
+
+      if (
+        s.padding !== undefined
+      ) {
+        paddingEl.value =
+          s.padding;
+      }
+
+      if (
+        s.minSize !== undefined
+      ) {
+        minSizeEl.value =
+          s.minSize;
+      }
+
+      if (
+        s.autoFit !== undefined
+      ) {
+        fitEl.checked =
+          !!s.autoFit;
+      }
+
+      if (
+        s.mode !== undefined
+      ) {
+        modeEl.value =
+          s.mode;
+      }
+
     }
 
-    saveStyleBtn.onclick = function () {
-      try {
-        var name = (styleNameEl.value || "").trim();
 
-        if (!name) {
-          setStatus("Please type a style name first.");
-          return;
+    saveStyleBtn.onclick =
+      function () {
+
+        try {
+
+          var name =
+            (
+              styleNameEl.value ||
+              ""
+            ).trim();
+
+          if (!name) {
+
+            setStatus(
+              "Please type a style name first."
+            );
+
+            return;
+
+          }
+
+
+          var styles =
+            loadStyles();
+
+          styles[name] =
+            currentSettingsSnapshot();
+
+          saveStylesObj(styles);
+
+          refreshStyleSelect(
+            name
+          );
+
+          setStatus(
+            "Style saved: " +
+            name
+          );
+
+          styleNameEl.value =
+            "";
+
+        } catch (e) {
+
+          alert(
+            "Save style error: " +
+            e.message
+          );
+
         }
 
-        var styles = loadStyles();
-        styles[name] = currentSettingsSnapshot();
-        saveStylesObj(styles);
+      };
 
-        refreshStyleSelect(name);
-        setStatus("Style saved: " + name);
-        styleNameEl.value = "";
-      } catch (e) {
-        alert("Save style error: " + e.message);
-      }
-    };
 
-    applyStyleBtn.onclick = function () {
-      try {
-        var name = styleSelectEl.value;
-        if (!name) {
-          setStatus("No style selected.");
-          return;
+    applyStyleBtn.onclick =
+      function () {
+
+        try {
+
+          var name =
+            styleSelectEl.value;
+
+          if (!name) {
+
+            setStatus(
+              "No style selected."
+            );
+
+            return;
+
+          }
+
+
+          var styles =
+            loadStyles();
+
+          var s =
+            styles[name];
+
+
+          if (!s) {
+
+            setStatus(
+              "Style not found: " +
+              name
+            );
+
+            return;
+
+          }
+
+
+          applySettingsSnapshot(s);
+
+          setStatus(
+            "Style applied: " +
+            name
+          );
+
+        } catch (e) {
+
+          alert(
+            "Apply style error: " +
+            e.message
+          );
+
         }
 
-        var styles = loadStyles();
-        var s = styles[name];
+      };
 
-        if (!s) {
-          setStatus("Style not found: " + name);
-          return;
+
+    deleteStyleBtn.onclick =
+      function () {
+
+        try {
+
+          var name =
+            styleSelectEl.value;
+
+          if (!name) {
+
+            setStatus(
+              "No style selected."
+            );
+
+            return;
+
+          }
+
+
+          var styles =
+            loadStyles();
+
+          delete styles[name];
+
+          saveStylesObj(styles);
+
+          refreshStyleSelect();
+
+          setStatus(
+            "Style deleted: " +
+            name
+          );
+
+        } catch (e) {
+
+          alert(
+            "Delete style error: " +
+            e.message
+          );
+
         }
 
-        applySettingsSnapshot(s);
-        setStatus("Style applied: " + name);
-      } catch (e) {
-        alert("Apply style error: " + e.message);
-      }
-    };
+      };
 
-    deleteStyleBtn.onclick = function () {
-      try {
-        var name = styleSelectEl.value;
-        if (!name) {
-          setStatus("No style selected.");
-          return;
-        }
-
-        var styles = loadStyles();
-        delete styles[name];
-        saveStylesObj(styles);
-
-        refreshStyleSelect();
-        setStatus("Style deleted: " + name);
-      } catch (e) {
-        alert("Delete style error: " + e.message);
-      }
-    };
 
     refreshStyleSelect();
 
@@ -394,6 +712,7 @@
             return;
           }
 
+
           if (
             e.data.indexOf(
               "TYPERP_OK:"
@@ -413,6 +732,7 @@
             return;
           }
 
+
           if (
             e.data.indexOf(
               "TYPERP_ERR:"
@@ -425,13 +745,15 @@
               );
 
             setStatus(
-              "Error: " + err
+              "Error: " +
+              err
             );
 
             alert(
               "TypeR-P Error:\n" +
               err
             );
+
           }
 
         } catch (err) {
@@ -439,6 +761,7 @@
           setStatus(
             "Listener error."
           );
+
         }
 
       }
@@ -449,630 +772,763 @@
        INSERT
        ===================================================== */
 
-    insertBtn.onclick = function () {
+    insertBtn.onclick =
+      function () {
 
-      try {
+        try {
 
-        var text =
-          textEl.value;
+          var text =
+            textEl.value;
 
-        if (
-          !text ||
-          text.trim() === ""
-        ) {
+          if (
+            !text ||
+            text.trim() === ""
+          ) {
 
-          setStatus(
-            "Please type some text first."
-          );
+            setStatus(
+              "Please type some text first."
+            );
 
-          return;
-        }
+            return;
 
-
-        var font =
-          fontEl.value ||
-          "ArialMT";
+          }
 
 
-        var initialSize =
-          Number(
-            sizeEl.value
-          ) || 48;
+          var font =
+            fontEl.value ||
+            "ArialMT";
 
 
-        var color =
-          (
-            colorEl.value ||
-            "FF0000"
-          )
-            .replace(
-              /[^0-9a-fA-F]/g,
-              ""
+          var initialSize =
+            Number(
+              sizeEl.value
+            ) || 48;
+
+
+          var color =
+            (
+              colorEl.value ||
+              "FF0000"
             )
-            .padEnd(
-              6,
-              "0"
-            )
-            .slice(
-              0,
-              6
+              .replace(
+                /[^0-9a-fA-F]/g,
+                ""
+              )
+              .padEnd(
+                6,
+                "0"
+              )
+              .slice(
+                0,
+                6
+              );
+
+
+          var align =
+            alignEl.value ||
+            "CENTER";
+
+
+          var padding =
+            Number(
+              paddingEl.value
             );
 
 
-        var align =
-          alignEl.value ||
-          "CENTER";
+          if (
+            !isFinite(padding) ||
+            padding < 0
+          ) {
+
+            padding = 12;
+
+          }
 
 
-        var padding =
-          Number(
-            paddingEl.value
+          var minSize =
+            Number(
+              minSizeEl.value
+            );
+
+
+          if (
+            !isFinite(minSize) ||
+            minSize < 1
+          ) {
+
+            minSize = 8;
+
+          }
+
+
+          var autoFit =
+            fitEl.checked;
+
+
+          var mode =
+            modeEl.value;
+
+
+          setStatus(
+            "Inserting build-009..."
           );
 
-        if (
-          !isFinite(padding) ||
-          padding < 0
-        ) {
-          padding = 12;
-        }
+
+          /* =================================================
+             ESCAPE VALUES
+             ================================================= */
+
+          function jsString(value) {
+
+            return JSON.stringify(
+              String(value)
+            );
+
+          }
 
 
-        var minSize =
-          Number(
-            minSizeEl.value
+          /* =================================================
+             PHOTOPEA SCRIPT
+             ================================================= */
+
+          var script =
+
+            "(function(){\n" +
+
+            "try {\n" +
+
+            "  var d = app.activeDocument;\n" +
+
+            "  var cx, cy;\n" +
+
+            "  var left, top, right, bottom;\n" +
+
+            "  var hasSelection = false;\n" +
+
+            "  var boundsInfo = 'doc-center';\n" +
+
+
+            "  function isRealNumber(x) {\n" +
+
+            "    return typeof x === 'number' &&\n" +
+
+            "      x === x &&\n" +
+
+            "      x !== Infinity &&\n" +
+
+            "      x !== -Infinity;\n" +
+
+            "  }\n" +
+
+
+            "  function toPx(u) {\n" +
+
+            "    if (u === null || u === undefined)\n" +
+
+            "      return NaN;\n" +
+
+            "    if (u.value !== undefined && u.value !== null) {\n" +
+
+            "      var v = Number(u.value);\n" +
+
+            "      if (isRealNumber(v)) return v;\n" +
+
+            "    }\n" +
+
+            "    if (typeof u.as === 'function') {\n" +
+
+            "      try {\n" +
+
+            "        var p = Number(u.as('px'));\n" +
+
+            "        if (isRealNumber(p)) return p;\n" +
+
+            "      } catch(e) {}\n" +
+
+            "    }\n" +
+
+            "    return NaN;\n" +
+
+            "  }\n" +
+
+
+            "  try {\n" +
+
+            "    var bounds = d.selection.bounds;\n" +
+
+            "    if (bounds && bounds.length === 4) {\n" +
+
+            "      left = toPx(bounds[0]);\n" +
+
+            "      top = toPx(bounds[1]);\n" +
+
+            "      right = toPx(bounds[2]);\n" +
+
+            "      bottom = toPx(bounds[3]);\n" +
+
+            "      if (\n" +
+
+            "        isRealNumber(left) &&\n" +
+
+            "        isRealNumber(top) &&\n" +
+
+            "        isRealNumber(right) &&\n" +
+
+            "        isRealNumber(bottom) &&\n" +
+
+            "        right > left &&\n" +
+
+            "        bottom > top\n" +
+
+            "      ) {\n" +
+
+            "        hasSelection = true;\n" +
+
+            "      }\n" +
+
+            "    }\n" +
+
+            "  } catch(selectionError) {}\n" +
+
+
+            "  if (!hasSelection) {\n" +
+
+            "    left = 0;\n" +
+
+            "    top = 0;\n" +
+
+            "    right = d.width;\n" +
+
+            "    bottom = d.height;\n" +
+
+            "    cx = d.width / 2;\n" +
+
+            "    cy = d.height / 2;\n" +
+
+            "    boundsInfo = 'document-center';\n" +
+
+            "  } else {\n" +
+
+            "    cx = (left + right) / 2;\n" +
+
+            "    cy = (top + bottom) / 2;\n" +
+
+            "    boundsInfo =\n" +
+
+            "      'selection:' +\n" +
+
+            "      left + ',' +\n" +
+
+            "      top + ',' +\n" +
+
+            "      right + ',' +\n" +
+
+            "      bottom;\n" +
+
+            "  }\n" +
+
+
+            "  var boxLeft = left + " +
+            padding +
+            ";\n" +
+
+            "  var boxTop = top + " +
+            padding +
+            ";\n" +
+
+            "  var boxRight = right - " +
+            padding +
+            ";\n" +
+
+            "  var boxBottom = bottom - " +
+            padding +
+            ";\n" +
+
+
+            "  var boxWidth = boxRight - boxLeft;\n" +
+
+            "  var boxHeight = boxBottom - boxTop;\n" +
+
+
+            "  if (boxWidth < 1) boxWidth = 1;\n" +
+
+            "  if (boxHeight < 1) boxHeight = 1;\n" +
+
+
+            "  var layer = d.artLayers.add();\n" +
+
+            "  layer.kind = LayerKind.TEXT;\n" +
+
+            "  layer.name = " +
+
+            jsString(
+              "TTP: " +
+              text.slice(0, 45)
+            ) +
+
+            ";\n" +
+
+
+            "  var ti = layer.textItem;\n" +
+
+
+            /* =================================================
+               POINT TEXT
+               ================================================= */
+
+            "  if (" +
+
+            jsString(mode) +
+
+            " === 'POINT') {\n" +
+
+            "    ti.kind = TextType.POINTTEXT;\n" +
+
+            "    ti.contents = " +
+
+            jsString(text) +
+
+            ";\n" +
+
+            "    ti.font = " +
+
+            jsString(font) +
+
+            ";\n" +
+
+            "    ti.size = " +
+
+            initialSize +
+
+            ";\n" +
+
+            "    ti.justification =\n" +
+
+            "      Justification." +
+
+            align +
+
+            ";\n" +
+
+
+            "    var pointColor = new SolidColor();\n" +
+
+            "    pointColor.rgb.hexValue = " +
+
+            jsString(color) +
+
+            ";\n" +
+
+            "    ti.color = pointColor;\n" +
+
+            "    ti.position = [cx, cy];\n" +
+
+
+            /* =================================================
+               PARAGRAPH TEXT
+               ================================================= */
+
+            "  } else {\n" +
+
+            "    ti.kind = TextType.PARAGRAPHTEXT;\n" +
+
+            "    ti.position = [boxLeft, boxTop];\n" +
+
+            "    ti.width = new UnitValue(boxWidth, 'px');\n" +
+
+            "    ti.height = new UnitValue(boxHeight, 'px');\n" +
+
+            "    ti.contents = " +
+
+            jsString(text) +
+
+            ";\n" +
+
+            "    ti.font = " +
+
+            jsString(font) +
+
+            ";\n" +
+
+            "    ti.size = " +
+
+            initialSize +
+
+            ";\n" +
+
+            "    ti.justification =\n" +
+
+            "      Justification." +
+
+            align +
+
+            ";\n" +
+
+
+            "    var boxColor = new SolidColor();\n" +
+
+            "    boxColor.rgb.hexValue = " +
+
+            jsString(color) +
+
+            ";\n" +
+
+            "    ti.color = boxColor;\n" +
+
+
+            /* =================================================
+               SMART AUTO FIT
+               ================================================= */
+
+            "    if (" +
+
+            autoFit +
+
+            ") {\n" +
+
+            "      var currentSize = " +
+
+            initialSize +
+
+            ";\n" +
+
+            "      var minimum = " +
+
+            minSize +
+
+            ";\n" +
+
+
+            "      function estimateLines(str, size, width) {\n" +
+
+            "        var avgCharWidth = size * 0.52;\n" +
+
+            "        var charsPerLine = Math.max(\n" +
+
+            "          1,\n" +
+
+            "          Math.floor(width / avgCharWidth)\n" +
+
+            "        );\n" +
+
+
+            "        var explicit = str.split('\\\\n');\n" +
+
+            "        var lines = 0;\n" +
+
+
+            "        for (var i = 0; i < explicit.length; i++) {\n" +
+
+            "          var line = explicit[i];\n" +
+
+            "          var words = line.split(/\\\\s+/);\n" +
+
+            "          var currentChars = 0;\n" +
+
+
+            "          if (line === '') {\n" +
+
+            "            lines += 1;\n" +
+
+            "            continue;\n" +
+
+            "          }\n" +
+
+
+            "          for (var j = 0; j < words.length; j++) {\n" +
+
+            "            var word = words[j];\n" +
+
+            "            if (!word) continue;\n" +
+
+
+            "            var wordLen = word.length;\n" +
+
+
+            "            if (wordLen > charsPerLine) {\n" +
+
+            "              if (currentChars > 0) {\n" +
+
+            "                lines += 1;\n" +
+
+            "                currentChars = 0;\n" +
+
+            "              }\n" +
+
+            "              lines += Math.ceil(wordLen / charsPerLine);\n" +
+
+            "            } else {\n" +
+
+            "              var needed = wordLen;\n" +
+
+            "              if (currentChars > 0) needed += 1;\n" +
+
+
+            "              if (currentChars + needed > charsPerLine) {\n" +
+
+            "                lines += 1;\n" +
+
+            "                currentChars = wordLen;\n" +
+
+            "              } else {\n" +
+
+            "                currentChars += needed;\n" +
+
+            "              }\n" +
+
+            "            }\n" +
+
+            "          }\n" +
+
+
+            "          if (currentChars > 0) lines += 1;\n" +
+
+            "        }\n" +
+
+
+            "        return Math.max(1, lines);\n" +
+
+            "      }\n" +
+
+
+            "      function splitLongWords(str, size, width) {\n" +
+
+            "        var avgCharWidth = size * 0.52;\n" +
+
+            "        var charsPerLine = Math.max(\n" +
+
+            "          1,\n" +
+
+            "          Math.floor(width / avgCharWidth)\n" +
+
+            "        );\n" +
+
+
+            "        var lines = str.split('\\\\n');\n" +
+
+            "        var output = [];\n" +
+
+
+            "        for (var i = 0; i < lines.length; i++) {\n" +
+
+            "          var line = lines[i];\n" +
+
+            "          var words = line.split(/(\\\\s+)/);\n" +
+
+            "          var rebuilt = '';\n" +
+
+
+            "          for (var j = 0; j < words.length; j++) {\n" +
+
+            "            var part = words[j];\n" +
+
+
+            "            if (/^\\\\s+$/.test(part)) {\n" +
+
+            "              rebuilt += part;\n" +
+
+            "              continue;\n" +
+
+            "            }\n" +
+
+
+            "            if (part.length > charsPerLine) {\n" +
+
+            "              var start = 0;\n" +
+
+            "              while (start < part.length) {\n" +
+
+            "                var chunk = part.substr(\n" +
+
+            "                  start,\n" +
+
+            "                  charsPerLine\n" +
+
+            "                );\n" +
+
+            "                rebuilt += chunk;\n" +
+
+            "                start += charsPerLine;\n" +
+
+
+            "                if (start < part.length) {\n" +
+
+            "                  rebuilt += '\\\\n';\n" +
+
+            "                }\n" +
+
+            "              }\n" +
+
+            "            } else {\n" +
+
+            "              rebuilt += part;\n" +
+
+            "            }\n" +
+
+            "          }\n" +
+
+
+            "          output.push(rebuilt);\n" +
+
+            "        }\n" +
+
+
+            "        return output.join('\\\\n');\n" +
+
+            "      }\n" +
+
+
+            "      while (currentSize > minimum) {\n" +
+
+            "        var lines = estimateLines(\n" +
+
+            jsString(text) +
+
+            ",\n" +
+
+            "          currentSize,\n" +
+
+            "          boxWidth\n" +
+
+            "        );\n" +
+
+
+            "        var estimatedHeight =\n" +
+
+            "          lines * currentSize * 1.20;\n" +
+
+
+            "        if (estimatedHeight <= boxHeight) {\n" +
+
+            "          break;\n" +
+
+            "        }\n" +
+
+
+            "        currentSize -= 1;\n" +
+
+            "        ti.size = currentSize;\n" +
+
+            "      }\n" +
+
+
+            "      var processedText = splitLongWords(\n" +
+
+            jsString(text) +
+
+            ",\n" +
+
+            "        currentSize,\n" +
+
+            "        boxWidth\n" +
+
+            "      );\n" +
+
+
+            "      if (processedText !== " +
+
+            jsString(text) +
+
+            ") {\n" +
+
+            "        ti.contents = processedText;\n" +
+
+            "      }\n" +
+
+            "    }\n" +
+
+            "  }\n" +
+
+
+            "  d.activeLayer = layer;\n" +
+
+
+            "  app.echoToOE(\n" +
+
+            "    'TYPERP_OK:' +\n" +
+
+            "    boundsInfo +\n" +
+
+            "    ' | box=' +\n" +
+
+            "    Math.round(boxWidth) +\n" +
+
+            "    'x' +\n" +
+
+            "    Math.round(boxHeight) +\n" +
+
+            "    ' | center=' +\n" +
+
+            "    Math.round(cx) +\n" +
+
+            "    ',' +\n" +
+
+            "    Math.round(cy)\n" +
+
+            "  );\n" +
+
+
+            "} catch(e) {\n" +
+
+            "  app.echoToOE(\n" +
+
+            "    'TYPERP_ERR:' +\n" +
+
+            "    (e && e.message ? e.message : String(e))\n" +
+
+            "  );\n" +
+
+            "}\n" +
+
+            "})();";
+
+
+          window.parent.postMessage(
+            script,
+            "*"
           );
 
-        if (
-          !isFinite(minSize) ||
-          minSize < 1
-        ) {
-          minSize = 8;
-        }
+
+          setTimeout(
+            function () {
+
+              if (
+                statusEl.textContent
+                  .indexOf(
+                    "Inserting..."
+                  ) === 0
+              ) {
+
+                setStatus(
+                  "No response from Photopea."
+                );
+
+              }
+
+            },
+            7000
+          );
 
 
-        var autoFit =
-          fitEl.checked;
+        } catch (clickErr) {
 
+          setStatus(
+            "Click error: " +
+            clickErr.message
+          );
 
-        var mode =
-          modeEl.value;
-
-
-        setStatus(
-          "Inserting build-008..."
-        );
-
-
-        /* =================================================
-           ESCAPE VALUES
-           ================================================= */
-
-        function jsString(value) {
-
-          return JSON.stringify(
-            String(value)
+          alert(
+            "TypeR-P click error:\n" +
+            clickErr.message
           );
 
         }
 
-
-        /* =================================================
-           PHOTOPEA SCRIPT
-           ================================================= */
-
-        var script =
-
-          "(function(){\n" +
-
-          "try {\n" +
-
-          "  var d = app.activeDocument;\n" +
-
-          "  var cx, cy;\n" +
-
-          "  var left, top, right, bottom;\n" +
-
-          "  var hasSelection = false;\n" +
-
-          "  var boundsInfo = 'doc-center';\n" +
-
-
-          "  function isRealNumber(x) {\n" +
-
-          "    return typeof x === 'number' &&\n" +
-
-          "      x === x &&\n" +
-
-          "      x !== Infinity &&\n" +
-
-          "      x !== -Infinity;\n" +
-
-          "  }\n" +
-
-
-          "  function toPx(u) {\n" +
-
-          "    if (u === null || u === undefined)\n" +
-
-          "      return NaN;\n" +
-
-          "    \n" +
-
-          "    if (u.value !== undefined && u.value !== null) {\n" +
-
-          "      var v = Number(u.value);\n" +
-
-          "      if (isRealNumber(v)) return v;\n" +
-
-          "    }\n" +
-
-          "    \n" +
-
-          "    if (typeof u.as === 'function') {\n" +
-
-          "      try {\n" +
-
-          "        var p = Number(u.as('px'));\n" +
-
-          "        if (isRealNumber(p)) return p;\n" +
-
-          "      } catch(e) {}\n" +
-
-          "    }\n" +
-
-          "    \n" +
-
-          "    return NaN;\n" +
-
-          "  }\n" +
-
-
-          "  try {\n" +
-
-          "    var bounds = d.selection.bounds;\n" +
-
-          "    \n" +
-
-          "    if (bounds && bounds.length === 4) {\n" +
-
-          "      left = toPx(bounds[0]);\n" +
-
-          "      top = toPx(bounds[1]);\n" +
-
-          "      right = toPx(bounds[2]);\n" +
-
-          "      bottom = toPx(bounds[3]);\n" +
-
-          "      \n" +
-
-          "      if (\n" +
-
-          "        isRealNumber(left) &&\n" +
-
-          "        isRealNumber(top) &&\n" +
-
-          "        isRealNumber(right) &&\n" +
-
-          "        isRealNumber(bottom) &&\n" +
-
-          "        right > left &&\n" +
-
-          "        bottom > top\n" +
-
-          "      ) {\n" +
-
-          "        hasSelection = true;\n" +
-
-          "      }\n" +
-
-          "    }\n" +
-
-          "  } catch(selectionError) {}\n" +
-
-
-          "  if (!hasSelection) {\n" +
-
-          "    left = 0;\n" +
-
-          "    top = 0;\n" +
-
-          "    right = d.width;\n" +
-
-          "    bottom = d.height;\n" +
-
-          "    \n" +
-
-          "    cx = d.width / 2;\n" +
-
-          "    cy = d.height / 2;\n" +
-
-          "    \n" +
-
-          "    boundsInfo = 'document-center';\n" +
-
-          "  } else {\n" +
-
-          "    cx = (left + right) / 2;\n" +
-
-          "    cy = (top + bottom) / 2;\n" +
-
-          "    \n" +
-
-          "    boundsInfo =\n" +
-
-          "      'selection:' +\n" +
-
-          "      left + ',' +\n" +
-
-          "      top + ',' +\n" +
-
-          "      right + ',' +\n" +
-
-          "      bottom;\n" +
-
-          "  }\n" +
-
-
-          "  var boxLeft = left + " +
-          padding +
-          ";\n" +
-
-          "  var boxTop = top + " +
-          padding +
-          ";\n" +
-
-          "  var boxRight = right - " +
-          padding +
-          ";\n" +
-
-          "  var boxBottom = bottom - " +
-          padding +
-          ";\n" +
-
-
-          "  var boxWidth =\n" +
-          "    boxRight - boxLeft;\n" +
-
-          "  var boxHeight =\n" +
-          "    boxBottom - boxTop;\n" +
-
-
-          "  if (boxWidth < 1) boxWidth = 1;\n" +
-
-          "  if (boxHeight < 1) boxHeight = 1;\n" +
-
-
-          "  var layer =\n" +
-          "    d.artLayers.add();\n" +
-
-          "  layer.kind = LayerKind.TEXT;\n" +
-
-          "  layer.name = " +
-          jsString(
-            "TTP: " +
-            text
-              .slice(0, 45)
-          ) +
-          ";\n" +
-
-
-          "  var ti = layer.textItem;\n" +
-
-
-          "  if (" +
-          jsString(mode) +
-          " === 'POINT') {\n" +
-
-          "    ti.kind = TextType.POINTTEXT;\n" +
-
-          "    ti.contents = " +
-          jsString(text) +
-          ";\n" +
-
-          "    ti.font = " +
-          jsString(font) +
-          ";\n" +
-
-          "    ti.size = " +
-          initialSize +
-          ";\n" +
-
-          "    ti.justification =\n" +
-          "      Justification." +
-          align +
-          ";\n" +
-
-
-          "    var pointColor =\n" +
-          "      new SolidColor();\n" +
-
-          "    pointColor.rgb.hexValue = " +
-          jsString(color) +
-          ";\n" +
-
-          "    ti.color = pointColor;\n" +
-
-
-          "    ti.position = [cx, cy];\n" +
-
-          "  } else {\n" +
-
-
-          "    ti.kind =\n" +
-          "      TextType.PARAGRAPHTEXT;\n" +
-
-
-          "    ti.position = [\n" +
-          "      boxLeft,\n" +
-          "      boxTop\n" +
-          "    ];\n" +
-
-
-          "    ti.width =\n" +
-          "      new UnitValue(\n" +
-          "        boxWidth,\n" +
-          "        'px'\n" +
-          "      );\n" +
-
-
-          "    ti.height =\n" +
-          "      new UnitValue(\n" +
-          "        boxHeight,\n" +
-          "        'px'\n" +
-          "      );\n" +
-
-
-          "    ti.contents = " +
-          jsString(text) +
-          ";\n" +
-
-          "    ti.font = " +
-          jsString(font) +
-          ";\n" +
-
-          "    ti.size = " +
-          initialSize +
-          ";\n" +
-
-
-          "    ti.justification =\n" +
-          "      Justification." +
-          align +
-          ";\n" +
-
-
-          "    var boxColor =\n" +
-          "      new SolidColor();\n" +
-
-          "    boxColor.rgb.hexValue = " +
-          jsString(color) +
-          ";\n" +
-
-          "    ti.color = boxColor;\n" +
-
-
-          "    if (" +
-          autoFit +
-          ") {\n" +
-
-          "      var currentSize = " +
-          initialSize +
-          ";\n" +
-
-          "      var minimum = " +
-          minSize +
-          ";\n" +
-
-
-          "      function estimateLines(str, size, width) {\n" +
-
-          "        var chars = str.length;\n" +
-
-          "        var avgCharWidth = size * 0.52;\n" +
-
-          "        var charsPerLine = Math.max(\n" +
-
-          "          1,\n" +
-
-          "          Math.floor(\n" +
-
-          "            width / avgCharWidth\n" +
-
-          "          )\n" +
-
-          "        );\n" +
-
-
-          "        var explicit =\n" +
-
-          "          str.split('\\\\n');\n" +
-
-
-          "        var lines = 0;\n" +
-
-
-          "        for (\n" +
-
-          "          var i = 0;\n" +
-
-          "          i < explicit.length;\n" +
-
-          "          i++\n" +
-
-          "        ) {\n" +
-
-          "          var n =\n" +
-
-          "            explicit[i].length;\n" +
-
-          "          \n" +
-
-          "          lines += Math.max(\n" +
-
-          "            1,\n" +
-
-          "            Math.ceil(\n" +
-
-          "              n / charsPerLine\n" +
-
-          "            )\n" +
-
-          "          );\n" +
-
-          "        }\n" +
-
-
-          "        return lines;\n" +
-
-          "      }\n" +
-
-
-          "      while (\n" +
-
-          "        currentSize > minimum\n" +
-
-          "      ) {\n" +
-
-          "        var lines =\n" +
-
-          "          estimateLines(\n" +
-
-          "            " +
-          jsString(text) +
-          ",\n" +
-
-          "            currentSize,\n" +
-
-          "            boxWidth\n" +
-
-          "          );\n" +
-
-
-          "        var estimatedHeight =\n" +
-
-          "          lines *\n" +
-
-          "          currentSize *\n" +
-
-          "          1.20;\n" +
-
-
-          "        if (\n" +
-
-          "          estimatedHeight <=\n" +
-
-          "          boxHeight\n" +
-
-          "        ) {\n" +
-
-          "          break;\n" +
-
-          "        }\n" +
-
-
-          "        currentSize -= 1;\n" +
-
-          "        ti.size = currentSize;\n" +
-
-          "      }\n" +
-
-          "    }\n" +
-
-          "  }\n" +
-
-
-          "  d.activeLayer = layer;\n" +
-
-
-          "  app.echoToOE(\n" +
-
-          "    'TYPERP_OK:' +\n" +
-
-          "    boundsInfo +\n" +
-
-          "    ' | box=' +\n" +
-
-          "    Math.round(boxWidth) +\n" +
-
-          "    'x' +\n" +
-
-          "    Math.round(boxHeight) +\n" +
-
-          "    ' | center=' +\n" +
-
-          "    Math.round(cx) +\n" +
-
-          "    ',' +\n" +
-
-          "    Math.round(cy)\n" +
-
-          "  );\n" +
-
-
-          "} catch(e) {\n" +
-
-          "  app.echoToOE(\n" +
-
-          "    'TYPERP_ERR:' +\n" +
-
-          "    (e && e.message ?\n" +
-
-          "      e.message :\n" +
-
-          "      String(e))\n" +
-
-          "  );\n" +
-
-          "}\n" +
-
-          "})();";
-
-
-        window.parent.postMessage(
-          script,
-          "*"
-        );
-
-
-        setTimeout(
-          function () {
-
-            if (
-              statusEl.textContent
-                .indexOf(
-                  "Inserting..."
-                ) === 0
-            ) {
-
-              setStatus(
-                "No response from Photopea."
-              );
-
-            }
-
-          },
-          7000
-        );
-
-
-      } catch (clickErr) {
-
-        setStatus(
-          "Click error: " +
-          clickErr.message
-        );
-
-        alert(
-          "TypeR-P click error:\n" +
-          clickErr.message
-        );
-      }
-
-    };
+      };
 
 
     setStatus(
-      "Ready (build-008)"
+      "Ready (build-009)"
     );
 
 
