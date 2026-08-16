@@ -1,123 +1,114 @@
-window.addEventListener("message", function (e) {
-  if (typeof e.data === "string") {
-    // جلوگیری از اوررایت شدن پیام status توسط پیام سیستمی Photopea
-    if (e.data === "done") return;
+// TypeR-P â€” main.js
+// baseline: Point Text Ø¯Ø± Ù…Ø±Ú©Ø² Selection (Ø¯Ø± ØµÙˆØ±Øª ÙˆØ¬ÙˆØ¯) ÛŒØ§ Ù…Ø±Ú©Ø² ØªØµÙˆÛŒØ± (Ø¯Ø± ØºÛŒØ± Ø§ÛŒÙ†ØµÙˆØ±Øª)
 
-    const statusEl = document.getElementById("status");
-    if (statusEl) {
-      statusEl.textContent = e.data;
-    }
+var statusEl = document.getElementById("status");
+var textEl = document.getElementById("text");
+var fontEl = document.getElementById("font");
+var sizeEl = document.getElementById("size");
+var colorEl = document.getElementById("color");
+var alignEl = document.getElementById("align");
+var insertBtn = document.getElementById("insert");
+
+function setStatus(msg) {
+  statusEl.textContent = msg;
+}
+
+// Ù‡Ø± Ù¾ÛŒØ§Ù…ÛŒ Ú©Ù‡ Ø§Ø² Photopea (Ø§Ø² Ø·Ø±ÛŒÙ‚ app.echoToOE) Ø¨Ø±Ú¯Ø±Ø¯Ø¯ØŒ Ø§ÛŒÙ†Ø¬Ø§ Ø¯Ø±ÛŒØ§ÙØª Ù…ÛŒâ€ŒØ´ÙˆØ¯
+window.addEventListener("message", function (e) {
+  if (typeof e.data !== "string") return;
+
+  if (e.data.indexOf("TYPERP_OK:") === 0) {
+    var payload = e.data.slice("TYPERP_OK:".length);
+    setStatus("Text inserted. " + payload);
+  } else if (e.data.indexOf("TYPERP_ERR:") === 0) {
+    var err = e.data.slice("TYPERP_ERR:".length);
+    setStatus("Error: " + err);
+    console.error("TypeR-P error from Photopea:", err);
   }
+  // Ù¾ÛŒØ§Ù…â€ŒÙ‡Ø§ÛŒ Ø¯ÛŒÚ¯Ø± Photopea (Ù…Ø«Ù„ Ù‡Ù†Ø¯Ø´ÛŒÚ© Ø§ÙˆÙ„ÛŒÙ‡) Ù†Ø§Ø¯ÛŒØ¯Ù‡ Ú¯Ø±ÙØªÙ‡ Ù…ÛŒâ€ŒØ´ÙˆÙ†Ø¯
 });
 
-document.getElementById("insert").addEventListener("click", function () {
-  const statusEl = document.getElementById("status");
-  if (statusEl) {
-    statusEl.textContent = "Processing in Photopea...";
+insertBtn.addEventListener("click", function () {
+  var text = textEl.value;
+
+  if (!text || text.trim() === "") {
+    setStatus("Please type some text first.");
+    return;
   }
 
-  const textVal = document.getElementById("text").value || "Text";
-  const fontVal = document.getElementById("font").value || "ArialMT";
-  const sizeVal = parseFloat(document.getElementById("size").value) || 48;
-  const colorVal = document.getElementById("color").value || "FF0000";
-  const alignVal = document.getElementById("align").value || "CENTER";
+  var font = fontEl.value || "ArialMT";
+  var size = Number(sizeEl.value) || 48;
+  var color = (colorEl.value || "FF0000").replace(/[^0-9a-fA-F]/g, "").padEnd(6, "0").slice(0, 6);
+  var align = alignEl.value || "CENTER"; // LEFT | CENTER | RIGHT
 
-  const escapedText = textVal
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, "\\n")
-    .replace(/\r/g, "\\r");
+  setStatus("Inserting...");
 
-  const escapedFont = fontVal.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  const escapedColor = colorVal.replace(/[^0-9A-Fa-f]/g, "");
-
-  const script = `
-    (function() {
-      try {
-        var d = app.activeDocument;
-        if (!d) {
-          app.echoToOE("Error: No document open in Photopea.");
-          return;
-        }
-
-        // تبدیل انواع خروجی‌های bounds (رشته واحددار، UnitValue، عدد) به عدد پیکسلی
-        function parsePx(v) {
-          if (v === null || v === undefined) return NaN;
-          if (typeof v === "number") return v;
-          if (typeof v === "object") {
-            if ("value" in v && typeof v.value === "number") return v.value;
-            if (typeof v.as === "function") return v.as("px");
-          }
-          var p = parseFloat(String(v));
-          return isNaN(p) ? NaN : p;
-        }
-
-        var docW = parsePx(d.width) || 800;
-        var docH = parsePx(d.height) || 600;
-
-        var posX = docW / 2;
-        var posY = docH / 2;
-        var hasSelection = false;
-        var diag = "";
-
-        try {
-          var sel = d.selection;
-          if (sel) {
-            var b = sel.bounds;
-            if (b && b.length === 4) {
-              var l = parsePx(b[0]);
-              var t = parsePx(b[1]);
-              var r = parsePx(b[2]);
-              var bm = parsePx(b[3]);
-
-              diag = "Raw: [" + b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "] -> Parsed: [" + l + "," + t + "," + r + "," + bm + "]";
-
-              if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
-                posX = (l + r) / 2;
-                posY = (t + bm) / 2;
-                hasSelection = true;
-              }
-            } else {
-              diag = "Bounds empty or invalid";
-            }
-          } else {
-            diag = "No active selection";
-          }
-        } catch(selErr) {
-          diag = "Selection error: " + selErr.message;
-        }
-
-        if (isNaN(posX) || !isFinite(posX)) posX = docW / 2;
-        if (isNaN(posY) || !isFinite(posY)) posY = docH / 2;
-
-        var layer = d.artLayers.add();
-        layer.kind = LayerKind.TEXT;
-
-        var ti = layer.textItem;
-        ti.kind = TextType.POINTTEXT;
-        ti.contents = "${escapedText}";
-        ti.font = "${escapedFont}";
-        ti.size = ${sizeVal};
-        ti.justification = Justification.${alignVal};
-
-        var c = new SolidColor();
-        c.rgb.hexValue = "${escapedColor}";
-        ti.color = c;
-
-        ti.position = [posX, posY];
-        d.activeLayer = layer;
-
-        var resultMsg = (hasSelection ? "Placed in Selection" : "Placed in Center (Fallback)") +
-                        " (" + Math.round(posX) + ", " + Math.round(posY) + ")" +
-                        (diag ? " | " + diag : "");
-
-        app.echoToOE(resultMsg);
-
-      } catch(err) {
-        app.echoToOE("Fatal Script Error: " + err.message);
-      }
-    })();
-  `;
+  // Ø§Ø³Ú©Ø±ÛŒÙ¾ØªÛŒ Ú©Ù‡ Ø¯Ø§Ø®Ù„ Photopea Ø§Ø¬Ø±Ø§ Ù…ÛŒâ€ŒØ´ÙˆØ¯.
+  // Ù†Ú©ØªÙ‡: LayerKind, TextType, Justification, SolidColor, UnitValue Ù‡Ù…Ú¯ÛŒ ÙÙ‚Ø·
+  // Ø¯Ø§Ø®Ù„ Ù…Ø­ÛŒØ· Ø§Ø³Ú©Ø±ÛŒÙ¾Øª Photopea Ù…Ø¹ØªØ¨Ø±Ù†Ø¯ØŒ Ù†Ù‡ Ø¯Ø± Ø§ÛŒÙ† ÙØ§ÛŒÙ„ main.js.
+  var script =
+    "try {\n" +
+    "  var d = app.activeDocument;\n" +
+    "  var cx, cy;\n" +
+    "  var boundsInfo = 'doc-center';\n" +
+    "\n" +
+    "  function toPx(u) {\n" +
+    "    if (u === null || u === undefined) return NaN;\n" +
+    "    if (typeof u === 'number') return u;\n" +
+    "    if (typeof u.value === 'number') return u.value;\n" +          // Ø±ÙˆØ´ ØªØ£ÛŒÛŒØ¯Ø´Ø¯Ù‡ Ø§ØµÙ„ÛŒ
+    "    if (typeof u.as === 'function') {\n" +
+    "      try { return u.as('px'); } catch (e2) {}\n" +               // fallback Ù…Ø³ØªÙ†Ø¯
+    "    }\n" +
+    "    var n = Number(u);\n" +                                       // Ø¢Ø®Ø±ÛŒÙ† fallback
+    "    return n;\n" +
+    "  }\n" +
+    "\n" +
+    "  var bounds = null;\n" +
+    "  try { bounds = d.selection.bounds; } catch (e3) { bounds = null; }\n" +
+    "\n" +
+    "  if (bounds) {\n" +
+    "    var left   = toPx(bounds[0]);\n" +
+    "    var top    = toPx(bounds[1]);\n" +
+    "    var right  = toPx(bounds[2]);\n" +
+    "    var bottom = toPx(bounds[3]);\n" +
+    "\n" +
+    "    if (!isNaN(left) && !isNaN(top) && !isNaN(right) && !isNaN(bottom)) {\n" +
+    "      cx = (left + right) / 2;\n" +
+    "      cy = (top + bottom) / 2;\n" +
+    "      boundsInfo = 'selection-center:' + left + ',' + top + ',' + right + ',' + bottom;\n" +
+    "    } else {\n" +
+    "      cx = d.width / 2;\n" +
+    "      cy = d.height / 2;\n" +
+    "      boundsInfo = 'selection-unreadable-fallback-doc-center';\n" +
+    "    }\n" +
+    "  } else {\n" +
+    "    cx = d.width / 2;\n" +
+    "    cy = d.height / 2;\n" +
+    "  }\n" +
+    "\n" +
+    "  var layer = d.artLayers.add();\n" +
+    "  layer.kind = LayerKind.TEXT;\n" +
+    "\n" +
+    "  var ti = layer.textItem;\n" +
+    "  ti.kind = TextType.POINTTEXT;\n" +
+    "  ti.contents = " + JSON.stringify(text) + ";\n" +
+    "  ti.font = " + JSON.stringify(font) + ";\n" +
+    "  ti.size = " + size + ";\n" +
+    "  ti.justification = Justification." + align + ";\n" +
+    "\n" +
+    "  var c = new SolidColor();\n" +
+    "  c.rgb.hexValue = " + JSON.stringify(color) + ";\n" +
+    "  ti.color = c;\n" +
+    "\n" +
+    "  ti.position = [cx, cy];\n" +
+    "  d.activeLayer = layer;\n" +
+    "\n" +
+    "  app.echoToOE('TYPERP_OK:' + boundsInfo + ' -> x=' + cx + ' y=' + cy);\n" +
+    "} catch (e) {\n" +
+    "  app.echoToOE('TYPERP_ERR:' + (e && e.message ? e.message : String(e)));\n" +
+    "}";
 
   window.parent.postMessage(script, "*");
 });
+
+setStatus("Ready.");
