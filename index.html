@@ -86,14 +86,16 @@
 
   <script>
     var s = document.createElement("script");
-    s.src = "./src/main.js?v=999";
-    s.onload = function () {
-      document.getElementById("status").textContent = "MAIN.JS LOADED";
-    };
+
+    s.src = "./src/main.js?v=1000";
+
     s.onerror = function () {
-      document.getElementById("status").textContent = "MAIN.JS FAILED TO LOAD";
+      document.getElementById("status").textContent =
+        "MAIN.JS FAILED TO LOAD";
+
       alert("MAIN.JS FAILED TO LOAD");
     };
+
     document.body.appendChild(s);
   </script>
 
