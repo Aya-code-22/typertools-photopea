@@ -1,9 +1,9 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-012
+// BUILD: TYPERP-BUILD-013
 // Selection-aware Paragraph Text
 // Padding + Auto Fit + Smart Long-Word Breaking
 // Saved Styles + Font Size Controls
-// Text Line Loader + Line Navigation
+// Full Text -> Line Loader -> Current Line -> Selection Insert
 
 (function () {
 
@@ -16,7 +16,6 @@
        ===================================================== */
 
     var statusEl = document.getElementById("status");
-    var textEl = document.getElementById("text");
     var fontEl = document.getElementById("font");
     var sizeEl = document.getElementById("size");
     var colorEl = document.getElementById("color");
@@ -26,7 +25,6 @@
     var missing = [];
 
     if (!statusEl) missing.push("#status");
-    if (!textEl) missing.push("#text");
     if (!fontEl) missing.push("#font");
     if (!sizeEl) missing.push("#size");
     if (!colorEl) missing.push("#color");
@@ -91,40 +89,539 @@
 
 
     /* =====================================================
+       REMOVE OLD TEXT INPUT
+       ===================================================== */
+
+    /*
+     * The original #text textarea is no longer used.
+     * Hide it if it still exists in the HTML.
+     */
+
+    var oldTextEl =
+      document.getElementById("text");
+
+    if (oldTextEl) {
+      oldTextEl.style.display = "none";
+    }
+
+
+    /* =====================================================
+       FULL TEXT
+       ===================================================== */
+
+    var sourceLabel =
+      makeLabel("Full Text");
+
+
+    var sourceEl =
+      document.createElement("textarea");
+
+    sourceEl.id =
+      "fullText";
+
+    sourceEl.placeholder =
+      "Paste the complete text here...\n\n" +
+      "Example:\n" +
+      "What are you looking at?\n" +
+      "Doctor, please wait!\n" +
+      "I almost got my head chopped off.";
+
+    sourceEl.style.width =
+      "100%";
+
+    sourceEl.style.height =
+      "120px";
+
+    sourceEl.style.boxSizing =
+      "border-box";
+
+    sourceEl.style.resize =
+      "vertical";
+
+
+    var loadLinesBtn =
+      document.createElement("button");
+
+    loadLinesBtn.type =
+      "button";
+
+    loadLinesBtn.textContent =
+      "Load Lines";
+
+    loadLinesBtn.style.width =
+      "100%";
+
+    loadLinesBtn.style.marginTop =
+      "5px";
+
+
+    actions.parentElement.appendChild(
+      sourceLabel
+    );
+
+    actions.parentElement.appendChild(
+      sourceEl
+    );
+
+    actions.parentElement.appendChild(
+      loadLinesBtn
+    );
+
+
+    /* =====================================================
+       CURRENT LINE
+       ===================================================== */
+
+    var currentLabel =
+      makeLabel("Current Line");
+
+
+    var currentLineEl =
+      document.createElement("textarea");
+
+    currentLineEl.id =
+      "currentLine";
+
+    currentLineEl.placeholder =
+      "Current line will appear here...";
+
+    currentLineEl.style.width =
+      "100%";
+
+    currentLineEl.style.height =
+      "85px";
+
+    currentLineEl.style.boxSizing =
+      "border-box";
+
+    currentLineEl.style.resize =
+      "vertical";
+
+
+    actions.parentElement.appendChild(
+      currentLabel
+    );
+
+    actions.parentElement.appendChild(
+      currentLineEl
+    );
+
+
+    /* =====================================================
+       LINE NAVIGATION
+       ===================================================== */
+
+    var lineInfo =
+      document.createElement("div");
+
+    lineInfo.style.textAlign =
+      "center";
+
+    lineInfo.style.marginTop =
+      "5px";
+
+    lineInfo.style.marginBottom =
+      "5px";
+
+    lineInfo.style.fontSize =
+      "12px";
+
+
+    var lineButtons =
+      document.createElement("div");
+
+    lineButtons.style.display =
+      "flex";
+
+    lineButtons.style.gap =
+      "5px";
+
+    lineButtons.style.flexWrap =
+      "wrap";
+
+
+    var previousLineBtn =
+      document.createElement("button");
+
+    previousLineBtn.type =
+      "button";
+
+    previousLineBtn.textContent =
+      "Previous";
+
+    previousLineBtn.style.flex =
+      "1";
+
+
+    var nextLineBtn =
+      document.createElement("button");
+
+    nextLineBtn.type =
+      "button";
+
+    nextLineBtn.textContent =
+      "Next";
+
+    nextLineBtn.style.flex =
+      "1";
+
+
+    var insertLineBtn =
+      document.createElement("button");
+
+    insertLineBtn.type =
+      "button";
+
+    insertLineBtn.textContent =
+      "Insert Line";
+
+    insertLineBtn.style.flex =
+      "1";
+
+
+    lineButtons.appendChild(
+      previousLineBtn
+    );
+
+    lineButtons.appendChild(
+      nextLineBtn
+    );
+
+    lineButtons.appendChild(
+      insertLineBtn
+    );
+
+
+    actions.parentElement.appendChild(
+      lineInfo
+    );
+
+    actions.parentElement.appendChild(
+      lineButtons
+    );
+
+
+    /* =====================================================
+       LINE DATA
+       ===================================================== */
+
+    var loadedLines = [];
+
+    var currentLineIndex = 0;
+
+
+    function updateLineInfo() {
+
+      if (
+        loadedLines.length === 0
+      ) {
+
+        lineInfo.textContent =
+          "No lines loaded.";
+
+        return;
+      }
+
+
+      lineInfo.textContent =
+        "Line " +
+        (currentLineIndex + 1) +
+        " / " +
+        loadedLines.length;
+
+    }
+
+
+    function showCurrentLine() {
+
+      if (
+        loadedLines.length === 0
+      ) {
+
+        currentLineEl.value =
+          "";
+
+        updateLineInfo();
+
+        return;
+      }
+
+
+      currentLineEl.value =
+        loadedLines[
+          currentLineIndex
+        ];
+
+
+      updateLineInfo();
+
+    }
+
+
+    /* =====================================================
+       LOAD LINES
+       ===================================================== */
+
+    loadLinesBtn.onclick =
+      function () {
+
+        try {
+
+          var raw =
+            sourceEl.value;
+
+
+          if (
+            raw === null ||
+            raw === undefined ||
+            raw === ""
+          ) {
+
+            loadedLines = [];
+
+            currentLineIndex = 0;
+
+            currentLineEl.value =
+              "";
+
+            updateLineInfo();
+
+            setStatus(
+              "No source text."
+            );
+
+            return;
+          }
+
+
+          /*
+           * Normalize line endings.
+           */
+
+          raw =
+            raw.replace(
+              /\r\n/g,
+              "\n"
+            );
+
+          raw =
+            raw.replace(
+              /\r/g,
+              "\n"
+            );
+
+
+          /*
+           * IMPORTANT:
+           * Do not trim the individual lines.
+           * This preserves the original text.
+           */
+
+          loadedLines =
+            raw.split("\n");
+
+
+          currentLineIndex =
+            0;
+
+
+          showCurrentLine();
+
+
+          setStatus(
+            "Loaded " +
+            loadedLines.length +
+            " line(s)."
+          );
+
+
+        } catch (e) {
+
+          alert(
+            "Load lines error:\n" +
+            e.message
+          );
+
+        }
+
+      };
+
+
+    /* =====================================================
+       CURRENT LINE EDITING
+       ===================================================== */
+
+    currentLineEl.addEventListener(
+      "input",
+      function () {
+
+        if (
+          loadedLines.length === 0
+        ) {
+
+          return;
+
+        }
+
+
+        loadedLines[
+          currentLineIndex
+        ] =
+          currentLineEl.value;
+
+
+        setStatus(
+          "Current line edited."
+        );
+
+      }
+    );
+
+
+    /* =====================================================
+       PREVIOUS
+       ===================================================== */
+
+    previousLineBtn.onclick =
+      function () {
+
+        if (
+          loadedLines.length === 0
+        ) {
+
+          setStatus(
+            "Load some lines first."
+          );
+
+          return;
+
+        }
+
+
+        /*
+         * Save current edit before moving.
+         */
+
+        loadedLines[
+          currentLineIndex
+        ] =
+          currentLineEl.value;
+
+
+        if (
+          currentLineIndex > 0
+        ) {
+
+          currentLineIndex--;
+
+        }
+
+
+        showCurrentLine();
+
+      };
+
+
+    /* =====================================================
+       NEXT
+       ===================================================== */
+
+    nextLineBtn.onclick =
+      function () {
+
+        if (
+          loadedLines.length === 0
+        ) {
+
+          setStatus(
+            "Load some lines first."
+          );
+
+          return;
+
+        }
+
+
+        /*
+         * Save current edit before moving.
+         */
+
+        loadedLines[
+          currentLineIndex
+        ] =
+          currentLineEl.value;
+
+
+        if (
+          currentLineIndex <
+          loadedLines.length - 1
+        ) {
+
+          currentLineIndex++;
+
+        }
+
+
+        showCurrentLine();
+
+      };
+
+
+    updateLineInfo();
+
+
+    /* =====================================================
        FONT SIZE CONTROLS
        ===================================================== */
 
     var fontSizeLabel =
       makeLabel("Font Size");
 
+
     var fontSizeRow =
       document.createElement("div");
 
-    fontSizeRow.style.display = "flex";
-    fontSizeRow.style.gap = "5px";
-    fontSizeRow.style.alignItems = "center";
+    fontSizeRow.style.display =
+      "flex";
+
+    fontSizeRow.style.gap =
+      "5px";
+
+    fontSizeRow.style.alignItems =
+      "center";
 
 
     var minusSizeBtn =
       document.createElement("button");
 
-    minusSizeBtn.type = "button";
-    minusSizeBtn.textContent = "−";
+    minusSizeBtn.type =
+      "button";
+
+    minusSizeBtn.textContent =
+      "−";
 
 
     var plusSizeBtn =
       document.createElement("button");
 
-    plusSizeBtn.type = "button";
-    plusSizeBtn.textContent = "+";
+    plusSizeBtn.type =
+      "button";
+
+    plusSizeBtn.textContent =
+      "+";
 
 
     var sizeDisplay =
       document.createElement("span");
 
-    sizeDisplay.style.flex = "1";
-    sizeDisplay.style.textAlign = "center";
-    sizeDisplay.style.fontWeight = "bold";
+    sizeDisplay.style.flex =
+      "1";
+
+    sizeDisplay.style.textAlign =
+      "center";
+
+    sizeDisplay.style.fontWeight =
+      "bold";
 
 
     function updateSizeDisplay() {
@@ -133,7 +630,8 @@
         Number(sizeEl.value) || 48;
 
       sizeDisplay.textContent =
-        String(value) + " px";
+        String(value) +
+        " px";
 
     }
 
@@ -144,13 +642,22 @@
         var value =
           Number(sizeEl.value) || 48;
 
+
         value -= 1;
 
-        if (value < 1) {
+
+        if (
+          value < 1
+        ) {
+
           value = 1;
+
         }
 
-        sizeEl.value = value;
+
+        sizeEl.value =
+          value;
+
 
         updateSizeDisplay();
 
@@ -163,13 +670,22 @@
         var value =
           Number(sizeEl.value) || 48;
 
+
         value += 1;
 
-        if (value > 500) {
+
+        if (
+          value > 500
+        ) {
+
           value = 500;
+
         }
 
-        sizeEl.value = value;
+
+        sizeEl.value =
+          value;
+
 
         updateSizeDisplay();
 
@@ -203,405 +719,8 @@
       fontSizeRow
     );
 
+
     updateSizeDisplay();
-
-
-    /* =====================================================
-       TEXT SOURCE / LINE LOADER
-       ===================================================== */
-
-    var sourceLabel =
-      makeLabel(
-        "Full Text / Dialogue List"
-      );
-
-
-    var sourceEl =
-      document.createElement("textarea");
-
-    sourceEl.placeholder =
-      "Paste the full text here...\n\nExample:\nHello.\nHow are you?\nI'm fine.";
-
-    sourceEl.style.width = "100%";
-    sourceEl.style.height = "110px";
-    sourceEl.style.boxSizing = "border-box";
-    sourceEl.style.resize = "vertical";
-
-
-    var loadLinesBtn =
-      document.createElement("button");
-
-    loadLinesBtn.type = "button";
-    loadLinesBtn.textContent =
-      "Load Lines";
-
-
-    actions.parentElement.appendChild(
-      sourceLabel
-    );
-
-    actions.parentElement.appendChild(
-      sourceEl
-    );
-
-    actions.parentElement.appendChild(
-      loadLinesBtn
-    );
-
-
-    /* =====================================================
-       LOADED LINES
-       ===================================================== */
-
-    var linesLabel =
-      makeLabel(
-        "Loaded Lines"
-      );
-
-
-    var linesEl =
-      document.createElement("textarea");
-
-    linesEl.style.width = "100%";
-    linesEl.style.height = "110px";
-    linesEl.style.boxSizing = "border-box";
-    linesEl.style.resize = "vertical";
-
-
-    var lineInfo =
-      document.createElement("div");
-
-    lineInfo.style.textAlign =
-      "center";
-
-    lineInfo.style.marginTop =
-      "4px";
-
-    lineInfo.style.marginBottom =
-      "4px";
-
-
-    var previousLineBtn =
-      document.createElement("button");
-
-    previousLineBtn.type =
-      "button";
-
-    previousLineBtn.textContent =
-      "Previous";
-
-
-    var nextLineBtn =
-      document.createElement("button");
-
-    nextLineBtn.type =
-      "button";
-
-    nextLineBtn.textContent =
-      "Next";
-
-
-    var useLineBtn =
-      document.createElement("button");
-
-    useLineBtn.type =
-      "button";
-
-    useLineBtn.textContent =
-      "Use Current Line";
-
-
-    var insertLineBtn =
-      document.createElement("button");
-
-    insertLineBtn.type =
-      "button";
-
-    insertLineBtn.textContent =
-      "Insert Current Line";
-
-
-    var lineButtons =
-      document.createElement("div");
-
-    lineButtons.style.display =
-      "flex";
-
-    lineButtons.style.gap =
-      "5px";
-
-    lineButtons.style.flexWrap =
-      "wrap";
-
-    lineButtons.style.marginTop =
-      "5px";
-
-
-    lineButtons.appendChild(
-      previousLineBtn
-    );
-
-    lineButtons.appendChild(
-      nextLineBtn
-    );
-
-    lineButtons.appendChild(
-      useLineBtn
-    );
-
-    lineButtons.appendChild(
-      insertLineBtn
-    );
-
-
-    actions.parentElement.appendChild(
-      linesLabel
-    );
-
-    actions.parentElement.appendChild(
-      linesEl
-    );
-
-    actions.parentElement.appendChild(
-      lineInfo
-    );
-
-    actions.parentElement.appendChild(
-      lineButtons
-    );
-
-
-    var loadedLines = [];
-    var currentLineIndex = 0;
-
-
-    function updateLineInfo() {
-
-      if (loadedLines.length === 0) {
-
-        lineInfo.textContent =
-          "No lines loaded.";
-
-        return;
-      }
-
-
-      lineInfo.textContent =
-        "Line " +
-        (currentLineIndex + 1) +
-        " / " +
-        loadedLines.length;
-
-    }
-
-
-    function showCurrentLine() {
-
-      if (
-        loadedLines.length === 0
-      ) {
-
-        linesEl.value = "";
-
-        updateLineInfo();
-
-        return;
-      }
-
-
-      linesEl.value =
-        loadedLines[
-          currentLineIndex
-        ];
-
-      updateLineInfo();
-
-    }
-
-
-    loadLinesBtn.onclick =
-      function () {
-
-        try {
-
-          var raw =
-            sourceEl.value;
-
-
-          if (
-            raw === null ||
-            raw === undefined ||
-            raw === ""
-          ) {
-
-            loadedLines = [];
-            currentLineIndex = 0;
-            linesEl.value = "";
-
-            updateLineInfo();
-
-            setStatus(
-              "No source text."
-            );
-
-            return;
-          }
-
-
-          /*
-           * Normalize Windows/Mac line endings.
-           *
-           * IMPORTANT:
-           * We do NOT trim individual lines.
-           * This preserves the user's text.
-           */
-
-          raw =
-            raw.replace(
-              /\r\n/g,
-              "\n"
-            );
-
-          raw =
-            raw.replace(
-              /\r/g,
-              "\n"
-            );
-
-
-          loadedLines =
-            raw.split("\n");
-
-
-          currentLineIndex = 0;
-
-
-          showCurrentLine();
-
-
-          setStatus(
-            "Loaded " +
-            loadedLines.length +
-            " line(s)."
-          );
-
-
-        } catch (e) {
-
-          alert(
-            "Load lines error:\n" +
-            e.message
-          );
-
-        }
-
-      };
-
-
-    previousLineBtn.onclick =
-      function () {
-
-        if (
-          loadedLines.length === 0
-        ) {
-
-          return;
-        }
-
-
-        if (
-          currentLineIndex > 0
-        ) {
-
-          currentLineIndex--;
-
-          showCurrentLine();
-
-        }
-
-      };
-
-
-    nextLineBtn.onclick =
-      function () {
-
-        if (
-          loadedLines.length === 0
-        ) {
-
-          return;
-        }
-
-
-        if (
-          currentLineIndex <
-          loadedLines.length - 1
-        ) {
-
-          currentLineIndex++;
-
-          showCurrentLine();
-
-        }
-
-      };
-
-
-    useLineBtn.onclick =
-      function () {
-
-        if (
-          loadedLines.length === 0
-        ) {
-
-          setStatus(
-            "No lines loaded."
-          );
-
-          return;
-        }
-
-
-        textEl.value =
-          loadedLines[
-            currentLineIndex
-          ];
-
-
-        setStatus(
-          "Line " +
-          (currentLineIndex + 1) +
-          " loaded into text."
-        );
-
-      };
-
-
-    linesEl.addEventListener(
-      "input",
-      function () {
-
-        if (
-          loadedLines.length === 0
-        ) {
-          return;
-        }
-
-
-        loadedLines[
-          currentLineIndex
-        ] = linesEl.value;
-
-
-        setStatus(
-          "Current line edited."
-        );
-
-      }
-    );
-
-
-    updateLineInfo();
 
 
     /* =====================================================
@@ -611,12 +730,14 @@
     var paddingLabel =
       makeLabel("Padding");
 
+
     var paddingEl =
       makeNumber(
         12,
         0,
         500
       );
+
 
     actions.parentElement.appendChild(
       paddingLabel
@@ -773,7 +894,9 @@
     var STYLES_KEY =
       "typerp_styles_v1";
 
-    var memoryStyles = {};
+
+    var memoryStyles =
+      {};
 
 
     function loadStyles() {
@@ -785,8 +908,11 @@
             STYLES_KEY
           );
 
+
         if (!raw) {
+
           return {};
+
         }
 
 
@@ -828,7 +954,8 @@
 
       } catch (e) {
 
-        memoryStyles = obj;
+        memoryStyles =
+          obj;
 
       }
 
@@ -839,6 +966,7 @@
       makeLabel(
         "Saved Styles"
       );
+
 
     actions.parentElement.appendChild(
       stylesLabel
@@ -983,7 +1111,11 @@
           styles
         ).sort(
           function (a, b) {
-            return a.localeCompare(b);
+
+            return a.localeCompare(
+              b
+            );
+
           }
         );
 
@@ -1094,10 +1226,14 @@
     }
 
 
-    function applySettingsSnapshot(s) {
+    function applySettingsSnapshot(
+      s
+    ) {
 
       if (!s) {
+
         return;
+
       }
 
 
@@ -1227,14 +1363,14 @@
           );
 
 
+          styleNameEl.value =
+            "";
+
+
           setStatus(
             "Style saved: " +
             name
           );
-
-
-          styleNameEl.value =
-            "";
 
 
         } catch (e) {
@@ -1468,8 +1604,7 @@
           text === null
         ) {
 
-          text =
-            textEl.value;
+          text = "";
 
         }
 
@@ -1480,7 +1615,7 @@
         ) {
 
           setStatus(
-            "Please type some text first."
+            "Current line is empty."
           );
 
           return;
@@ -1564,7 +1699,7 @@
 
 
         setStatus(
-          "Inserting build-012..."
+          "Inserting build-013..."
         );
 
 
@@ -1788,9 +1923,7 @@
 
           ";\n" +
 
-          "    ti.justification =\n" +
-
-          "      Justification." +
+          "    ti.justification = Justification." +
 
           align +
 
@@ -1838,9 +1971,7 @@
 
           ";\n" +
 
-          "    ti.justification =\n" +
-
-          "      Justification." +
+          "    ti.justification = Justification." +
 
           align +
 
@@ -2195,14 +2326,19 @@
 
 
     /* =====================================================
-       NORMAL INSERT
+       MAIN INSERT BUTTON
        ===================================================== */
+
+    /*
+     * The original Insert button remains available.
+     * It inserts whatever is currently in Current Line.
+     */
 
     insertBtn.onclick =
       function () {
 
         insertTextIntoPhotopea(
-          textEl.value
+          currentLineEl.value
         );
 
       };
@@ -2220,7 +2356,7 @@
         ) {
 
           setStatus(
-            "No lines loaded."
+            "Load lines first."
           );
 
           return;
@@ -2228,10 +2364,18 @@
         }
 
 
+        /*
+         * Save any manual edit.
+         */
+
+        loadedLines[
+          currentLineIndex
+        ] =
+          currentLineEl.value;
+
+
         var line =
-          loadedLines[
-            currentLineIndex
-          ];
+          currentLineEl.value;
 
 
         if (
@@ -2260,7 +2404,7 @@
        ===================================================== */
 
     setStatus(
-      "Ready (build-012)"
+      "Ready (build-013)"
     );
 
 
