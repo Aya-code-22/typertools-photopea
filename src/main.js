@@ -1,181 +1,115 @@
-(function () {
-  const els = {
-    status: document.getElementById("status"),
-    text: document.getElementById("text"),
-    font: document.getElementById("font"),
-    size: document.getElementById("size"),
-    color: document.getElementById("color"),
-    align: document.getElementById("align"),
-    insert: document.getElementById("insert"),
-  };
+// TypeR-P — main.js
+// baseline: Point Text در مرکز Selection (در صورت وجود) یا مرکز تصویر (در غیر اینصورت)
 
-  let pendingTimeout = null;
+var statusEl = document.getElementById("status");
+var textEl = document.getElementById("text");
+var fontEl = document.getElementById("font");
+var sizeEl = document.getElementById("size");
+var colorEl = document.getElementById("color");
+var alignEl = document.getElementById("align");
+var insertBtn = document.getElementById("insert");
 
-  function setStatus(msg) {
-    if (els.status) els.status.textContent = msg;
-    console.log("[TypeR-P]", msg);
+function setStatus(msg) {
+  statusEl.textContent = msg;
+}
+
+window.addEventListener("message", function (e) {
+  if (typeof e.data !== "string") return;
+
+  if (e.data.indexOf("TYPERP_OK:") === 0) {
+    var payload = e.data.slice("TYPERP_OK:".length);
+    var fullMsg = "Text inserted. " + payload;
+    setStatus(fullMsg);
+    console.log("TypeR-P full message:", fullMsg);
+    alert(fullMsg);
+  } else if (e.data.indexOf("TYPERP_ERR:") === 0) {
+    var err = e.data.slice("TYPERP_ERR:".length);
+    setStatus("Error: " + err);
+    console.error("TypeR-P error from Photopea:", err);
+    alert("Error: " + err);
+  }
+});
+
+insertBtn.addEventListener("click", function () {
+  var text = textEl.value;
+
+  if (!text || text.trim() === "") {
+    setStatus("Please type some text first.");
+    return;
   }
 
-  function clearPending() {
-    if (pendingTimeout) {
-      clearTimeout(pendingTimeout);
-      pendingTimeout = null;
-    }
-  }
+  var font = fontEl.value || "ArialMT";
+  var size = Number(sizeEl.value) || 48;
+  var color = (colorEl.value || "FF0000").replace(/[^0-9a-fA-F]/g, "").padEnd(6, "0").slice(0, 6);
+  var align = alignEl.value || "CENTER";
 
-  function sendToPhotopea(script) {
-    window.parent.postMessage(script, "*");
-  }
+  setStatus("Inserting...");
 
-  window.addEventListener("message", function (e) {
-    if (typeof e.data !== "string") return;
-    if (e.data === "done") return;
-
-    console.log("[TypeR-P] raw message from Photopea:", e.data);
-
-    if (e.data.indexOf("TYPERP_OK|") === 0) {
-      clearPending();
-      const payload = e.data.slice("TYPERP_OK|".length);
-      let parsed = null;
-      try {
-        parsed = JSON.parse(payload);
-      } catch (err) {
-        setStatus("Inserted (could not parse result payload)");
-        return;
-      }
-
-      if (parsed.hasSel) {
-        setStatus("Inserted inside selection at (" + parsed.cx + ", " + parsed.cy + ")");
-      } else {
-        setStatus("Inserted at image center (" + parsed.cx + ", " + parsed.cy + ") — no usable selection");
-      }
-      console.log("[TypeR-P] selection diagnostics:", parsed.diag);
-      return;
-    }
-
-    if (e.data.indexOf("TYPERP_ERROR|") === 0) {
-      clearPending();
-      setStatus("Error: " + e.data.slice("TYPERP_ERROR|".length));
-      return;
-    }
-  });
-
-  function buildScript(opts) {
-    const textJs = JSON.stringify(opts.text);
-    const fontJs = JSON.stringify(opts.font);
-    const colorJs = JSON.stringify(opts.color);
-    const sizeJs = JSON.stringify(opts.size);
-    const alignJs = opts.align;
-
-    return (
-      "(function(){\n" +
-      "  function reportError(msg){ try{ app.echoToOE('TYPERP_ERROR|' + msg); }catch(eR){} try{ alert('TypeR-P error: ' + msg); }catch(eA){} }\n" +
-      "  try {\n" +
-      "    var d = app.activeDocument;\n" +
-      "    var hasSel = false;\n" +
-      "    var cx = d.width / 2;\n" +
-      "    var cy = d.height / 2;\n" +
-      "    var diag = {};\n" +
-      "\n" +
-      "    try {\n" +
-      "      var sel = d.selection;\n" +
-      "      var b = sel.bounds;\n" +
-      "\n" +
-      "      diag.typeofBounds = typeof b;\n" +
-      "      diag.boundsLength = (b && typeof b.length === 'number') ? b.length : null;\n" +
-      "\n" +
-      "      if (b && b.length === 4) {\n" +
-      "        var vals = [];\n" +
-      "        for (var i = 0; i < 4; i++) {\n" +
-      "          var raw = b[i];\n" +
-      "          var num = NaN;\n" +
-      "          if (typeof raw === 'number') {\n" +
-      "            num = raw;\n" +
-      "          } else if (raw && typeof raw.value === 'number') {\n" +
-      "            num = raw.value;\n" +
-      "          } else if (raw && typeof raw.as === 'function') {\n" +
-      "            try { num = raw.as('px'); } catch (eAs) { num = NaN; }\n" +
-      "          } else {\n" +
-      "            num = Number(raw);\n" +
-      "          }\n" +
-      "          vals.push(num);\n" +
-      "        }\n" +
-      "        diag.parsedVals = vals.join(',');\n" +
-      "\n" +
-      "        var allValid = true;\n" +
-      "        for (var k = 0; k < vals.length; k++) {\n" +
-      "          if (typeof vals[k] !== 'number' || isNaN(vals[k])) { allValid = false; }\n" +
-      "        }\n" +
-      "\n" +
-      "        if (allValid) {\n" +
-      "          var left = vals[0], top = vals[1], right = vals[2], bottom = vals[3];\n" +
-      "          if (right > left && bottom > top) {\n" +
-      "            cx = (left + right) / 2;\n" +
-      "            cy = (top + bottom) / 2;\n" +
-      "            hasSel = true;\n" +
-      "          }\n" +
-      "        }\n" +
-      "      }\n" +
-      "    } catch (selErr) {\n" +
-      "      diag.selectionError = String(selErr);\n" +
-      "    }\n" +
-      "\n" +
-      "    var layer = d.artLayers.add();\n" +
-      "    layer.kind = LayerKind.TEXT;\n" +
-      "\n" +
-      "    var ti = layer.textItem;\n" +
-      "    ti.kind = TextType.POINTTEXT;\n" +
-      "    ti.contents = " + textJs + ";\n" +
-      "    ti.font = " + fontJs + ";\n" +
-      "    ti.size = " + sizeJs + ";\n" +
-      "    ti.justification = Justification." + alignJs + ";\n" +
-      "\n" +
-      "    var c = new SolidColor();\n" +
-      "    c.rgb.hexValue = " + colorJs + ";\n" +
-      "    ti.color = c;\n" +
-      "\n" +
-      "    ti.position = [cx, cy];\n" +
-      "    d.activeLayer = layer;\n" +
-      "\n" +
-      "    var result = { hasSel: hasSel, cx: Math.round(cx), cy: Math.round(cy), diag: diag };\n" +
-      "    var resultStr = JSON.stringify(result);\n" +
-      "    try { app.echoToOE('TYPERP_OK|' + resultStr); } catch (eEcho) {}\n" +
-      "    alert('TypeR-P: ' + (hasSel ? 'inserted in selection' : 'inserted at image center') + '\\ncx=' + Math.round(cx) + ' cy=' + Math.round(cy) + '\\n' + resultStr);\n" +
-      "  } catch (mainErr) {\n" +
-      "    reportError(String(mainErr));\n" +
-      "  }\n" +
-      "})();"
-    );
-  }
-
-  function onInsertClick() {
-    const text = (els.text.value || "").trim();
-    if (!text) {
-      setStatus("لطفاً ابتدا متنی وارد کنید");
-      return;
-    }
-
-    const font = els.font.value || "ArialMT";
-    const size = Number(els.size.value) || 48;
-    let color = (els.color.value || "FF0000").replace("#", "").trim();
-    if (!/^[0-9a-fA-F]{6}$/.test(color)) color = "FF0000";
-
-    const alignRaw = (els.align.value || "CENTER").toUpperCase();
-    const align = ["LEFT", "CENTER", "RIGHT"].includes(alignRaw) ? alignRaw : "CENTER";
-
-    setStatus("Inserting...");
-    clearPending();
-    pendingTimeout = setTimeout(function () {
-      setStatus("No message came back from Photopea — check the alert dialog that appeared on canvas, or the browser console.");
-    }, 6000);
-
-    const script = buildScript({ text, font, size, color, align });
-    sendToPhotopea(script);
-  }
-
-  if (els.insert) {
-    els.insert.addEventListener("click", onInsertClick);
-  }
-
-  setStatus("Ready");
-})();
+  var script =
+    "try {\n" +
+    "  var d = app.activeDocument;\n" +
+    "  var cx, cy;\n" +
+    "  var boundsInfo = 'doc-center';\n" +
+    "\n" +
+    "  function toPx(u) {\n" +
+    "    if (u === null || u === undefined) return NaN;\n" +
+    "    if (typeof u === 'number') return u;\n" +
+    "\n" +
+    "    if (u.value !== undefined && u.value !== null) {\n" +
+    "      var v1 = Number(u.value);\n" +
+    "      if (!isNaN(v1)) return v1;\n" +
+    "    }\n" +
+    "\n" +
+    "    if (typeof u.as === 'function') {\n" +
+    "      try {\n" +
+    "        var v2 = Number(u.as('px'));\n" +
+    "        if (!isNaN(v2)) return v2;\n" +
+    "      } catch (e2) {}\n" +
+    "    }\n" +
+    "\n" +
+    "    var v3 = Number(u);\n" +
+    "    if (!isNaN(v3)) return v3;\n" +
+    "\n" +
+    "    var s = String(u);\n" +
+    "    var m = s.match(/-?\\d+(\\.\\d+)?/);\n" +
+    "    if (m) return parseFloat(m[0]);\n" +
+    "\n" +
+    "    return NaN;\n" +
+    "  }\n" +
+    "\n" +
+    "  var bounds = null;\n" +
+    "  var boundsErr = '';\n" +
+    "  try { bounds = d.selection.bounds; } catch (e3) { bounds = null; boundsErr = (e3 && e3.message) ? e3.message : String(e3); }\n" +
+    "\n" +
+    "  if (bounds && bounds.length === 4) {\n" +
+    "    var b0 = bounds[0], b1 = bounds[1], b2 = bounds[2], b3 = bounds[3];\n" +
+    "    var left   = toPx(b0);\n" +
+    "    var top    = toPx(b1);\n" +
+    "    var right  = toPx(b2);\n" +
+    "    var bottom = toPx(b3);\n" +
+    "\n" +
+    "    var raw = 'raw=[' + String(b0) + ',' + String(b1) + ',' + String(b2) + ',' + String(b3) + ']';\n" +
+    "    var typ = 'types=[' + (typeof b0) + ',' + (typeof b1) + ',' + (typeof b2) + ',' + (typeof b3) + ']';\n" +
+    "    var val = 'valueProp=[' + (b0 && b0.value) + ',' + (b1 && b1.value) + ',' + (b2 && b2.value) + ',' + (b3 && b3.value) + ']';\n" +
+    "    var parsed = 'parsed=[' + left + ',' + top + ',' + right + ',' + bottom + ']';\n" +
+    "    var nanFlags = 'isNaN=[' + isNaN(left) + ',' + isNaN(top) + ',' + isNaN(right) + ',' + isNaN(bottom) + ']';\n" +
+    "\n" +
+    "    if (!isNaN(left) && !isNaN(top) && !isNaN(right) && !isNaN(bottom) && right > left && bottom > top) {\n" +
+    "      cx = (left + right) / 2;\n" +
+    "      cy = (top + bottom) / 2;\n" +
+    "      boundsInfo = 'selection-center:' + left + ',' + top + ',' + right + ',' + bottom + ' | ' + raw + ' | ' + typ + ' | ' + val;\n" +
+    "    } else {\n" +
+    "      cx = d.width / 2;\n" +
+    "      cy = d.height / 2;\n" +
+    "      boundsInfo = 'selection-unreadable-fallback-doc-center | ' + raw + ' | ' + typ + ' | ' + val + ' | ' + parsed + ' | ' + nanFlags;\n" +
+    "    }\n" +
+    "  } else {\n" +
+    "    cx = d.width / 2;\n" +
+    "    cy = d.height / 2;\n" +
+    "    boundsInfo = 'no-selection-or-error: ' + boundsErr + ' | boundsLen=' + (bounds && bounds.length);\n" +
+    "  }\n" +
+    "\n" +
+    "  var layer = d.artLayers.add();\n" +
+    "  layer.kind = LayerKind.TEXT;\n" +
+    "\n" +
+    "  var ti =
