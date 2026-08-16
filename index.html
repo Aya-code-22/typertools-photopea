@@ -86,13 +86,10 @@
 
   <script>
     var s = document.createElement("script");
-
-    s.src = "./src/main.js?v=1000";
+    s.src = "./src/main.js?v=" + Date.now(); // خودکار همیشه نسخهٔ تازه می‌گیرد
 
     s.onerror = function () {
-      document.getElementById("status").textContent =
-        "MAIN.JS FAILED TO LOAD";
-
+      document.getElementById("status").textContent = "MAIN.JS FAILED TO LOAD";
       alert("MAIN.JS FAILED TO LOAD");
     };
 
