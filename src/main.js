@@ -1,5 +1,5 @@
 // TypeR-P — main.js
-// build-tag: TYPERP-BUILD-007 (TyperTools Core Features: Paragraph Text, Auto-Fit, Padding & Leading)
+// build-tag: TYPERP-BUILD-008 (True Auto-Fit, Vertical Centering, Leading & UnitValue Box)
 
 (function () {
   try {
@@ -11,7 +11,6 @@
     var alignEl = document.getElementById("align");
     var insertBtn = document.getElementById("insert");
 
-    // عناصر جدید TyperTools (با Fallback ایمن در صورت عدم وجود در HTML)
     var modeEl = document.getElementById("textMode");
     var autoFitEl = document.getElementById("autoFit");
     var paddingEl = document.getElementById("padding");
@@ -32,7 +31,7 @@
 
         if (e.data.indexOf("TYPERP_OK:") === 0) {
           var payload = e.data.slice("TYPERP_OK:".length);
-          setStatus("Inserted! " + payload);
+          setStatus(payload);
         } else if (e.data.indexOf("TYPERP_ERR:") === 0) {
           var err = e.data.slice("TYPERP_ERR:".length);
           setStatus("Error: " + err);
@@ -51,7 +50,6 @@
           return;
         }
 
-        // اِعمال تنظیم UPPERCASE
         var isUppercase = uppercaseEl ? uppercaseEl.checked : false;
         var text = isUppercase ? rawText.toUpperCase() : rawText;
 
@@ -67,7 +65,7 @@
         var useAutoFit = autoFitEl ? autoFitEl.checked : true;
         var padding = Number(paddingEl ? paddingEl.value : 15) || 0;
 
-        setStatus("Processing Layout... (build-007)");
+        setStatus("Fitting & Rendering... (build-008)");
 
         var script =
           "(function(){\n" +
@@ -111,52 +109,86 @@
           "    }\n" +
           "  }\n" +
           "\n" +
-          "  // ۱. اعمال Padding روی ابعاد Selection\n" +
           "  var pad = " + padding + ";\n" +
           "  var boxL = left + pad;\n" +
           "  var boxT = top + pad;\n" +
-          "  var boxW = Math.max(20, (right - left) - (pad * 2));\n" +
-          "  var boxH = Math.max(20, (bottom - top) - (pad * 2));\n" +
+          "  var boxW = Math.max(10, (right - left) - (pad * 2));\n" +
+          "  var boxH = Math.max(10, (bottom - top) - (pad * 2));\n" +
           "\n" +
-          "  // ۲. الگوریتم Auto-Fit برای محاسبه اندازه فونت مناسب Bubble\n" +
-          "  var finalSize = " + manualSize + ";\n" +
-          "  var textStr = " + JSON.stringify(text) + ";\n" +
-          "  if (" + useAutoFit + " && hasSel) {\n" +
-          "    var charCount = Math.max(1, textStr.length);\n" +
-          "    var area = boxW * boxH;\n" +
-          "    // فرمول تقریبی تراکم متنی مانگا (نسبت ابعاد کاراکتر به مساحت کادر)\n" +
-          "    var calculated = Math.floor(Math.sqrt(area / (charCount * 1.15)));\n" +
-          "    finalSize = Math.max(12, Math.min(calculated, 140));\n" +
-          "  }\n" +
-          "\n" +
-          "  // ۳. ساخت لایه متن\n" +
           "  var layer = d.artLayers.add();\n" +
           "  layer.kind = LayerKind.TEXT;\n" +
           "  var ti = layer.textItem;\n" +
           "\n" +
-          "  ti.contents = textStr;\n" +
+          "  ti.contents = " + JSON.stringify(text) + ";\n" +
           "  ti.font = " + JSON.stringify(font) + ";\n" +
-          "  ti.size = finalSize;\n" +
           "  ti.justification = Justification." + align + ";\n" +
           "\n" +
           "  var c = new SolidColor();\n" +
           "  c.rgb.hexValue = " + JSON.stringify(color) + ";\n" +
           "  ti.color = c;\n" +
           "\n" +
-          "  // ۴. تنظیم نوع متن (Point vs Paragraph/Box)\n" +
+          "  try { ti.hyphenation = false; } catch(eH) {}\n" +
+          "\n" +
           "  var mode = " + JSON.stringify(textMode) + ";\n" +
+          "  var finalSize = " + manualSize + ";\n" +
+          "\n" +
           "  if (mode === 'PARAGRAPHTEXT' && hasSel) {\n" +
           "    ti.kind = TextType.PARAGRAPHTEXT;\n" +
-          "    ti.width = boxW;\n" +
-          "    ti.height = boxH;\n" +
+          "    try { ti.width = new UnitValue(boxW, 'px'); } catch(eW) { ti.width = boxW; }\n" +
+          "    try { ti.height = new UnitValue(boxH, 'px'); } catch(eH) { ti.height = boxH; }\n" +
           "    ti.position = [boxL, boxT];\n" +
+          "\n" +
+          "    // الگوریتم Auto-Fit تعاملی جهت سنجش واقعی ابعاد متن روی بوم\n" +
+          "    if (" + useAutoFit + ") {\n" +
+          "      var minS = 8;\n" +
+          "      var maxS = Math.min(boxH, 120);\n" +
+          "      var bestSize = minS;\n" +
+          "\n" +
+          "      for (var iter = 0; iter < 10; iter++) {\n" +
+          "        var midS = Math.floor((minS + maxS) / 2);\n" +
+          "        if (midS <= minS) break;\n" +
+          "\n" +
+          "        ti.size = midS;\n" +
+          "        try { ti.useAutoLeading = false; ti.leading = midS * 1.15; } catch(eL) {}\n" +
+          "\n" +
+          "        var tb = layer.bounds;\n" +
+          "        var tw = toPx(tb[2]) - toPx(tb[0]);\n" +
+          "        var th = toPx(tb[3]) - toPx(tb[1]);\n" +
+          "\n" +
+          "        if (tw <= boxW && th <= boxH) {\n" +
+          "          bestSize = midS;\n" +
+          "          minS = midS;\n" +
+          "        } else {\n" +
+          "          maxS = midS;\n" +
+          "        }\n" +
+          "      }\n" +
+          "      finalSize = bestSize;\n" +
+          "    }\n" +
+          "\n" +
+          "    ti.size = finalSize;\n" +
+          "    try { ti.useAutoLeading = false; ti.leading = finalSize * 1.15; } catch(eL2) {}\n" +
+          "\n" +
+          "    // تراز عمودی (Vertical Centering) بر اساس ابعاد رندر شده واقعی\n" +
+          "    var renderBounds = layer.bounds;\n" +
+          "    var actualT = toPx(renderBounds[1]);\n" +
+          "    var actualB = toPx(renderBounds[3]);\n" +
+          "    var actualH = actualB - actualT;\n" +
+          "\n" +
+          "    var targetCenterY = top + ((bottom - top) / 2);\n" +
+          "    var currentCenterY = actualT + (actualH / 2);\n" +
+          "    var offsetY = targetCenterY - currentCenterY;\n" +
+          "\n" +
+          "    if (isRealNumber(offsetY) && Math.abs(offsetY) > 1) {\n" +
+          "      layer.translate(0, offsetY);\n" +
+          "    }\n" +
           "  } else {\n" +
           "    ti.kind = TextType.POINTTEXT;\n" +
+          "    ti.size = finalSize;\n" +
           "    ti.position = [(left + right) / 2, (top + bottom) / 2];\n" +
           "  }\n" +
           "\n" +
           "  d.activeLayer = layer;\n" +
-          "  app.echoToOE('TYPERP_OK: Mode=' + mode + ' | Size=' + finalSize + 'px | Box=' + Math.round(boxW) + 'x' + Math.round(boxH));\n" +
+          "  app.echoToOE('TYPERP_OK: Applied Auto-Fit (' + finalSize + 'px) & Centered Vertically');\n" +
           "} catch (e) {\n" +
           "  app.echoToOE('TYPERP_ERR:' + (e && e.message ? e.message : String(e)));\n" +
           "}\n" +
@@ -169,10 +201,9 @@
       }
     };
 
-    setStatus("Ready (build-007)");
+    setStatus("Ready (build-008)");
 
   } catch (initErr) {
     alert("TypeR-P FATAL init error: " + initErr.message);
   }
 })();
-
