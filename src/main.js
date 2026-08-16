@@ -1,5 +1,5 @@
 // TypeR-P — main.js
-// build-tag: TYPERP-BUILD-005 (defensive: هر خطایی با alert نشان داده می‌شود)
+// build-tag: TYPERP-BUILD-006 (بدون تکیه به isNaN سراسری؛ IIFE برای جلوگیری از نشت متغیر)
 
 (function () {
   try {
@@ -11,7 +11,6 @@
     var alignEl = document.getElementById("align");
     var insertBtn = document.getElementById("insert");
 
-    // چک کنیم همهٔ عناصر واقعاً پیدا شده‌اند
     var missing = [];
     if (!statusEl) missing.push("#status");
     if (!textEl) missing.push("#text");
@@ -63,33 +62,37 @@
         var color = (colorEl.value || "FF0000").replace(/[^0-9a-fA-F]/g, "").padEnd(6, "0").slice(0, 6);
         var align = alignEl.value || "CENTER";
 
-        setStatus("Inserting... (build-005)");
-        alert("Debug: click received, sending script to Photopea now.");
+        setStatus("Inserting... (build-006)");
 
         var script =
+          "(function(){\n" +
           "try {\n" +
           "  var d = app.activeDocument;\n" +
           "  var cx, cy;\n" +
           "  var boundsInfo = 'doc-center';\n" +
           "\n" +
+          "  function isRealNumber(x) {\n" +
+          "    return typeof x === 'number' && x === x && x !== Infinity && x !== -Infinity;\n" +
+          "  }\n" +
+          "\n" +
           "  function toPx(u) {\n" +
           "    if (u === null || u === undefined) return NaN;\n" +
-          "    if (typeof u === 'number') return u;\n" +
+          "    if (isRealNumber(u)) return u;\n" +
           "\n" +
           "    if (u.value !== undefined && u.value !== null) {\n" +
           "      var v1 = Number(u.value);\n" +
-          "      if (!isNaN(v1)) return v1;\n" +
+          "      if (isRealNumber(v1)) return v1;\n" +
           "    }\n" +
           "\n" +
           "    if (typeof u.as === 'function') {\n" +
           "      try {\n" +
           "        var v2 = Number(u.as('px'));\n" +
-          "        if (!isNaN(v2)) return v2;\n" +
+          "        if (isRealNumber(v2)) return v2;\n" +
           "      } catch (e2) {}\n" +
           "    }\n" +
           "\n" +
           "    var v3 = Number(u);\n" +
-          "    if (!isNaN(v3)) return v3;\n" +
+          "    if (isRealNumber(v3)) return v3;\n" +
           "\n" +
           "    var s = String(u);\n" +
           "    var m = s.match(/-?\\d+(\\.\\d+)?/);\n" +
@@ -111,18 +114,17 @@
           "\n" +
           "    var raw = 'raw=[' + String(b0) + ',' + String(b1) + ',' + String(b2) + ',' + String(b3) + ']';\n" +
           "    var typ = 'types=[' + (typeof b0) + ',' + (typeof b1) + ',' + (typeof b2) + ',' + (typeof b3) + ']';\n" +
-          "    var val = 'valueProp=[' + (b0 && b0.value) + ',' + (b1 && b1.value) + ',' + (b2 && b2.value) + ',' + (b3 && b3.value) + ']';\n" +
           "    var parsed = 'parsed=[' + left + ',' + top + ',' + right + ',' + bottom + ']';\n" +
-          "    var nanFlags = 'isNaN=[' + isNaN(left) + ',' + isNaN(top) + ',' + isNaN(right) + ',' + isNaN(bottom) + ']';\n" +
+          "    var okFlags = 'ok=[' + isRealNumber(left) + ',' + isRealNumber(top) + ',' + isRealNumber(right) + ',' + isRealNumber(bottom) + ']';\n" +
           "\n" +
-          "    if (!isNaN(left) && !isNaN(top) && !isNaN(right) && !isNaN(bottom) && right > left && bottom > top) {\n" +
+          "    if (isRealNumber(left) && isRealNumber(top) && isRealNumber(right) && isRealNumber(bottom) && right > left && bottom > top) {\n" +
           "      cx = (left + right) / 2;\n" +
           "      cy = (top + bottom) / 2;\n" +
-          "      boundsInfo = 'selection-center:' + left + ',' + top + ',' + right + ',' + bottom + ' | ' + raw + ' | ' + typ + ' | ' + val;\n" +
+          "      boundsInfo = 'selection-center:' + left + ',' + top + ',' + right + ',' + bottom + ' | ' + raw + ' | ' + typ;\n" +
           "    } else {\n" +
           "      cx = d.width / 2;\n" +
           "      cy = d.height / 2;\n" +
-          "      boundsInfo = 'selection-unreadable-fallback-doc-center | ' + raw + ' | ' + typ + ' | ' + val + ' | ' + parsed + ' | ' + nanFlags;\n" +
+          "      boundsInfo = 'selection-unreadable-fallback-doc-center | ' + raw + ' | ' + typ + ' | ' + parsed + ' | ' + okFlags;\n" +
           "    }\n" +
           "  } else {\n" +
           "    cx = d.width / 2;\n" +
@@ -150,13 +152,14 @@
           "  app.echoToOE('TYPERP_OK:' + boundsInfo + ' -> x=' + cx + ' y=' + cy);\n" +
           "} catch (e) {\n" +
           "  app.echoToOE('TYPERP_ERR:' + (e && e.message ? e.message : String(e)));\n" +
-          "}";
+          "}\n" +
+          "})();";
 
         window.parent.postMessage(script, "*");
 
         setTimeout(function () {
           if (statusEl.textContent.indexOf("Inserting...") === 0) {
-            setStatus("No response from Photopea after 5s (build-005)");
+            setStatus("No response from Photopea after 5s (build-006)");
           }
         }, 5000);
 
@@ -166,7 +169,7 @@
       }
     };
 
-    setStatus("Ready (build-005)");
+    setStatus("Ready (build-006)");
 
   } catch (initErr) {
     alert("TypeR-P FATAL init error: " + initErr.message);
