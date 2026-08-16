@@ -1,142 +1,124 @@
-(function() {
-    'use strict';
-
-    const statusEl = document.getElementById('status');
-    const textEl = document.getElementById('text');
-    const fontEl = document.getElementById('font');
-    const sizeEl = document.getElementById('size');
-    const colorEl = document.getElementById('color');
-    const alignEl = document.getElementById('align');
-    const insertBtn = document.getElementById('insert');
-
-    // === Photopea official plugin method ===
-    function runPhotopeaScript(scriptText) {
-        return new Promise((resolve, reject) => {
-            // Generate unique ID
-            const id = 'cmd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-            
-            // Response handler
-            const handler = function(e) {
-                const data = e.data;
-                if (data && data.id === id) {
-                    window.removeEventListener('message', handler);
-                    if (data.error) {
-                        reject(new Error(data.error));
-                    } else {
-                        resolve(data.result);
-                    }
-                }
-            };
-            window.addEventListener('message', handler);
-            
-            // Send script to Photopea (this is the official way)
-            window.parent.postMessage({
-                id: id,
-                script: scriptText
-            }, '*');
-        });
+// دریافت پاسخ‌های ارسالی از Photopea (توسط app.echoToOE)
+window.addEventListener("message", function (e) {
+  if (typeof e.data === "string") {
+    const statusEl = document.getElementById("status");
+    if (statusEl) {
+      statusEl.textContent = e.data;
     }
+  }
+});
 
-    // === Insert handler ===
-    insertBtn.addEventListener('click', async function() {
-        try {
-            statusEl.textContent = 'Sending to Photopea...';
-            insertBtn.disabled = true;
+document.getElementById("insert").addEventListener("click", function () {
+  const textVal = document.getElementById("text").value || "Text";
+  const fontVal = document.getElementById("font").value || "ArialMT";
+  const sizeVal = parseFloat(document.getElementById("size").value) || 48;
+  const colorVal = document.getElementById("color").value || "FF0000";
+  const alignVal = document.getElementById("align").value || "CENTER";
 
-            const text = textEl.value.trim() || 'TypeR-P';
-            const font = fontEl.value || 'ArialMT';
-            const size = parseInt(sizeEl.value) || 48;
-            const color = colorEl.value || 'FF0000';
-            const align = alignEl.value || 'CENTER';
+  // آماده‌سازی متن برای ارسال به اسکریپت Photopea
+  const escapedText = textVal
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r");
 
-            // === Photopea script (uses app.echoToOE for response) ===
-            const script = `
-                try {
-                    var doc = app.activeDocument;
-                    var w = doc.width.value || doc.width;
-                    var h = doc.height.value || doc.height;
-                    
-                    var cx = w / 2;
-                    var cy = h / 2;
-                    var msg = 'No selection, center used';
-                    
-                    // Try selection
-                    try {
-                        if (doc.selection && doc.selection.bounds) {
-                            var b = doc.selection.bounds;
-                            // Photopea returns UnitValues
-                            if (b[0] && b[0].value !== undefined) {
-                                var left = b[0].value;
-                                var top = b[1].value;
-                                var right = b[2].value;
-                                var bottom = b[3].value;
-                                
-                                if (isFinite(left) && isFinite(right)) {
-                                    cx = (left + right) / 2;
-                                    cy = (top + bottom) / 2;
-                                    msg = 'Selection: ' + left + ',' + top + ',' + right + ',' + bottom;
-                                }
-                            }
-                        }
-                    } catch(e) {
-                        msg = 'Selection error: ' + e.message;
-                    }
-                    
-                    // Create text layer
-                    var layer = doc.artLayers.add();
-                    layer.kind = LayerKind.TEXT;
-                    var ti = layer.textItem;
-                    ti.kind = TextType.POINTTEXT;
-                    ti.contents = \`${text}\`;
-                    ti.font = \`${font}\`;
-                    ti.size = ${size};
-                    ti.justification = Justification.${align};
-                    
-                    var c = new SolidColor();
-                    c.rgb.hexValue = '${color}';
-                    ti.color = c;
-                    
-                    ti.position = [cx, cy];
-                    doc.activeLayer = layer;
-                    
-                    // RETURN RESULT TO PLUGIN (OFFICIAL PHOTOPEA METHOD)
-                    app.echoToOE(JSON.stringify({
-                        success: true,
-                        msg: msg,
-                        centerX: cx,
-                        centerY: cy
-                    }));
-                } catch(e) {
-                    app.echoToOE(JSON.stringify({
-                        success: false,
-                        error: e.toString()
-                    }));
-                }
-            `;
+  const escapedFont = fontVal.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const escapedColor = colorVal.replace(/[^0-9A-Fa-f]/g, "");
 
-            const resultStr = await runPhotopeaScript(script);
-            const result = JSON.parse(resultStr);
+  // اسکریپتی که داخل Photopea اجرا می‌شود
+  const script = `
+    (function() {
+      var d = app.activeDocument;
+      if (!d) {
+        app.echoToOE("Error: No document open in Photopea.");
+        return;
+      }
 
-            if (result.success) {
-                statusEl.textContent = '✅ ' + result.msg + ' | Center: (' + Math.round(result.centerX) + ', ' + Math.round(result.centerY) + ')';
-            } else {
-                statusEl.textContent = '❌ Photopea error: ' + result.error;
+      // ۱. ذخیره unit فعلی و تغییر آن به PIXELS جهت محاسبات دقیق
+      var oldUnits = app.preferences.rulerUnits;
+      app.preferences.rulerUnits = Units.PIXELS;
+
+      // مرکز کل تصویر (Fallback)
+      var docW = (typeof d.width === "object" && "value" in d.width) ? d.width.value : Number(d.width);
+      var docH = (typeof d.height === "object" && "value" in d.height) ? d.height.value : Number(d.height);
+      
+      var posX = docW / 2;
+      var posY = docH / 2;
+
+      var usedSelection = false;
+      var debugMsg = "";
+
+      // تابع تبدیل امن انواع داده‌های Photopea به عدد پیکسلی
+      function parseCoord(val) {
+        if (val === null || val === undefined) return NaN;
+        if (typeof val === "number") return val;
+        if (typeof val === "string") return parseFloat(val);
+        if (typeof val === "object") {
+          if ("value" in val && typeof val.value === "number") return val.value;
+          if (typeof val.as === "function") return val.as("px");
+          if ("value" in val) return parseFloat(String(val.value));
+        }
+        return parseFloat(String(val));
+      }
+
+      // ۲. استخراج ابعاد Selection با try-catch برای جلوگیری از کرش اسکریپت
+      try {
+        var sel = d.selection;
+        if (sel) {
+          var b = sel.bounds; // در صورت نبود Selection خطای ExtendScript می‌دهد
+          if (b && b.length === 4) {
+            var left   = parseCoord(b[0]);
+            var top    = parseCoord(b[1]);
+            var right  = parseCoord(b[2]);
+            var bottom = parseCoord(b[3]);
+
+            debugMsg = "Raw: [" + b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "]";
+
+            if (!isNaN(left) && !isNaN(top) && !isNaN(right) && !isNaN(bottom)) {
+              var w = right - left;
+              var h = bottom - top;
+              if (w > 0 && h > 0) {
+                posX = left + (w / 2);
+                posY = top + (h / 2);
+                usedSelection = true;
+              }
             }
-
-        } catch (err) {
-            statusEl.textContent = '❌ Plugin error: ' + err.message;
-        } finally {
-            insertBtn.disabled = false;
+          }
         }
-    });
+      } catch (err) {
+        debugMsg = "No Selection (" + err.message + ")";
+      }
 
-    // === Connect status ===
-    statusEl.textContent = 'Waiting for Photopea...';
-    window.addEventListener('message', function(e) {
-        if (e.data && e.data === 'photopea-ready') {
-            statusEl.textContent = 'Connected to Photopea ✔️';
-        }
-    });
-    window.parent.postMessage('plugin-ready', '*');
+      // بازگرداندن تنظیمات unit کاربر
+      app.preferences.rulerUnits = oldUnits;
 
-})();
+      // ۳. ساخت لایه متن در هر شرایطی (تضمینی)
+      var layer = d.artLayers.add();
+      layer.kind = LayerKind.TEXT;
+
+      var ti = layer.textItem;
+      ti.kind = TextType.POINTTEXT;
+      ti.contents = "${escapedText}";
+      ti.font = "${escapedFont}";
+      ti.size = ${sizeVal};
+      ti.justification = Justification.${alignVal};
+
+      var c = new SolidColor();
+      c.rgb.hexValue = "${escapedColor}";
+      ti.color = c;
+
+      // تنظیم مختصات مرکز انتخاب یا مرکز تصویر
+      ti.position = [posX, posY];
+      d.activeLayer = layer;
+
+      // ۴. ارسال وضعیت به پنل Plugin
+      var report = (usedSelection ? "Placed in Selection" : "Placed in Doc Center") +
+                   " (" + Math.round(posX) + ", " + Math.round(posY) + ")" +
+                   (debugMsg ? " | " + debugMsg : "");
+
+      app.echoToOE(report);
+    })();
+  `;
+
+  window.parent.postMessage(script, "*");
+});
