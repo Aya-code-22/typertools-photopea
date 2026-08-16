@@ -1,5 +1,8 @@
 window.addEventListener("message", function (e) {
   if (typeof e.data === "string") {
+    // جلوگیری از اوررایت شدن پیام status توسط پیام سیستمی Photopea
+    if (e.data === "done") return;
+
     const statusEl = document.getElementById("status");
     if (statusEl) {
       statusEl.textContent = e.data;
@@ -10,7 +13,7 @@ window.addEventListener("message", function (e) {
 document.getElementById("insert").addEventListener("click", function () {
   const statusEl = document.getElementById("status");
   if (statusEl) {
-    statusEl.textContent = "Analyzing Selection...";
+    statusEl.textContent = "Processing in Photopea...";
   }
 
   const textVal = document.getElementById("text").value || "Text";
@@ -33,68 +36,55 @@ document.getElementById("insert").addEventListener("click", function () {
       try {
         var d = app.activeDocument;
         if (!d) {
-          app.echoToOE("Error: No document open.");
+          app.echoToOE("Error: No document open in Photopea.");
           return;
         }
 
-        var docW = 800, docH = 600;
-        try {
-          docW = typeof d.width === "object" ? d.width.value : Number(d.width);
-          docH = typeof d.height === "object" ? d.height.value : Number(d.height);
-        } catch(e) {}
+        // تبدیل انواع خروجی‌های bounds (رشته واحددار، UnitValue، عدد) به عدد پیکسلی
+        function parsePx(v) {
+          if (v === null || v === undefined) return NaN;
+          if (typeof v === "number") return v;
+          if (typeof v === "object") {
+            if ("value" in v && typeof v.value === "number") return v.value;
+            if (typeof v.as === "function") return v.as("px");
+          }
+          var p = parseFloat(String(v));
+          return isNaN(p) ? NaN : p;
+        }
+
+        var docW = parsePx(d.width) || 800;
+        var docH = parsePx(d.height) || 600;
 
         var posX = docW / 2;
         var posY = docH / 2;
-        var successSel = false;
-        var diagMsg = "";
+        var hasSelection = false;
+        var diag = "";
 
         try {
           var sel = d.selection;
-          if (!sel) {
-            diagMsg = "d.selection is undefined";
-          } else {
+          if (sel) {
             var b = sel.bounds;
-            if (!b) {
-              diagMsg = "sel.bounds is undefined";
-            } else if (b.length !== 4) {
-              diagMsg = "bounds length is " + b.length;
-            } else {
-              var b0 = b[0];
-              var b0Type = typeof b0;
-              var b0Str = String(b0);
-              var b0Val = (b0 && typeof b0 === "object" && "value" in b0) ? b0.value : "no-value-key";
+            if (b && b.length === 4) {
+              var l = parsePx(b[0]);
+              var t = parsePx(b[1]);
+              var r = parsePx(b[2]);
+              var bm = parsePx(b[3]);
 
-              diagMsg = "b[0] Type:" + b0Type + " | Str:'" + b0Str + "' | .val:" + b0Val;
-
-              function parseVal(v) {
-                if (v === null || v === undefined) return NaN;
-                if (typeof v === "number") return v;
-                if (typeof v === "object") {
-                  if ("value" in v && typeof v.value === "number") return v.value;
-                  if ("_value" in v && typeof v._value === "number") return v._value;
-                  if (typeof v.as === "function") return v.as("px");
-                }
-                var p = parseFloat(String(v));
-                return isNaN(p) ? NaN : p;
-              }
-
-              var l = parseVal(b[0]);
-              var t = parseVal(b[1]);
-              var r = parseVal(b[2]);
-              var bm = parseVal(b[3]);
+              diag = "Raw: [" + b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "] -> Parsed: [" + l + "," + t + "," + r + "," + bm + "]";
 
               if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
                 posX = (l + r) / 2;
                 posY = (t + bm) / 2;
-                successSel = true;
-                diagMsg = "SUCCESS! Sel Center: [" + Math.round(posX) + "," + Math.round(posY) + "] | Bounds: [" + Math.round(l) + "," + Math.round(t) + "," + Math.round(r) + "," + Math.round(bm) + "]";
-              } else {
-                diagMsg += " -> Parsed NaN [" + l + "," + t + "," + r + "," + bm + "]";
+                hasSelection = true;
               }
+            } else {
+              diag = "Bounds empty or invalid";
             }
+          } else {
+            diag = "No active selection";
           }
-        } catch(selError) {
-          diagMsg = "Sel Exception: " + selError.message;
+        } catch(selErr) {
+          diag = "Selection error: " + selErr.message;
         }
 
         if (isNaN(posX) || !isFinite(posX)) posX = docW / 2;
@@ -117,11 +107,14 @@ document.getElementById("insert").addEventListener("click", function () {
         ti.position = [posX, posY];
         d.activeLayer = layer;
 
-        var finalStatus = (successSel ? "Placed in Selection" : "Placed in Center (Fallback)") + " | " + diagMsg;
-        app.echoToOE(finalStatus);
+        var resultMsg = (hasSelection ? "Placed in Selection" : "Placed in Center (Fallback)") +
+                        " (" + Math.round(posX) + ", " + Math.round(posY) + ")" +
+                        (diag ? " | " + diag : "");
+
+        app.echoToOE(resultMsg);
 
       } catch(err) {
-        app.echoToOE("Critical Script Error: " + err.message);
+        app.echoToOE("Fatal Script Error: " + err.message);
       }
     })();
   `;
