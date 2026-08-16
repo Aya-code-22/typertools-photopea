@@ -1,6 +1,7 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-009
-// Selection-aware Paragraph Text + Padding + Smart Auto Fit + Long Word Handling + Saved Styles
+// BUILD: TYPERP-BUILD-010
+// Selection-aware Paragraph Text + Padding + Smart Auto Fit
+// + Long Word Breaking + Saved Styles
 
 (function () {
 
@@ -49,20 +50,25 @@
 
 
     /* =====================================================
-       ADD EXTRA CONTROLS
+       EXTRA CONTROLS
        ===================================================== */
 
     var actions = insertBtn.parentElement;
 
     function makeLabel(text) {
+
       var label = document.createElement("label");
+
       label.textContent = text;
       label.style.display = "block";
       label.style.marginTop = "8px";
+
       return label;
     }
 
+
     function makeNumber(value, min, max) {
+
       var input = document.createElement("input");
 
       input.type = "number";
@@ -78,31 +84,41 @@
     }
 
 
-    /* Padding */
+    /* =====================================================
+       PADDING
+       ===================================================== */
 
-    var paddingLabel = makeLabel("Padding");
+    var paddingLabel =
+      makeLabel("Padding");
 
-    var paddingEl = makeNumber(
-      12,
-      0,
-      500
+    var paddingEl =
+      makeNumber(12, 0, 500);
+
+    actions.parentElement.appendChild(
+      paddingLabel
     );
 
-    actions.parentElement.appendChild(paddingLabel);
-    actions.parentElement.appendChild(paddingEl);
+    actions.parentElement.appendChild(
+      paddingEl
+    );
 
 
-    /* Auto Fit */
+    /* =====================================================
+       AUTO FIT
+       ===================================================== */
 
-    var fitLabel = makeLabel("Auto Fit");
+    var fitLabel =
+      makeLabel("Auto Fit");
 
-    var fitRow = document.createElement("label");
+    var fitRow =
+      document.createElement("label");
 
     fitRow.style.display = "flex";
     fitRow.style.alignItems = "center";
     fitRow.style.gap = "6px";
 
-    var fitEl = document.createElement("input");
+    var fitEl =
+      document.createElement("input");
 
     fitEl.type = "checkbox";
     fitEl.checked = true;
@@ -115,21 +131,24 @@
       )
     );
 
-    actions.parentElement.appendChild(fitLabel);
-    actions.parentElement.appendChild(fitRow);
-
-
-    /* Minimum font size */
-
-    var minSizeLabel = makeLabel(
-      "Minimum Font Size"
+    actions.parentElement.appendChild(
+      fitLabel
     );
 
-    var minSizeEl = makeNumber(
-      8,
-      1,
-      500
+    actions.parentElement.appendChild(
+      fitRow
     );
+
+
+    /* =====================================================
+       MINIMUM FONT SIZE
+       ===================================================== */
+
+    var minSizeLabel =
+      makeLabel("Minimum Font Size");
+
+    var minSizeEl =
+      makeNumber(8, 1, 500);
 
     actions.parentElement.appendChild(
       minSizeLabel
@@ -140,17 +159,18 @@
     );
 
 
-    /* Text mode */
+    /* =====================================================
+       TEXT MODE
+       ===================================================== */
 
-    var modeLabel = makeLabel(
-      "Text Mode"
-    );
+    var modeLabel =
+      makeLabel("Text Mode");
 
-    var modeEl = document.createElement(
-      "select"
-    );
+    var modeEl =
+      document.createElement("select");
 
     modeEl.style.width = "100%";
+
 
     var paragraphOption =
       document.createElement("option");
@@ -161,6 +181,7 @@
     paragraphOption.textContent =
       "Text Box (recommended)";
 
+
     var pointOption =
       document.createElement("option");
 
@@ -169,6 +190,7 @@
 
     pointOption.textContent =
       "Point Text";
+
 
     modeEl.appendChild(
       paragraphOption
@@ -191,9 +213,11 @@
        SAVED STYLES
        ===================================================== */
 
-    var STYLES_KEY = "typerp_styles_v1";
+    var STYLES_KEY =
+      "typerp_styles_v1";
 
     var memoryStyles = {};
+
 
     function loadStyles() {
 
@@ -379,12 +403,11 @@
       styleSelectEl.innerHTML =
         "";
 
+
       if (names.length === 0) {
 
         var emptyOpt =
-          document.createElement(
-            "option"
-          );
+          document.createElement("option");
 
         emptyOpt.value =
           "";
@@ -407,9 +430,7 @@
       ) {
 
         var opt =
-          document.createElement(
-            "option"
-          );
+          document.createElement("option");
 
         opt.value =
           names[i];
@@ -478,12 +499,14 @@
 
       if (!s) return;
 
+
       if (
         s.font !== undefined
       ) {
         fontEl.value =
           s.font;
       }
+
 
       if (
         s.size !== undefined
@@ -492,12 +515,14 @@
           s.size;
       }
 
+
       if (
         s.color !== undefined
       ) {
         colorEl.value =
           s.color;
       }
+
 
       if (
         s.align !== undefined
@@ -506,12 +531,14 @@
           s.align;
       }
 
+
       if (
         s.padding !== undefined
       ) {
         paddingEl.value =
           s.padding;
       }
+
 
       if (
         s.minSize !== undefined
@@ -520,12 +547,14 @@
           s.minSize;
       }
 
+
       if (
         s.autoFit !== undefined
       ) {
         fitEl.checked =
           !!s.autoFit;
       }
+
 
       if (
         s.mode !== undefined
@@ -548,6 +577,7 @@
               ""
             ).trim();
 
+
           if (!name) {
 
             setStatus(
@@ -555,7 +585,6 @@
             );
 
             return;
-
           }
 
 
@@ -579,6 +608,7 @@
           styleNameEl.value =
             "";
 
+
         } catch (e) {
 
           alert(
@@ -599,6 +629,7 @@
           var name =
             styleSelectEl.value;
 
+
           if (!name) {
 
             setStatus(
@@ -606,7 +637,6 @@
             );
 
             return;
-
           }
 
 
@@ -625,7 +655,6 @@
             );
 
             return;
-
           }
 
 
@@ -635,6 +664,7 @@
             "Style applied: " +
             name
           );
+
 
         } catch (e) {
 
@@ -656,6 +686,7 @@
           var name =
             styleSelectEl.value;
 
+
           if (!name) {
 
             setStatus(
@@ -663,7 +694,6 @@
             );
 
             return;
-
           }
 
 
@@ -680,6 +710,7 @@
             "Style deleted: " +
             name
           );
+
 
         } catch (e) {
 
@@ -780,6 +811,7 @@
           var text =
             textEl.value;
 
+
           if (
             !text ||
             text.trim() === ""
@@ -790,7 +822,6 @@
             );
 
             return;
-
           }
 
 
@@ -870,12 +901,12 @@
 
 
           setStatus(
-            "Inserting build-009..."
+            "Inserting build-010..."
           );
 
 
           /* =================================================
-             ESCAPE VALUES
+             ESCAPE
              ================================================= */
 
           function jsString(value) {
@@ -1199,6 +1230,10 @@
             ";\n" +
 
 
+            /* -------------------------------------------------
+               Estimate lines without modifying normal text
+               ------------------------------------------------- */
+
             "      function estimateLines(str, size, width) {\n" +
 
             "        var avgCharWidth = size * 0.52;\n" +
@@ -1212,7 +1247,7 @@
             "        );\n" +
 
 
-            "        var explicit = str.split('\\\\n');\n" +
+            "        var explicit = str.split(/\\r?\\n/);\n" +
 
             "        var lines = 0;\n" +
 
@@ -1221,7 +1256,7 @@
 
             "          var line = explicit[i];\n" +
 
-            "          var words = line.split(/\\\\s+/);\n" +
+            "          var words = line.split(/\\s+/);\n" +
 
             "          var currentChars = 0;\n" +
 
@@ -1291,6 +1326,11 @@
             "      }\n" +
 
 
+            /* -------------------------------------------------
+               Add invisible break opportunities ONLY to
+               extremely long words.
+               ------------------------------------------------- */
+
             "      function splitLongWords(str, size, width) {\n" +
 
             "        var avgCharWidth = size * 0.52;\n" +
@@ -1304,7 +1344,7 @@
             "        );\n" +
 
 
-            "        var lines = str.split('\\\\n');\n" +
+            "        var lines = str.split(/\\r?\\n/);\n" +
 
             "        var output = [];\n" +
 
@@ -1313,7 +1353,7 @@
 
             "          var line = lines[i];\n" +
 
-            "          var words = line.split(/(\\\\s+)/);\n" +
+            "          var words = line.split(/(\\s+)/);\n" +
 
             "          var rebuilt = '';\n" +
 
@@ -1323,7 +1363,7 @@
             "            var part = words[j];\n" +
 
 
-            "            if (/^\\\\s+$/.test(part)) {\n" +
+            "            if (/^\\s+$/.test(part)) {\n" +
 
             "              rebuilt += part;\n" +
 
@@ -1334,26 +1374,13 @@
 
             "            if (part.length > charsPerLine) {\n" +
 
-            "              var start = 0;\n" +
+            "              for (var k = 0; k < part.length; k++) {\n" +
 
-            "              while (start < part.length) {\n" +
+            "                rebuilt += part.charAt(k);\n" +
 
-            "                var chunk = part.substr(\n" +
+            "                if (k < part.length - 1) {\n" +
 
-            "                  start,\n" +
-
-            "                  charsPerLine\n" +
-
-            "                );\n" +
-
-            "                rebuilt += chunk;\n" +
-
-            "                start += charsPerLine;\n" +
-
-
-            "                if (start < part.length) {\n" +
-
-            "                  rebuilt += '\\\\n';\n" +
+            "                  rebuilt += '\\u200B';\n" +
 
             "                }\n" +
 
@@ -1373,10 +1400,14 @@
             "        }\n" +
 
 
-            "        return output.join('\\\\n');\n" +
+            "        return output.join('\\n');\n" +
 
             "      }\n" +
 
+
+            /* -------------------------------------------------
+               Auto Fit
+               ------------------------------------------------- */
 
             "      while (currentSize > minimum) {\n" +
 
@@ -1412,6 +1443,10 @@
             "      }\n" +
 
 
+            /* -------------------------------------------------
+               Long-word processing AFTER font fitting
+               ------------------------------------------------- */
+
             "      var processedText = splitLongWords(\n" +
 
             jsString(text) +
@@ -1439,6 +1474,10 @@
 
             "  }\n" +
 
+
+            /* =================================================
+               COMPLETE
+               ================================================= */
 
             "  d.activeLayer = layer;\n" +
 
@@ -1527,8 +1566,12 @@
       };
 
 
+    /* =====================================================
+       READY
+       ===================================================== */
+
     setStatus(
-      "Ready (build-009)"
+      "Ready (build-010)"
     );
 
 
