@@ -6,9 +6,85 @@
   <title>TypeR-P</title>
   <link rel="stylesheet" href="./src/style.css">
 </head>
+
 <body>
-  <div id="app"></div>
+
+  <header>
+    <strong>TypeR-P</strong>
+    <span id="status">Waiting for Photopea...</span>
+  </header>
+
+  <section class="panel">
+    <label for="text">Text</label>
+
+    <textarea
+      id="text"
+      placeholder="Type text here..."
+    ></textarea>
+  </section>
+
+  <section class="panel">
+
+    <label for="font">Font</label>
+
+    <input
+      id="font"
+      type="text"
+      value="ArialMT"
+    >
+
+    <div class="row">
+
+      <div>
+        <label for="size">Size</label>
+        <input
+          id="size"
+          type="number"
+          value="48"
+          min="1"
+        >
+      </div>
+
+      <div>
+        <label for="color">Color</label>
+        <input
+          id="color"
+          type="text"
+          value="FF0000"
+          maxlength="6"
+        >
+      </div>
+
+    </div>
+
+    <div class="row">
+
+      <div>
+        <label for="align">Alignment</label>
+
+        <select id="align">
+          <option value="LEFT">Left</option>
+          <option value="CENTER" selected>Center</option>
+          <option value="RIGHT">Right</option>
+        </select>
+      </div>
+
+    </div>
+
+  </section>
+
+  <section class="actions">
+
+    <button
+      id="insert"
+      class="primary"
+    >
+      INSERT TEXT
+    </button>
+
+  </section>
 
   <script src="./src/main.js"></script>
+
 </body>
 </html>
