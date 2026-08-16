@@ -1,8 +1,14 @@
 window.addEventListener("message", function (e) {
+  const statusEl = document.getElementById("status");
+  if (!statusEl) return;
+
   if (typeof e.data === "string") {
-    const statusEl = document.getElementById("status");
-    if (statusEl) {
-      statusEl.textContent = e.data;
+    statusEl.textContent = e.data;
+  } else if (e.data) {
+    try {
+      statusEl.textContent = typeof e.data === "object" ? JSON.stringify(e.data) : String(e.data);
+    } catch (err) {
+      statusEl.textContent = "Response received from Photopea";
     }
   }
 });
@@ -30,52 +36,67 @@ document.getElementById("insert").addEventListener("click", function () {
 
   const script = `
     (function() {
+      function send(msg) {
+        if (typeof app !== "undefined" && typeof app.echoToOE === "function") {
+          app.echoToOE(msg);
+        }
+      }
+
       try {
         var d = app.activeDocument;
         if (!d) {
-          app.echoToOE("Error: No document open in Photopea.");
+          send("Error: No document open in Photopea.");
           return;
         }
 
-        // تابع تبدیل امن انواع داده‌ها به عدد پیکسلی
-        function toPx(val) {
-          if (val === undefined || val === null) return NaN;
+        // تبدیل تضمینی UnitValue / Number / String به عدد خالص
+        function toNum(val) {
+          if (val === null || val === undefined) return NaN;
           if (typeof val === "number") return val;
           if (typeof val.value === "number") return val.value;
-          return parseFloat(val);
+          var n = val * 1;
+          if (!isNaN(n)) return n;
+          n = parseFloat(String(val));
+          return isNaN(n) ? NaN : n;
         }
 
-        var docW = toPx(d.width);
-        var docH = toPx(d.height);
+        // ابعاد سند
+        var docW = toNum(d.width);
+        var docH = toNum(d.height);
+        
+        var posX = (!isNaN(docW) && docW > 0) ? docW / 2 : 400;
+        var posY = (!isNaN(docH) && docH > 0) ? docH / 2 : 300;
 
-        var posX = docW / 2;
-        var posY = docH / 2;
         var hasSel = false;
-        var debugInfo = "";
+        var selLog = "";
 
-        // بررسی Selection
+        // استخراج Selection
         try {
           var sel = d.selection;
           if (sel) {
             var b = sel.bounds;
             if (b && b.length === 4) {
-              var l = toPx(b[0]);
-              var t = toPx(b[1]);
-              var r = toPx(b[2]);
-              var bm = toPx(b[3]);
+              var l = toNum(b[0]);
+              var t = toNum(b[1]);
+              var r = toNum(b[2]);
+              var bm = toNum(b[3]);
 
-              debugInfo = "Bounds: [" + b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "] -> Parsed: [" + l + "," + t + "," + r + "," + bm + "]";
+              selLog = "Bounds: [" + l + "," + t + "," + r + "," + bm + "]";
 
-              if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r - l) > 0 && (bm - t) > 0) {
-                posX = l + (r - l) / 2;
-                posY = t + (bm - t) / 2;
+              if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
+                posX = (l + r) / 2;
+                posY = (t + bm) / 2;
                 hasSel = true;
               }
             }
           }
         } catch (selErr) {
-          debugInfo = "No Selection (" + selErr.message + ")";
+          selLog = "No active selection";
         }
+
+        // جلوگیری از ارسال NaN به موتور متن جهت منع کرش اسکریپت
+        if (isNaN(posX) || !isFinite(posX)) posX = docW / 2 || 400;
+        if (isNaN(posY) || !isFinite(posY)) posY = docH / 2 || 300;
 
         // ساخت Text Layer
         var layer = d.artLayers.add();
@@ -95,16 +116,24 @@ document.getElementById("insert").addEventListener("click", function () {
         ti.position = [posX, posY];
         d.activeLayer = layer;
 
-        var report = (hasSel ? "Placed in Selection" : "Placed in Center") +
-                     " [" + Math.round(posX) + ", " + Math.round(posY) + "]" +
-                     (debugInfo ? " | " + debugInfo : "");
+        var resultText = (hasSel ? "Placed in Selection" : "Placed in Center") +
+                          " [" + Math.round(posX) + ", " + Math.round(posY) + "]" +
+                          (selLog ? " | " + selLog : "");
 
-        app.echoToOE(report);
-      } catch (mainErr) {
-        app.echoToOE("Script Error: " + mainErr.message);
+        send(resultText);
+
+      } catch (err) {
+        send("Script Error: " + err.message);
       }
     })();
   `;
 
   window.parent.postMessage(script, "*");
+
+  // تایمر خروج از وضعیت معلق در صورت عدم پاسخ از فوتوپیا
+  setTimeout(function() {
+    if (statusEl && statusEl.textContent === "Sending to Photopea...") {
+      statusEl.textContent = "Command sent (Check Canvas)";
+    }
+  }, 1500);
 });
