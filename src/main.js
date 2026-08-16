@@ -1,5 +1,7 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-021
+// BUILD: TYPERP-BUILD-022
+//
+// Diagnostic selection pipeline
 //
 // Full Text -> Lines -> Current Line
 // Selection-aware Paragraph Text
@@ -10,13 +12,6 @@
 // Letter Spacing
 // Line Spacing
 // Horizontal Scale
-//
-// BUILD-021:
-// - Safer Photopea communication
-// - Explicit script-start response
-// - Safer selection reading
-// - Fixed generated-script construction
-// - No hanging at "Checking active selection..."
 
 (function () {
 
@@ -94,7 +89,7 @@
   if (missing.length) {
 
     alert(
-      "TypeR-P BUILD-021 UI ERROR\n\n" +
+      "TypeR-P BUILD-022 UI ERROR\n\n" +
       "Missing:\n" +
       missing.join("\n")
     );
@@ -108,9 +103,7 @@
      ===================================================== */
 
   function setStatus(msg) {
-
     statusEl.textContent = msg;
-
   }
 
 
@@ -119,7 +112,6 @@
      ===================================================== */
 
   var lines = [];
-
   var currentIndex = 0;
 
 
@@ -145,7 +137,6 @@
       (currentIndex + 1) +
       " / " +
       lines.length;
-
   }
 
 
@@ -157,7 +148,6 @@
 
     lines[currentIndex] =
       currentLineEl.value;
-
   }
 
 
@@ -230,9 +220,7 @@
   currentLineEl.addEventListener(
     "input",
     function () {
-
       saveCurrentLine();
-
     }
   );
 
@@ -245,9 +233,7 @@
 
     if (!lines.length) {
 
-      setStatus(
-        "Load lines first."
-      );
+      setStatus("Load lines first.");
 
       return;
     }
@@ -274,9 +260,7 @@
 
     if (!lines.length) {
 
-      setStatus(
-        "Load lines first."
-      );
+      setStatus("Load lines first.");
 
       return;
     }
@@ -309,10 +293,8 @@
 
 
   if (!settingsPanel) {
-
     settingsPanel =
       fontEl.parentElement;
-
   }
 
 
@@ -321,21 +303,13 @@
     var label =
       document.createElement("label");
 
+    label.textContent = text;
 
-    label.textContent =
-      text;
+    label.style.display = "block";
 
-
-    label.style.display =
-      "block";
-
-
-    label.style.marginTop =
-      "8px";
-
+    label.style.marginTop = "8px";
 
     return label;
-
   }
 
 
@@ -349,37 +323,22 @@
     var input =
       document.createElement("input");
 
+    input.type = "number";
 
-    input.type =
-      "number";
+    input.value = value;
 
+    input.min = min;
 
-    input.value =
-      value;
+    input.max = max;
 
+    input.step = step || "1";
 
-    input.min =
-      min;
-
-
-    input.max =
-      max;
-
-
-    input.step =
-      step || "1";
-
-
-    input.style.width =
-      "100%";
-
+    input.style.width = "100%";
 
     input.style.boxSizing =
       "border-box";
 
-
     return input;
-
   }
 
 
@@ -435,17 +394,12 @@
     document.createElement("input");
 
 
-  fitEl.type =
-    "checkbox";
+  fitEl.type = "checkbox";
+
+  fitEl.checked = true;
 
 
-  fitEl.checked =
-    true;
-
-
-  fitRow.appendChild(
-    fitEl
-  );
+  fitRow.appendChild(fitEl);
 
 
   fitRow.appendChild(
@@ -490,9 +444,7 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel(
-      "Text Mode"
-    )
+    makeLabel("Text Mode")
   );
 
 
@@ -500,8 +452,7 @@
     document.createElement("select");
 
 
-  modeEl.style.width =
-    "100%";
+  modeEl.style.width = "100%";
 
 
   var paragraphOption =
@@ -548,9 +499,7 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel(
-      "Letter Spacing"
-    )
+    makeLabel("Letter Spacing")
   );
 
 
@@ -573,9 +522,7 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel(
-      "Line Spacing"
-    )
+    makeLabel("Line Spacing")
   );
 
 
@@ -630,9 +577,7 @@
         typeof event.data !==
         "string"
       ) {
-
         return;
-
       }
 
 
@@ -665,13 +610,12 @@
 
 
         setStatus(
-          "Error: " +
-          error
+          "Error: " + error
         );
 
 
         alert(
-          "TypeR-P BUILD-021\n\n" +
+          "TypeR-P BUILD-022\n\n" +
           error
         );
 
@@ -682,7 +626,7 @@
 
 
   /* =====================================================
-     SAFE JS STRING
+     SAFE STRING
      ===================================================== */
 
   function jsString(value) {
@@ -695,12 +639,11 @@
 
 
   /* =====================================================
-     INSERT LINE
+     INSERT
      ===================================================== */
 
   insertLineBtn.onclick =
     function () {
-
 
       if (!lines.length) {
 
@@ -732,9 +675,9 @@
       }
 
 
-      /* -----------------------------------------------
+      /* =================================================
          SETTINGS
-         ----------------------------------------------- */
+         ================================================= */
 
       var font =
         fontEl.value ||
@@ -758,12 +701,8 @@
         .slice(0, 6);
 
 
-      while (
-        color.length < 6
-      ) {
-
+      while (color.length < 6) {
         color += "0";
-
       }
 
 
@@ -782,9 +721,7 @@
         !isFinite(padding) ||
         padding < 0
       ) {
-
         padding = 12;
-
       }
 
 
@@ -798,9 +735,7 @@
         !isFinite(minSize) ||
         minSize < 1
       ) {
-
         minSize = 8;
-
       }
 
 
@@ -834,9 +769,7 @@
         !isFinite(leading) ||
         leading < 0
       ) {
-
         leading = 0;
-
       }
 
 
@@ -850,15 +783,9 @@
         !isFinite(horizontalScale) ||
         horizontalScale <= 0
       ) {
-
         horizontalScale = 100;
-
       }
 
-
-      /* -----------------------------------------------
-         STATUS
-         ----------------------------------------------- */
 
       setStatus(
         "Sending to Photopea..."
@@ -866,31 +793,23 @@
 
 
       /* =================================================
-         PHOTOPEA SCRIPT
+         BUILD PHOTOPEA SCRIPT
          ================================================= */
 
       var script = "";
 
 
       script +=
-        "(function(){\n";
+        "(function(){try{\n";
 
 
-      script +=
-        "try{\n";
-
-
-      /* -----------------------------------------------
-         START CONFIRMATION
-         ----------------------------------------------- */
+      /* STEP 1 */
 
       script +=
         "app.echoToOE('TYPERP_OK:SCRIPT_STARTED');\n";
 
 
-      /* -----------------------------------------------
-         DOCUMENT
-         ----------------------------------------------- */
+      /* STEP 2 */
 
       script +=
         "var d=app.activeDocument;\n";
@@ -900,17 +819,32 @@
         "if(!d){throw new Error('No active document.');}\n";
 
 
-      /* -----------------------------------------------
-         SELECTION
-         ----------------------------------------------- */
+      script +=
+        "app.echoToOE('TYPERP_OK:DOCUMENT_OK');\n";
+
+
+      /* STEP 3 */
 
       script +=
-        "var b=null;\n";
+        "app.echoToOE('TYPERP_OK:READING_SELECTION');\n";
+
+
+      /*
+       * IMPORTANT:
+       * Read selection bounds directly.
+       * No helper function or conversion happens
+       * until we know Photopea returned the bounds.
+       */
+
+      script +=
+        "var b=d.selection.bounds;\n";
 
 
       script +=
-        "try{b=d.selection.bounds;}catch(e){b=null;}\n";
+        "app.echoToOE('TYPERP_OK:SELECTION_READ');\n";
 
+
+      /* STEP 4 */
 
       script +=
         "if(!b||b.length!==4){\n";
@@ -924,9 +858,13 @@
         "}\n";
 
 
-      /* -----------------------------------------------
-         UNIT CONVERSION
-         ----------------------------------------------- */
+      script +=
+        "app.echoToOE('TYPERP_OK:SELECTION_VALID');\n";
+
+
+      /* =================================================
+         COORDINATES
+         ================================================= */
 
       script +=
         "function px(v){\n";
@@ -1009,6 +947,10 @@
 
 
       script +=
+        "app.echoToOE('TYPERP_OK:COORDINATES_READ');\n";
+
+
+      script +=
         "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){\n";
 
 
@@ -1032,9 +974,13 @@
         "}\n";
 
 
-      /* -----------------------------------------------
-         TEXT BOX
-         ----------------------------------------------- */
+      script +=
+        "app.echoToOE('TYPERP_OK:COORDINATES_OK');\n";
+
+
+      /* =================================================
+         BOX
+         ================================================= */
 
       script +=
         "var boxLeft=L+" +
@@ -1080,9 +1026,9 @@
         "}\n";
 
 
-      /* -----------------------------------------------
-         CREATE TEXT LAYER
-         ----------------------------------------------- */
+      /* =================================================
+         CREATE LAYER
+         ================================================= */
 
       script +=
         "var layer=d.artLayers.add();\n";
@@ -1096,7 +1042,7 @@
         "layer.name=" +
         jsString(
           "TTP: " +
-          text.substring(0, 45)
+          text.substring(0,45)
         ) +
         ";\n";
 
@@ -1106,7 +1052,7 @@
 
 
       /* =================================================
-         PARAGRAPH TEXT
+         PARAGRAPH
          ================================================= */
 
       script +=
@@ -1414,31 +1360,24 @@
 
 
       script +=
-        "var lineHeight;\n";
+        "var lineHeight=";
+
+
+      if (leading > 0) {
+
+        script +=
+          leading;
+
+      } else {
+
+        script +=
+          "current*1.20";
+
+      }
 
 
       script +=
-        "if(" +
-        leading +
-        ">0){\n";
-
-
-      script +=
-        "lineHeight=" +
-        leading +
         ";\n";
-
-
-      script +=
-        "}else{\n";
-
-
-      script +=
-        "lineHeight=current*1.20;\n";
-
-
-      script +=
-        "}\n";
 
 
       script +=
@@ -1446,7 +1385,7 @@
 
 
       script +=
-        "if(neededHeight<=boxHeight){break;}\n";
+        "if(neededHeight<=boxHeight)break;\n";
 
 
       script +=
@@ -1550,17 +1489,9 @@
 
 
       script +=
-        "try{\n";
-
-
-      script +=
-        "ti.horizontalScale=" +
+        "try{ti.horizontalScale=" +
         horizontalScale +
-        ";\n";
-
-
-      script +=
-        "}catch(e){}\n";
+        ";}catch(e){}\n";
 
 
       script +=
@@ -1571,9 +1502,9 @@
         "}\n";
 
 
-      /* -----------------------------------------------
+      /* =================================================
          FINISH
-         ----------------------------------------------- */
+         ================================================= */
 
       script +=
         "d.activeLayer=layer;\n";
@@ -1643,14 +1574,12 @@
           "*"
         );
 
-      } catch (sendError) {
+      } catch (e) {
 
         setStatus(
           "Send error: " +
-          sendError.message
+          e.message
         );
-
-        return;
 
       }
 
@@ -1659,40 +1588,27 @@
          TIMEOUT
          ================================================= */
 
-      var waiting = true;
+      setTimeout(
+        function () {
+
+          var current =
+            statusEl.textContent;
 
 
-      var timeoutId =
-        setTimeout(
-          function () {
+          if (
+            current ===
+            "Sending to Photopea..."
+          ) {
 
-            if (!waiting) {
-              return;
-            }
+            setStatus(
+              "Photopea did not respond."
+            );
 
+          }
 
-            waiting = false;
-
-
-            if (
-              statusEl.textContent ===
-              "Sending to Photopea..."
-            ) {
-
-              setStatus(
-                "Photopea did not respond."
-              );
-
-            }
-
-          },
-          7000
-        );
-
-
-      /* We don't actually need to clear the timeout
-         because the status listener will replace it.
-         The variable exists to keep the logic explicit. */
+        },
+        7000
+      );
 
     };
 
@@ -1705,7 +1621,7 @@
 
 
   setStatus(
-    "Ready (BUILD-021)"
+    "Ready (BUILD-022)"
   );
 
 
