@@ -1,5 +1,5 @@
 // TypeR-P — main.js
-// build-tag: TYPERP-BUILD-008 (Paragraph Text در Selection + fallback به Point Text)
+// build-tag: TYPERP-BUILD-009 (Paragraph Text در Selection + fallback به Point Text)
 
 (function () {
   try {
@@ -132,15 +132,24 @@
           "\n" +
           "    var sizeSetErr = '';\n" +
           "    var actualW = 'unread', actualH = 'unread';\n" +
+          "    var methodUsed = 'none';\n" +
           "    try {\n" +
-          "      ti.width = UnitValue(boxWidth, 'px');\n" +
-          "      ti.height = UnitValue(boxHeight, 'px');\n" +
-          "    } catch (eSizeUnit) {\n" +
+          "      ti.width = new UnitValue(boxWidth + ' pixels');\n" +
+          "      ti.height = new UnitValue(boxHeight + ' pixels');\n" +
+          "      methodUsed = 'new UnitValue(string)';\n" +
+          "    } catch (eA) {\n" +
           "      try {\n" +
-          "        ti.width = boxWidth;\n" +
-          "        ti.height = boxHeight;\n" +
-          "      } catch (eSizePlain) {\n" +
-          "        sizeSetErr = ' | width/height-set-failed: ' + eSizePlain.message;\n" +
+          "        ti.width = UnitValue(boxWidth, 'px');\n" +
+          "        ti.height = UnitValue(boxHeight, 'px');\n" +
+          "        methodUsed = 'UnitValue(n, px)';\n" +
+          "      } catch (eB) {\n" +
+          "        try {\n" +
+          "          ti.width = boxWidth;\n" +
+          "          ti.height = boxHeight;\n" +
+          "          methodUsed = 'plain number';\n" +
+          "        } catch (eC) {\n" +
+          "          sizeSetErr = ' | width/height-set-failed: ' + eC.message;\n" +
+          "        }\n" +
           "      }\n" +
           "    }\n" +
           "    try {\n" +
@@ -161,7 +170,7 @@
           "\n" +
           "    ti.position = [boxLeft, boxTop];\n" +
           "\n" +
-          "    boundsInfo += ' | requestedBox=' + boxWidth + 'x' + boxHeight + ' | actualBox=' + actualW + 'x' + actualH + sizeSetErr;\n" +
+          "    boundsInfo += ' | requestedBox=' + boxWidth + 'x' + boxHeight + ' | actualBox=' + actualW + 'x' + actualH + ' | method=' + methodUsed + sizeSetErr;\n" +
           "  } else {\n" +
           "    ti.kind = TextType.POINTTEXT;\n" +
           "    ti.contents = " + JSON.stringify(text) + ";\n" +
@@ -191,7 +200,7 @@
       }
     };
 
-    setStatus("Ready (build-008)");
+    setStatus("Ready (build-009)");
 
   } catch (initErr) {
     alert("TypeR-P FATAL init error: " + initErr.message);
