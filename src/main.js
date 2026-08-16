@@ -1,5 +1,5 @@
-// TypeR-P â€” main.js
-// baseline: Point Text Ø¯Ø± Ù…Ø±Ú©Ø² Selection (Ø¯Ø± ØµÙˆØ±Øª ÙˆØ¬ÙˆØ¯) ÛŒØ§ Ù…Ø±Ú©Ø² ØªØµÙˆÛŒØ± (Ø¯Ø± ØºÛŒØ± Ø§ÛŒÙ†ØµÙˆØ±Øª)
+// TypeR-P — main.js
+// baseline: Point Text در مرکز Selection (در صورت وجود) یا مرکز تصویر (در غیر اینصورت)
 
 var statusEl = document.getElementById("status");
 var textEl = document.getElementById("text");
@@ -13,7 +13,7 @@ function setStatus(msg) {
   statusEl.textContent = msg;
 }
 
-// Ù‡Ø± Ù¾ÛŒØ§Ù…ÛŒ Ú©Ù‡ Ø§Ø² Photopea (Ø§Ø² Ø·Ø±ÛŒÙ‚ app.echoToOE) Ø¨Ø±Ú¯Ø±Ø¯Ø¯ØŒ Ø§ÛŒÙ†Ø¬Ø§ Ø¯Ø±ÛŒØ§ÙØª Ù…ÛŒâ€ŒØ´ÙˆØ¯
+// هر پیامی که از Photopea (از طریق app.echoToOE) برگردد، اینجا دریافت می‌شود
 window.addEventListener("message", function (e) {
   if (typeof e.data !== "string") return;
 
@@ -25,7 +25,7 @@ window.addEventListener("message", function (e) {
     setStatus("Error: " + err);
     console.error("TypeR-P error from Photopea:", err);
   }
-  // Ù¾ÛŒØ§Ù…â€ŒÙ‡Ø§ÛŒ Ø¯ÛŒÚ¯Ø± Photopea (Ù…Ø«Ù„ Ù‡Ù†Ø¯Ø´ÛŒÚ© Ø§ÙˆÙ„ÛŒÙ‡) Ù†Ø§Ø¯ÛŒØ¯Ù‡ Ú¯Ø±ÙØªÙ‡ Ù…ÛŒâ€ŒØ´ÙˆÙ†Ø¯
+  // پیام‌های دیگر Photopea (مثل هندشیک اولیه) نادیده گرفته می‌شوند
 });
 
 insertBtn.addEventListener("click", function () {
@@ -43,9 +43,9 @@ insertBtn.addEventListener("click", function () {
 
   setStatus("Inserting...");
 
-  // Ø§Ø³Ú©Ø±ÛŒÙ¾ØªÛŒ Ú©Ù‡ Ø¯Ø§Ø®Ù„ Photopea Ø§Ø¬Ø±Ø§ Ù…ÛŒâ€ŒØ´ÙˆØ¯.
-  // Ù†Ú©ØªÙ‡: LayerKind, TextType, Justification, SolidColor, UnitValue Ù‡Ù…Ú¯ÛŒ ÙÙ‚Ø·
-  // Ø¯Ø§Ø®Ù„ Ù…Ø­ÛŒØ· Ø§Ø³Ú©Ø±ÛŒÙ¾Øª Photopea Ù…Ø¹ØªØ¨Ø±Ù†Ø¯ØŒ Ù†Ù‡ Ø¯Ø± Ø§ÛŒÙ† ÙØ§ÛŒÙ„ main.js.
+  // اسکریپتی که داخل Photopea اجرا می‌شود.
+  // نکته: LayerKind, TextType, Justification, SolidColor, UnitValue همگی فقط
+  // داخل محیط اسکریپت Photopea معتبرند، نه در این فایل main.js.
   var script =
     "try {\n" +
     "  var d = app.activeDocument;\n" +
@@ -55,16 +55,17 @@ insertBtn.addEventListener("click", function () {
     "  function toPx(u) {\n" +
     "    if (u === null || u === undefined) return NaN;\n" +
     "    if (typeof u === 'number') return u;\n" +
-    "    if (typeof u.value === 'number') return u.value;\n" +          // Ø±ÙˆØ´ ØªØ£ÛŒÛŒØ¯Ø´Ø¯Ù‡ Ø§ØµÙ„ÛŒ
+    "    if (typeof u.value === 'number') return u.value;\n" +
     "    if (typeof u.as === 'function') {\n" +
-    "      try { return u.as('px'); } catch (e2) {}\n" +               // fallback Ù…Ø³ØªÙ†Ø¯
+    "      try { return u.as('px'); } catch (e2) {}\n" +
     "    }\n" +
-    "    var n = Number(u);\n" +                                       // Ø¢Ø®Ø±ÛŒÙ† fallback
+    "    var n = Number(u);\n" +
     "    return n;\n" +
     "  }\n" +
     "\n" +
     "  var bounds = null;\n" +
-    "  try { bounds = d.selection.bounds; } catch (e3) { bounds = null; }\n" +
+    "  var boundsErr = '';\n" +
+    "  try { bounds = d.selection.bounds; } catch (e3) { bounds = null; boundsErr = (e3 && e3.message) ? e3.message : String(e3); }\n" +
     "\n" +
     "  if (bounds) {\n" +
     "    var left   = toPx(bounds[0]);\n" +
@@ -72,18 +73,24 @@ insertBtn.addEventListener("click", function () {
     "    var right  = toPx(bounds[2]);\n" +
     "    var bottom = toPx(bounds[3]);\n" +
     "\n" +
+    "    var raw = 'raw=[' + String(bounds[0]) + ',' + String(bounds[1]) + ',' + String(bounds[2]) + ',' + String(bounds[3]) + ']';\n" +
+    "    var typ = 'types=[' + typeof bounds[0] + ',' + typeof bounds[1] + ',' + typeof bounds[2] + ',' + typeof bounds[3] + ']';\n" +
+    "    var val = 'valueProp=[' + (bounds[0] && bounds[0].value) + ',' + (bounds[1] && bounds[1].value) + ',' + (bounds[2] && bounds[2].value) + ',' + (bounds[3] && bounds[3].value) + ']';\n" +
+    "    var parsed = 'parsed=[' + left + ',' + top + ',' + right + ',' + bottom + ']';\n" +
+    "\n" +
     "    if (!isNaN(left) && !isNaN(top) && !isNaN(right) && !isNaN(bottom)) {\n" +
     "      cx = (left + right) / 2;\n" +
     "      cy = (top + bottom) / 2;\n" +
-    "      boundsInfo = 'selection-center:' + left + ',' + top + ',' + right + ',' + bottom;\n" +
+    "      boundsInfo = 'selection-center:' + left + ',' + top + ',' + right + ',' + bottom + ' | ' + raw + ' | ' + typ + ' | ' + val;\n" +
     "    } else {\n" +
     "      cx = d.width / 2;\n" +
     "      cy = d.height / 2;\n" +
-    "      boundsInfo = 'selection-unreadable-fallback-doc-center';\n" +
+    "      boundsInfo = 'selection-unreadable-fallback-doc-center | ' + raw + ' | ' + typ + ' | ' + val + ' | ' + parsed;\n" +
     "    }\n" +
     "  } else {\n" +
     "    cx = d.width / 2;\n" +
     "    cy = d.height / 2;\n" +
+    "    boundsInfo = 'no-selection-or-error: ' + boundsErr;\n" +
     "  }\n" +
     "\n" +
     "  var layer = d.artLayers.add();\n" +
