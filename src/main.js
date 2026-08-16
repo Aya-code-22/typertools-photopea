@@ -5,6 +5,7 @@
 (function () {
   "use strict";
   alert("TYPERP BUILD 008 LOADED");
+  document.getElementById("status").textContent = "STEP 1";
   try {
     var statusEl = document.getElementById("status");
     var textEl = document.getElementById("text");
