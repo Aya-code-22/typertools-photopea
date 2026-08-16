@@ -1,122 +1,111 @@
-// TypeR-P — main.js
-// baseline: Point Text در مرکز Selection (در صورت وجود) یا مرکز تصویر (در غیر اینصورت)
-
-var statusEl = document.getElementById("status");
-var textEl = document.getElementById("text");
-var fontEl = document.getElementById("font");
-var sizeEl = document.getElementById("size");
-var colorEl = document.getElementById("color");
-var alignEl = document.getElementById("align");
-var insertBtn = document.getElementById("insert");
-
-function setStatus(msg) {
-  statusEl.textContent = msg;
-}
-
 window.addEventListener("message", function (e) {
-  if (typeof e.data !== "string") return;
+  if (typeof e.data === "string") {
+    // نادیده گرفتن پیام سیستمی done از طرف Photopea
+    if (e.data === "done") return;
 
-  if (e.data.indexOf("TYPERP_OK:") === 0) {
-    var payload = e.data.slice("TYPERP_OK:".length);
-    var fullMsg = "Text inserted. " + payload;
-    setStatus(fullMsg);
-    console.log("TypeR-P full message:", fullMsg);
-    alert(fullMsg);
-  } else if (e.data.indexOf("TYPERP_ERR:") === 0) {
-    var err = e.data.slice("TYPERP_ERR:".length);
-    setStatus("Error: " + err);
-    console.error("TypeR-P error from Photopea:", err);
-    alert("Error: " + err);
+    const statusEl = document.getElementById("status");
+    if (statusEl) {
+      statusEl.textContent = e.data;
+    }
   }
 });
 
-insertBtn.addEventListener("click", function () {
-  var text = textEl.value;
-
-  if (!text || text.trim() === "") {
-    setStatus("Please type some text first.");
-    return;
+document.getElementById("insert").addEventListener("click", function () {
+  const statusEl = document.getElementById("status");
+  if (statusEl) {
+    statusEl.textContent = "Inserting Text...";
   }
 
-  var font = fontEl.value || "ArialMT";
-  var size = Number(sizeEl.value) || 48;
-  var color = (colorEl.value || "FF0000").replace(/[^0-9a-fA-F]/g, "").padEnd(6, "0").slice(0, 6);
-  var align = alignEl.value || "CENTER";
+  const textVal = document.getElementById("text").value || "Text";
+  const fontVal = document.getElementById("font").value || "ArialMT";
+  const sizeVal = parseFloat(document.getElementById("size").value) || 48;
+  const colorVal = document.getElementById("color").value || "FF0000";
+  const alignVal = document.getElementById("align").value || "CENTER";
 
-  setStatus("Inserting...");
+  const escapedText = textVal
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r");
 
-  var script =
-    "try {\n" +
-    "  var d = app.activeDocument;\n" +
-    "  var cx, cy;\n" +
-    "  var boundsInfo = 'doc-center';\n" +
-    "\n" +
-    "  function toPx(u) {\n" +
-    "    if (u === null || u === undefined) return NaN;\n" +
-    "    if (typeof u === 'number') return u;\n" +
-    "    if (typeof u.value === 'number') return u.value;\n" +
-    "    if (typeof u.as === 'function') {\n" +
-    "      try { return u.as('px'); } catch (e2) {}\n" +
-    "    }\n" +
-    "    var n = Number(u);\n" +
-    "    return n;\n" +
-    "  }\n" +
-    "\n" +
-    "  var bounds = null;\n" +
-    "  var boundsErr = '';\n" +
-    "  try { bounds = d.selection.bounds; } catch (e3) { bounds = null; boundsErr = (e3 && e3.message) ? e3.message : String(e3); }\n" +
-    "\n" +
-    "  if (bounds && bounds.length === 4) {\n" +
-    "    var b0 = bounds[0], b1 = bounds[1], b2 = bounds[2], b3 = bounds[3];\n" +
-    "    var left   = toPx(b0);\n" +
-    "    var top    = toPx(b1);\n" +
-    "    var right  = toPx(b2);\n" +
-    "    var bottom = toPx(b3);\n" +
-    "\n" +
-    "    var raw = 'raw=[' + String(b0) + ',' + String(b1) + ',' + String(b2) + ',' + String(b3) + ']';\n" +
-    "    var typ = 'types=[' + (typeof b0) + ',' + (typeof b1) + ',' + (typeof b2) + ',' + (typeof b3) + ']';\n" +
-    "    var val = 'valueProp=[' + (b0 && b0.value) + ',' + (b1 && b1.value) + ',' + (b2 && b2.value) + ',' + (b3 && b3.value) + ']';\n" +
-    "    var parsed = 'parsed=[' + left + ',' + top + ',' + right + ',' + bottom + ']';\n" +
-    "    var nanFlags = 'isNaN=[' + isNaN(left) + ',' + isNaN(top) + ',' + isNaN(right) + ',' + isNaN(bottom) + ']';\n" +
-    "\n" +
-    "    if (!isNaN(left) && !isNaN(top) && !isNaN(right) && !isNaN(bottom)) {\n" +
-    "      cx = (left + right) / 2;\n" +
-    "      cy = (top + bottom) / 2;\n" +
-    "      boundsInfo = 'selection-center:' + left + ',' + top + ',' + right + ',' + bottom + ' | ' + raw + ' | ' + typ + ' | ' + val;\n" +
-    "    } else {\n" +
-    "      cx = d.width / 2;\n" +
-    "      cy = d.height / 2;\n" +
-    "      boundsInfo = 'selection-unreadable-fallback-doc-center | ' + raw + ' | ' + typ + ' | ' + val + ' | ' + parsed + ' | ' + nanFlags;\n" +
-    "    }\n" +
-    "  } else {\n" +
-    "    cx = d.width / 2;\n" +
-    "    cy = d.height / 2;\n" +
-    "    boundsInfo = 'no-selection-or-error: ' + boundsErr + ' | boundsLen=' + (bounds && bounds.length);\n" +
-    "  }\n" +
-    "\n" +
-    "  var layer = d.artLayers.add();\n" +
-    "  layer.kind = LayerKind.TEXT;\n" +
-    "\n" +
-    "  var ti = layer.textItem;\n" +
-    "  ti.kind = TextType.POINTTEXT;\n" +
-    "  ti.contents = " + JSON.stringify(text) + ";\n" +
-    "  ti.font = " + JSON.stringify(font) + ";\n" +
-    "  ti.size = " + size + ";\n" +
-    "  ti.justification = Justification." + align + ";\n" +
-    "\n" +
-    "  var c = new SolidColor();\n" +
-    "  c.rgb.hexValue = " + JSON.stringify(color) + ";\n" +
-    "  ti.color = c;\n" +
-    "\n" +
-    "  ti.position = [cx, cy];\n" +
-    "  d.activeLayer = layer;\n" +
-    "\n" +
-    "  app.echoToOE('TYPERP_OK:' + boundsInfo + ' -> x=' + cx + ' y=' + cy);\n" +
-    "} catch (e) {\n" +
-    "  app.echoToOE('TYPERP_ERR:' + (e && e.message ? e.message : String(e)));\n" +
-    "}";
+  const escapedFont = fontVal.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const escapedColor = colorVal.replace(/[^0-9A-Fa-f]/g, "");
+
+  const script = `
+    (function() {
+      try {
+        var d = app.activeDocument;
+        if (!d) {
+          app.echoToOE("Error: No document open.");
+          return;
+        }
+
+        // استخراج عدد پیکسلی خالص از ویژگی .value
+        function getPx(item) {
+          if (!item) return NaN;
+          if (typeof item === "number") return item;
+          if (typeof item.value === "number") return item.value;
+          if (typeof item.value !== "undefined") return parseFloat(item.value);
+          return parseFloat(String(item));
+        }
+
+        var docW = getPx(d.width) || 800;
+        var docH = getPx(d.height) || 600;
+
+        var posX = docW / 2;
+        var posY = docH / 2;
+        var placedInSel = false;
+        var debugMsg = "";
+
+        try {
+          var sel = d.selection;
+          if (sel && sel.bounds && sel.bounds.length === 4) {
+            var b = sel.bounds;
+
+            var l = getPx(b[0]);
+            var t = getPx(b[1]);
+            var r = getPx(b[2]);
+            var bm = getPx(b[3]);
+
+            if (!isNaN(l) && !isNaN(t) && !isNaN(r) && !isNaN(bm) && (r > l) && (bm > t)) {
+              posX = (l + r) / 2;
+              posY = (t + bm) / 2;
+              placedInSel = true;
+              debugMsg = "Selection Center: [" + Math.round(posX) + ", " + Math.round(posY) + "]";
+            }
+          }
+        } catch(selErr) {
+          debugMsg = "Selection error: " + selErr.message;
+        }
+
+        // ساخت Text Layer
+        var layer = d.artLayers.add();
+        layer.kind = LayerKind.TEXT;
+
+        var ti = layer.textItem;
+        ti.kind = TextType.POINTTEXT;
+        ti.contents = "${escapedText}";
+        ti.font = "${escapedFont}";
+        ti.size = ${sizeVal};
+        ti.justification = Justification.${alignVal};
+
+        var c = new SolidColor();
+        c.rgb.hexValue = "${escapedColor}";
+        ti.color = c;
+
+        ti.position = [posX, posY];
+        d.activeLayer = layer;
+
+        var resultMsg = (placedInSel ? "Placed in Selection" : "Placed in Doc Center") +
+                        " | " + debugMsg;
+
+        app.echoToOE(resultMsg);
+
+      } catch(err) {
+        app.echoToOE("Error: " + err.message);
+      }
+    })();
+  `;
 
   window.parent.postMessage(script, "*");
 });
-
-setStatus("Ready.");
