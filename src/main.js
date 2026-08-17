@@ -1,5 +1,11 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-027
+// BUILD: TYPERP-BUILD-028
+//
+// BUILD-028
+// - Persistent Full Text
+// - Full Text survives panel close/reopen
+// - Automatically restores saved text
+// - Automatically restores loaded lines from saved text
 //
 // BUILD-027
 // - Bold / Italic
@@ -67,7 +73,7 @@
 
   if (missing.length) {
     alert(
-      "TypeR-P BUILD-027 UI ERROR\n\nMissing:\n" +
+      "TypeR-P BUILD-028 UI ERROR\n\nMissing:\n" +
       missing.join("\n")
     );
     return;
@@ -84,6 +90,93 @@
 
 
   /* =====================================================
+     PERSISTENT FULL TEXT
+     ===================================================== */
+
+  var FULL_TEXT_KEY =
+    "typerp_full_text_v1";
+
+
+  function saveFullText() {
+
+    try {
+
+      localStorage.setItem(
+        FULL_TEXT_KEY,
+        fullTextEl.value || ""
+      );
+
+    } catch (e) {
+
+      /* Ignore storage errors.
+         The panel continues working normally. */
+
+    }
+  }
+
+
+  function restoreFullText() {
+
+    try {
+
+      var saved =
+        localStorage.getItem(
+          FULL_TEXT_KEY
+        );
+
+      if (
+        saved !== null &&
+        typeof saved === "string"
+      ) {
+
+        fullTextEl.value = saved;
+
+        return true;
+      }
+
+    } catch (e) {
+
+      /* Ignore storage errors. */
+
+    }
+
+    return false;
+  }
+
+
+  /*
+   * Save immediately whenever the user changes
+   * the Full Text box.
+   *
+   * input catches typing, paste, cut, etc.
+   */
+
+  fullTextEl.addEventListener(
+    "input",
+    function () {
+
+      saveFullText();
+
+    }
+  );
+
+
+  /*
+   * Also save on change in case the browser
+   * fires change without input.
+   */
+
+  fullTextEl.addEventListener(
+    "change",
+    function () {
+
+      saveFullText();
+
+    }
+  );
+
+
+  /* =====================================================
      LINE SYSTEM
      ===================================================== */
 
@@ -94,12 +187,16 @@
   function updateLine() {
 
     if (!lines.length) {
+
       currentLineEl.value = "";
-      lineInfoEl.textContent = "No lines loaded.";
+      lineInfoEl.textContent =
+        "No lines loaded.";
+
       return;
     }
 
-    currentLineEl.value = lines[currentIndex];
+    currentLineEl.value =
+      lines[currentIndex];
 
     lineInfoEl.textContent =
       "Line " +
@@ -118,10 +215,53 @@
   }
 
 
+  function loadTextIntoLines(text) {
+
+    if (!text || !text.trim()) {
+
+      lines = [];
+      currentIndex = 0;
+      updateLine();
+
+      return;
+    }
+
+    text =
+      text
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n");
+
+    lines =
+      text.split("\n");
+
+    while (
+      lines.length > 0 &&
+      lines[lines.length - 1].trim() === ""
+    ) {
+
+      lines.pop();
+
+    }
+
+    currentIndex = 0;
+
+    updateLine();
+  }
+
+
   loadLinesBtn.onclick = function () {
 
     var text =
       fullTextEl.value || "";
+
+
+    /*
+     * Always save the latest Full Text before
+     * creating the line list.
+     */
+
+    saveFullText();
+
 
     if (!text.trim()) {
 
@@ -136,23 +276,9 @@
       return;
     }
 
-    text =
-      text
-        .replace(/\r\n/g, "\n")
-        .replace(/\r/g, "\n");
 
-    lines = text.split("\n");
+    loadTextIntoLines(text);
 
-    while (
-      lines.length > 0 &&
-      lines[lines.length - 1].trim() === ""
-    ) {
-      lines.pop();
-    }
-
-    currentIndex = 0;
-
-    updateLine();
 
     setStatus(
       "Loaded " +
@@ -165,7 +291,9 @@
   currentLineEl.addEventListener(
     "input",
     function () {
+
       saveCurrentLine();
+
     }
   );
 
@@ -173,15 +301,22 @@
   previousLineBtn.onclick = function () {
 
     if (!lines.length) {
-      setStatus("Load lines first.");
+
+      setStatus(
+        "Load lines first."
+      );
+
       return;
     }
 
+
     saveCurrentLine();
+
 
     if (currentIndex > 0) {
       currentIndex--;
     }
+
 
     updateLine();
   };
@@ -190,18 +325,27 @@
   nextLineBtn.onclick = function () {
 
     if (!lines.length) {
-      setStatus("Load lines first.");
+
+      setStatus(
+        "Load lines first."
+      );
+
       return;
     }
 
+
     saveCurrentLine();
+
 
     if (
       currentIndex <
       lines.length - 1
     ) {
+
       currentIndex++;
+
     }
+
 
     updateLine();
   };
@@ -215,8 +359,10 @@
     fontEl.closest(".panel");
 
   if (!settingsPanel) {
+
     settingsPanel =
       fontEl.parentElement;
+
   }
 
 
@@ -233,7 +379,11 @@
   }
 
 
-  function makeNumber(value, min, max) {
+  function makeNumber(
+    value,
+    min,
+    max
+  ) {
 
     var input =
       document.createElement("input");
@@ -259,25 +409,34 @@
     document.createElement("input");
 
   fontUploadInput.type = "file";
+
   fontUploadInput.accept =
     ".ttf,.otf,.woff,.woff2";
-  fontUploadInput.style.display = "none";
+
+  fontUploadInput.style.display =
+    "none";
 
 
   var fontUploadBtn =
     document.createElement("button");
 
   fontUploadBtn.type = "button";
+
   fontUploadBtn.textContent =
     "Load Font from Device";
-  fontUploadBtn.style.width = "100%";
-  fontUploadBtn.style.marginTop = "6px";
+
+  fontUploadBtn.style.width =
+    "100%";
+
+  fontUploadBtn.style.marginTop =
+    "6px";
 
 
   fontEl.parentElement.insertBefore(
     fontUploadBtn,
     fontEl.nextSibling
   );
+
 
   fontEl.parentElement.insertBefore(
     fontUploadInput,
@@ -286,61 +445,76 @@
 
 
   fontUploadBtn.onclick = function () {
+
     fontUploadInput.click();
+
   };
 
 
-  fontUploadInput.onchange = function () {
+  fontUploadInput.onchange =
+    function () {
 
-    var file =
-      fontUploadInput.files &&
-      fontUploadInput.files[0];
+      var file =
+        fontUploadInput.files &&
+        fontUploadInput.files[0];
 
-    if (!file) return;
+      if (!file) return;
 
-    setStatus("Loading font file...");
-
-    var reader = new FileReader();
-
-    reader.onload = function () {
-
-      var script =
-        "(function(){try{" +
-        "var before=(app.fonts&&app.fonts.length)?app.fonts.length:0;" +
-        "app.open(" +
-        JSON.stringify(reader.result) +
-        ");" +
-        "var after=(app.fonts&&app.fonts.length)?app.fonts.length:0;" +
-        "var name='';" +
-        "if(app.fonts&&after>0){" +
-        "var last=app.fonts[after-1];" +
-        "name=(last&&last.postScriptName)?" +
-        "last.postScriptName:" +
-        "(last&&last.name?last.name:'');" +
-        "}" +
-        "app.echoToOE('TYPERP_FONT_LOADED:'+name);" +
-        "}catch(e){" +
-        "app.echoToOE('TYPERP_FONT_ERR:'+" +
-        "(e&&e.message?e.message:String(e)));" +
-        "}})();";
-
-      window.parent.postMessage(
-        script,
-        "*"
-      );
-    };
-
-
-    reader.onerror = function () {
 
       setStatus(
-        "Could not read the font file."
+        "Loading font file..."
       );
+
+
+      var reader =
+        new FileReader();
+
+
+      reader.onload =
+        function () {
+
+          var script =
+            "(function(){try{" +
+            "var before=(app.fonts&&app.fonts.length)?app.fonts.length:0;" +
+            "app.open(" +
+            JSON.stringify(reader.result) +
+            ");" +
+            "var after=(app.fonts&&app.fonts.length)?app.fonts.length:0;" +
+            "var name='';" +
+            "if(app.fonts&&after>0){" +
+            "var last=app.fonts[after-1];" +
+            "name=(last&&last.postScriptName)?" +
+            "last.postScriptName:" +
+            "(last&&last.name?last.name:'');" +
+            "}" +
+            "app.echoToOE('TYPERP_FONT_LOADED:'+name);" +
+            "}catch(e){" +
+            "app.echoToOE('TYPERP_FONT_ERR:'+" +
+            "(e&&e.message?e.message:String(e)));" +
+            "}})();";
+
+
+          window.parent.postMessage(
+            script,
+            "*"
+          );
+
+        };
+
+
+      reader.onerror =
+        function () {
+
+          setStatus(
+            "Could not read the font file."
+          );
+
+        };
+
+
+      reader.readAsDataURL(file);
+
     };
-
-
-    reader.readAsDataURL(file);
-  };
 
 
   /* =====================================================
@@ -351,8 +525,10 @@
     makeLabel("Padding")
   );
 
+
   var paddingEl =
     makeNumber(12, 0, 500);
+
 
   settingsPanel.appendChild(
     paddingEl
@@ -371,20 +547,25 @@
   var styleRow =
     document.createElement("div");
 
-  styleRow.style.display = "flex";
-  styleRow.style.gap = "6px";
+  styleRow.style.display =
+    "flex";
+
+  styleRow.style.gap =
+    "6px";
 
 
   var boldLabel =
     document.createElement("label");
 
-  boldLabel.style.flex = "1";
+  boldLabel.style.flex =
+    "1";
 
 
   var boldEl =
     document.createElement("input");
 
-  boldEl.type = "checkbox";
+  boldEl.type =
+    "checkbox";
 
 
   boldLabel.appendChild(
@@ -392,20 +573,24 @@
   );
 
   boldLabel.appendChild(
-    document.createTextNode(" Bold")
+    document.createTextNode(
+      " Bold"
+    )
   );
 
 
   var italicLabel =
     document.createElement("label");
 
-  italicLabel.style.flex = "1";
+  italicLabel.style.flex =
+    "1";
 
 
   var italicEl =
     document.createElement("input");
 
-  italicEl.type = "checkbox";
+  italicEl.type =
+    "checkbox";
 
 
   italicLabel.appendChild(
@@ -413,7 +598,9 @@
   );
 
   italicLabel.appendChild(
-    document.createTextNode(" Italic")
+    document.createTextNode(
+      " Italic"
+    )
   );
 
 
@@ -424,6 +611,7 @@
   styleRow.appendChild(
     italicLabel
   );
+
 
   settingsPanel.appendChild(
     styleRow
@@ -442,25 +630,36 @@
   var fitRow =
     document.createElement("label");
 
-  fitRow.style.display = "flex";
-  fitRow.style.alignItems = "center";
-  fitRow.style.gap = "6px";
+  fitRow.style.display =
+    "flex";
+
+  fitRow.style.alignItems =
+    "center";
+
+  fitRow.style.gap =
+    "6px";
 
 
   var fitEl =
     document.createElement("input");
 
-  fitEl.type = "checkbox";
-  fitEl.checked = true;
+  fitEl.type =
+    "checkbox";
+
+  fitEl.checked =
+    true;
 
 
-  fitRow.appendChild(fitEl);
+  fitRow.appendChild(
+    fitEl
+  );
 
   fitRow.appendChild(
     document.createTextNode(
       "Automatically reduce font size"
     )
   );
+
 
   settingsPanel.appendChild(
     fitRow
@@ -472,11 +671,19 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel("Minimum Font Size")
+    makeLabel(
+      "Minimum Font Size"
+    )
   );
 
+
   var minSizeEl =
-    makeNumber(8, 1, 500);
+    makeNumber(
+      8,
+      1,
+      500
+    );
+
 
   settingsPanel.appendChild(
     minSizeEl
@@ -491,16 +698,20 @@
     makeLabel("Text Mode")
   );
 
+
   var modeEl =
     document.createElement("select");
 
-  modeEl.style.width = "100%";
+  modeEl.style.width =
+    "100%";
 
 
   var paragraphOption =
     document.createElement("option");
 
-  paragraphOption.value = "PARAGRAPH";
+  paragraphOption.value =
+    "PARAGRAPH";
+
   paragraphOption.textContent =
     "Text Box (recommended)";
 
@@ -508,7 +719,9 @@
   var pointOption =
     document.createElement("option");
 
-  pointOption.value = "POINT";
+  pointOption.value =
+    "POINT";
+
   pointOption.textContent =
     "Point Text";
 
@@ -520,6 +733,7 @@
   modeEl.appendChild(
     pointOption
   );
+
 
   settingsPanel.appendChild(
     modeEl
@@ -536,8 +750,14 @@
     )
   );
 
+
   var charSpacingEl =
-    makeNumber(0, -1000, 1000);
+    makeNumber(
+      0,
+      -1000,
+      1000
+    );
+
 
   settingsPanel.appendChild(
     charSpacingEl
@@ -554,8 +774,14 @@
     )
   );
 
+
   var wordSpacingEl =
-    makeNumber(0, 0, 20);
+    makeNumber(
+      0,
+      0,
+      20
+    );
+
 
   settingsPanel.appendChild(
     wordSpacingEl
@@ -567,33 +793,55 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel("Vertical Alignment")
+    makeLabel(
+      "Vertical Alignment"
+    )
   );
+
 
   var vAlignEl =
     document.createElement("select");
 
-  vAlignEl.style.width = "100%";
+  vAlignEl.style.width =
+    "100%";
 
 
   [
     ["TOP", "Top"],
     ["MIDDLE", "Center"],
     ["BOTTOM", "Bottom"]
-  ].forEach(function (pair) {
+  ].forEach(
+    function (pair) {
 
-    var opt =
-      document.createElement("option");
+      var opt =
+        document.createElement(
+          "option"
+        );
 
-    opt.value = pair[0];
-    opt.textContent = pair[1];
+      opt.value =
+        pair[0];
 
-    if (pair[0] === "MIDDLE") {
-      opt.selected = true;
+      opt.textContent =
+        pair[1];
+
+
+      if (
+        pair[0] ===
+        "MIDDLE"
+      ) {
+
+        opt.selected =
+          true;
+
+      }
+
+
+      vAlignEl.appendChild(
+        opt
+      );
+
     }
-
-    vAlignEl.appendChild(opt);
-  });
+  );
 
 
   settingsPanel.appendChild(
@@ -606,22 +854,30 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel("Stroke / Outline")
+    makeLabel(
+      "Stroke / Outline"
+    )
   );
 
 
   var strokeRow =
     document.createElement("label");
 
-  strokeRow.style.display = "flex";
-  strokeRow.style.alignItems = "center";
-  strokeRow.style.gap = "6px";
+  strokeRow.style.display =
+    "flex";
+
+  strokeRow.style.alignItems =
+    "center";
+
+  strokeRow.style.gap =
+    "6px";
 
 
   var strokeEnabledEl =
     document.createElement("input");
 
-  strokeEnabledEl.type = "checkbox";
+  strokeEnabledEl.type =
+    "checkbox";
 
 
   strokeRow.appendChild(
@@ -634,17 +890,26 @@
     )
   );
 
+
   settingsPanel.appendChild(
     strokeRow
   );
 
 
   settingsPanel.appendChild(
-    makeLabel("Stroke Width (px)")
+    makeLabel(
+      "Stroke Width (px)"
+    )
   );
 
+
   var strokeWidthEl =
-    makeNumber(3, 0, 100);
+    makeNumber(
+      3,
+      0,
+      100
+    );
+
 
   settingsPanel.appendChild(
     strokeWidthEl
@@ -652,17 +917,30 @@
 
 
   settingsPanel.appendChild(
-    makeLabel("Stroke Color")
+    makeLabel(
+      "Stroke Color"
+    )
   );
+
 
   var strokeColorEl =
     document.createElement("input");
 
-  strokeColorEl.type = "text";
-  strokeColorEl.value = "000000";
-  strokeColorEl.placeholder = "000000";
-  strokeColorEl.style.width = "100%";
-  strokeColorEl.style.boxSizing = "border-box";
+  strokeColorEl.type =
+    "text";
+
+  strokeColorEl.value =
+    "000000";
+
+  strokeColorEl.placeholder =
+    "000000";
+
+  strokeColorEl.style.width =
+    "100%";
+
+  strokeColorEl.style.boxSizing =
+    "border-box";
+
 
   settingsPanel.appendChild(
     strokeColorEl
@@ -670,11 +948,19 @@
 
 
   settingsPanel.appendChild(
-    makeLabel("Stroke Opacity (%)")
+    makeLabel(
+      "Stroke Opacity (%)"
+    )
   );
 
+
   var strokeOpacityEl =
-    makeNumber(100, 0, 100);
+    makeNumber(
+      100,
+      0,
+      100
+    );
+
 
   settingsPanel.appendChild(
     strokeOpacityEl
@@ -682,29 +968,43 @@
 
 
   settingsPanel.appendChild(
-    makeLabel("Stroke Position")
+    makeLabel(
+      "Stroke Position"
+    )
   );
+
 
   var strokePositionEl =
     document.createElement("select");
 
-  strokePositionEl.style.width = "100%";
+  strokePositionEl.style.width =
+    "100%";
 
 
   [
     ["OUTSIDE", "Outside"],
     ["CENTER", "Center"],
     ["INSIDE", "Inside"]
-  ].forEach(function (pair) {
+  ].forEach(
+    function (pair) {
 
-    var opt =
-      document.createElement("option");
+      var opt =
+        document.createElement(
+          "option"
+        );
 
-    opt.value = pair[0];
-    opt.textContent = pair[1];
+      opt.value =
+        pair[0];
 
-    strokePositionEl.appendChild(opt);
-  });
+      opt.textContent =
+        pair[1];
+
+      strokePositionEl.appendChild(
+        opt
+      );
+
+    }
+  );
 
 
   settingsPanel.appendChild(
@@ -720,7 +1020,8 @@
     "typerp_styles_v4";
 
 
-  var memoryStyles = {};
+  var memoryStyles =
+    {};
 
 
   function loadStyles() {
@@ -732,21 +1033,28 @@
           STYLES_KEY
         );
 
-      if (!raw) return {};
+
+      if (!raw)
+        return {};
+
 
       var parsed =
         JSON.parse(raw);
 
+
       return (
         parsed &&
-        typeof parsed === "object"
+        typeof parsed ===
+        "object"
       )
         ? parsed
         : {};
 
+
     } catch (e) {
 
       return memoryStyles;
+
     }
   }
 
@@ -760,58 +1068,91 @@
         JSON.stringify(obj)
       );
 
+
     } catch (e) {
 
-      memoryStyles = obj;
+      memoryStyles =
+        obj;
+
     }
   }
 
 
   settingsPanel.appendChild(
-    makeLabel("Saved Styles")
+    makeLabel(
+      "Saved Styles"
+    )
   );
 
 
   var styleSelectRow =
     document.createElement("div");
 
-  styleSelectRow.style.display = "flex";
-  styleSelectRow.style.gap = "5px";
-  styleSelectRow.style.marginTop = "4px";
+  styleSelectRow.style.display =
+    "flex";
+
+  styleSelectRow.style.gap =
+    "5px";
+
+  styleSelectRow.style.marginTop =
+    "4px";
 
 
   var styleSelectEl =
-    document.createElement("select");
+    document.createElement(
+      "select"
+    );
 
-  styleSelectEl.style.flex = "1";
+  styleSelectEl.style.flex =
+    "1";
 
 
   var loadStyleBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
-  loadStyleBtn.type = "button";
-  loadStyleBtn.textContent = "Load";
+  loadStyleBtn.type =
+    "button";
+
+  loadStyleBtn.textContent =
+    "Load";
 
 
   var updateStyleBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
-  updateStyleBtn.type = "button";
-  updateStyleBtn.textContent = "Update";
+  updateStyleBtn.type =
+    "button";
+
+  updateStyleBtn.textContent =
+    "Update";
 
 
   var applyStyleBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
-  applyStyleBtn.type = "button";
-  applyStyleBtn.textContent = "Apply";
+  applyStyleBtn.type =
+    "button";
+
+  applyStyleBtn.textContent =
+    "Apply";
 
 
   var deleteStyleBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
-  deleteStyleBtn.type = "button";
-  deleteStyleBtn.textContent = "Delete";
+  deleteStyleBtn.type =
+    "button";
+
+  deleteStyleBtn.textContent =
+    "Delete";
 
 
   styleSelectRow.appendChild(
@@ -841,28 +1182,46 @@
 
 
   var styleSaveRow =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
-  styleSaveRow.style.display = "flex";
-  styleSaveRow.style.gap = "6px";
-  styleSaveRow.style.marginTop = "6px";
+  styleSaveRow.style.display =
+    "flex";
+
+  styleSaveRow.style.gap =
+    "6px";
+
+  styleSaveRow.style.marginTop =
+    "6px";
 
 
   var styleNameEl =
-    document.createElement("input");
+    document.createElement(
+      "input"
+    );
 
-  styleNameEl.type = "text";
+  styleNameEl.type =
+    "text";
+
   styleNameEl.placeholder =
     "Style name...";
-  styleNameEl.style.flex = "1";
+
+  styleNameEl.style.flex =
+    "1";
+
   styleNameEl.style.boxSizing =
     "border-box";
 
 
   var saveStyleBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
-  saveStyleBtn.type = "button";
+  saveStyleBtn.type =
+    "button";
+
   saveStyleBtn.textContent =
     "Save Style";
 
@@ -875,12 +1234,14 @@
     saveStyleBtn
   );
 
+
   settingsPanel.appendChild(
     styleSaveRow
   );
 
 
-  var editingStyleName = "";
+  var editingStyleName =
+    "";
 
 
   /* =====================================================
@@ -892,16 +1253,20 @@
     return {
 
       font:
-        fontEl.value || "ArialMT",
+        fontEl.value ||
+        "ArialMT",
 
       size:
-        Number(sizeEl.value) || 48,
+        Number(sizeEl.value) ||
+        48,
 
       color:
-        colorEl.value || "FF0000",
+        colorEl.value ||
+        "FF0000",
 
       align:
-        alignEl.value || "CENTER",
+        alignEl.value ||
+        "CENTER",
 
       bold:
         !!boldEl.checked,
@@ -910,10 +1275,12 @@
         !!italicEl.checked,
 
       padding:
-        Number(paddingEl.value) || 0,
+        Number(paddingEl.value) ||
+        0,
 
       minSize:
-        Number(minSizeEl.value) || 8,
+        Number(minSizeEl.value) ||
+        8,
 
       autoFit:
         !!fitEl.checked,
@@ -922,10 +1289,12 @@
         modeEl.value,
 
       charSpacing:
-        Number(charSpacingEl.value) || 0,
+        Number(charSpacingEl.value) ||
+        0,
 
       wordSpacing:
-        Number(wordSpacingEl.value) || 0,
+        Number(wordSpacingEl.value) ||
+        0,
 
       vAlign:
         vAlignEl.value,
@@ -934,13 +1303,17 @@
         !!strokeEnabledEl.checked,
 
       strokeWidth:
-        Number(strokeWidthEl.value) || 0,
+        Number(strokeWidthEl.value) ||
+        0,
 
       strokeColor:
-        strokeColorEl.value || "000000",
+        strokeColorEl.value ||
+        "000000",
 
       strokeOpacity:
-        Number(strokeOpacityEl.value),
+        Number(
+          strokeOpacityEl.value
+        ),
 
       strokePosition:
         strokePositionEl.value
@@ -954,62 +1327,149 @@
     if (!s) return;
 
 
-    if (s.font !== undefined)
-      fontEl.value = s.font;
+    if (
+      s.font !==
+      undefined
+    )
+      fontEl.value =
+        s.font;
 
-    if (s.size !== undefined)
-      sizeEl.value = s.size;
 
-    if (s.color !== undefined)
-      colorEl.value = s.color;
+    if (
+      s.size !==
+      undefined
+    )
+      sizeEl.value =
+        s.size;
 
-    if (s.align !== undefined)
-      alignEl.value = s.align;
 
-    if (s.bold !== undefined)
-      boldEl.checked = !!s.bold;
+    if (
+      s.color !==
+      undefined
+    )
+      colorEl.value =
+        s.color;
 
-    if (s.italic !== undefined)
-      italicEl.checked = !!s.italic;
 
-    if (s.padding !== undefined)
-      paddingEl.value = s.padding;
+    if (
+      s.align !==
+      undefined
+    )
+      alignEl.value =
+        s.align;
 
-    if (s.minSize !== undefined)
-      minSizeEl.value = s.minSize;
 
-    if (s.autoFit !== undefined)
-      fitEl.checked = !!s.autoFit;
+    if (
+      s.bold !==
+      undefined
+    )
+      boldEl.checked =
+        !!s.bold;
 
-    if (s.mode !== undefined)
-      modeEl.value = s.mode;
 
-    if (s.charSpacing !== undefined)
-      charSpacingEl.value = s.charSpacing;
+    if (
+      s.italic !==
+      undefined
+    )
+      italicEl.checked =
+        !!s.italic;
 
-    if (s.wordSpacing !== undefined)
-      wordSpacingEl.value = s.wordSpacing;
 
-    if (s.vAlign !== undefined)
-      vAlignEl.value = s.vAlign;
+    if (
+      s.padding !==
+      undefined
+    )
+      paddingEl.value =
+        s.padding;
 
-    if (s.strokeEnabled !== undefined)
+
+    if (
+      s.minSize !==
+      undefined
+    )
+      minSizeEl.value =
+        s.minSize;
+
+
+    if (
+      s.autoFit !==
+      undefined
+    )
+      fitEl.checked =
+        !!s.autoFit;
+
+
+    if (
+      s.mode !==
+      undefined
+    )
+      modeEl.value =
+        s.mode;
+
+
+    if (
+      s.charSpacing !==
+      undefined
+    )
+      charSpacingEl.value =
+        s.charSpacing;
+
+
+    if (
+      s.wordSpacing !==
+      undefined
+    )
+      wordSpacingEl.value =
+        s.wordSpacing;
+
+
+    if (
+      s.vAlign !==
+      undefined
+    )
+      vAlignEl.value =
+        s.vAlign;
+
+
+    if (
+      s.strokeEnabled !==
+      undefined
+    )
       strokeEnabledEl.checked =
         !!s.strokeEnabled;
 
-    if (s.strokeWidth !== undefined)
-      strokeWidthEl.value = s.strokeWidth;
 
-    if (s.strokeColor !== undefined)
-      strokeColorEl.value = s.strokeColor;
+    if (
+      s.strokeWidth !==
+      undefined
+    )
+      strokeWidthEl.value =
+        s.strokeWidth;
 
-    if (s.strokeOpacity !== undefined)
+
+    if (
+      s.strokeColor !==
+      undefined
+    )
+      strokeColorEl.value =
+        s.strokeColor;
+
+
+    if (
+      s.strokeOpacity !==
+      undefined
+    )
       strokeOpacityEl.value =
         s.strokeOpacity;
 
-    if (s.strokePosition !== undefined)
+
+    if (
+      s.strokePosition !==
+      undefined
+    )
       strokePositionEl.value =
         s.strokePosition;
+
   }
 
 
@@ -1017,29 +1477,43 @@
      REFRESH STYLE LIST
      ===================================================== */
 
-  function refreshStyleSelect(selectName) {
+  function refreshStyleSelect(
+    selectName
+  ) {
 
-    var styles = loadStyles();
+    var styles =
+      loadStyles();
+
 
     var names =
-      Object.keys(styles).sort(
+      Object.keys(
+        styles
+      ).sort(
         function (a, b) {
+
           return a.localeCompare(b);
+
         }
       );
 
 
-    styleSelectEl.innerHTML = "";
+    styleSelectEl.innerHTML =
+      "";
 
 
     if (!names.length) {
 
       var empty =
-        document.createElement("option");
+        document.createElement(
+          "option"
+        );
 
-      empty.value = "";
+      empty.value =
+        "";
+
       empty.textContent =
         "(no styles saved)";
+
 
       styleSelectEl.appendChild(
         empty
@@ -1049,15 +1523,28 @@
     }
 
 
-    for (var i = 0; i < names.length; i++) {
+    for (
+      var i = 0;
+      i < names.length;
+      i++
+    ) {
 
       var opt =
-        document.createElement("option");
+        document.createElement(
+          "option"
+        );
 
-      opt.value = names[i];
-      opt.textContent = names[i];
+      opt.value =
+        names[i];
 
-      styleSelectEl.appendChild(opt);
+      opt.textContent =
+        names[i];
+
+
+      styleSelectEl.appendChild(
+        opt
+      );
+
     }
 
 
@@ -1065,9 +1552,12 @@
       selectName &&
       styles[selectName]
     ) {
+
       styleSelectEl.value =
         selectName;
+
     }
+
   }
 
 
@@ -1075,271 +1565,362 @@
      SAVE NEW STYLE
      ===================================================== */
 
-  saveStyleBtn.onclick = function () {
+  saveStyleBtn.onclick =
+    function () {
 
-    try {
+      try {
 
-      var name =
-        (styleNameEl.value || "").trim();
+        var name =
+          (
+            styleNameEl.value ||
+            ""
+          ).trim();
 
-      if (!name) {
 
-        setStatus(
-          "Please type a style name first."
+        if (!name) {
+
+          setStatus(
+            "Please type a style name first."
+          );
+
+          return;
+        }
+
+
+        var styles =
+          loadStyles();
+
+
+        styles[name] =
+          currentSettingsSnapshot();
+
+
+        saveStylesObj(
+          styles
         );
 
-        return;
+
+        refreshStyleSelect(
+          name
+        );
+
+
+        editingStyleName =
+          name;
+
+
+        setStatus(
+          "Style saved: " +
+          name
+        );
+
+
+        styleNameEl.value =
+          "";
+
+
+      } catch (e) {
+
+        alert(
+          "Save style error: " +
+          e.message
+        );
+
       }
 
-
-      var styles = loadStyles();
-
-      styles[name] =
-        currentSettingsSnapshot();
-
-      saveStylesObj(styles);
-
-      refreshStyleSelect(name);
-
-      editingStyleName = name;
-
-      setStatus(
-        "Style saved: " + name
-      );
-
-      styleNameEl.value = "";
-
-    } catch (e) {
-
-      alert(
-        "Save style error: " +
-        e.message
-      );
-    }
-  };
+    };
 
 
   /* =====================================================
      LOAD STYLE FOR EDITING
      ===================================================== */
 
-  loadStyleBtn.onclick = function () {
+  loadStyleBtn.onclick =
+    function () {
 
-    try {
+      try {
 
-      var name =
-        styleSelectEl.value;
+        var name =
+          styleSelectEl.value;
 
-      if (!name) {
 
-        setStatus(
-          "No style selected."
+        if (!name) {
+
+          setStatus(
+            "No style selected."
+          );
+
+          return;
+        }
+
+
+        var styles =
+          loadStyles();
+
+
+        if (!styles[name]) {
+
+          setStatus(
+            "Style not found: " +
+            name
+          );
+
+          return;
+        }
+
+
+        applySettingsSnapshot(
+          styles[name]
         );
 
-        return;
-      }
+
+        editingStyleName =
+          name;
 
 
-      var styles = loadStyles();
+        styleNameEl.value =
+          name;
 
-      if (!styles[name]) {
 
         setStatus(
-          "Style not found: " + name
+          "Loaded style for editing: " +
+          name
         );
 
-        return;
+
+      } catch (e) {
+
+        alert(
+          "Load style error: " +
+          e.message
+        );
+
       }
 
-
-      applySettingsSnapshot(
-        styles[name]
-      );
-
-
-      editingStyleName = name;
-
-      styleNameEl.value = name;
-
-
-      setStatus(
-        "Loaded style for editing: " +
-        name
-      );
-
-    } catch (e) {
-
-      alert(
-        "Load style error: " +
-        e.message
-      );
-    }
-  };
+    };
 
 
   /* =====================================================
      UPDATE EXISTING STYLE
      ===================================================== */
 
-  updateStyleBtn.onclick = function () {
+  updateStyleBtn.onclick =
+    function () {
 
-    try {
+      try {
 
-      var name =
-        editingStyleName ||
-        styleSelectEl.value;
+        var name =
+          editingStyleName ||
+          styleSelectEl.value;
 
-      if (!name) {
 
-        setStatus(
-          "Load a style for editing first."
+        if (!name) {
+
+          setStatus(
+            "Load a style for editing first."
+          );
+
+          return;
+        }
+
+
+        var styles =
+          loadStyles();
+
+
+        if (!styles[name]) {
+
+          setStatus(
+            "Style not found: " +
+            name
+          );
+
+          return;
+        }
+
+
+        styles[name] =
+          currentSettingsSnapshot();
+
+
+        saveStylesObj(
+          styles
         );
 
-        return;
-      }
 
-
-      var styles = loadStyles();
-
-      if (!styles[name]) {
-
-        setStatus(
-          "Style not found: " + name
+        refreshStyleSelect(
+          name
         );
 
-        return;
+
+        editingStyleName =
+          name;
+
+
+        styleNameEl.value =
+          "";
+
+
+        setStatus(
+          "Style updated: " +
+          name
+        );
+
+
+      } catch (e) {
+
+        alert(
+          "Update style error: " +
+          e.message
+        );
+
       }
 
-
-      styles[name] =
-        currentSettingsSnapshot();
-
-      saveStylesObj(styles);
-
-      refreshStyleSelect(name);
-
-      editingStyleName = name;
-
-      styleNameEl.value = "";
-
-      setStatus(
-        "Style updated: " + name
-      );
-
-    } catch (e) {
-
-      alert(
-        "Update style error: " +
-        e.message
-      );
-    }
-  };
+    };
 
 
   /* =====================================================
      APPLY STYLE
      ===================================================== */
 
-  applyStyleBtn.onclick = function () {
+  applyStyleBtn.onclick =
+    function () {
 
-    try {
+      try {
 
-      var name =
-        styleSelectEl.value;
+        var name =
+          styleSelectEl.value;
 
-      if (!name) {
 
-        setStatus(
-          "No style selected."
+        if (!name) {
+
+          setStatus(
+            "No style selected."
+          );
+
+          return;
+        }
+
+
+        var styles =
+          loadStyles();
+
+
+        var s =
+          styles[name];
+
+
+        if (!s) {
+
+          setStatus(
+            "Style not found: " +
+            name
+          );
+
+          return;
+        }
+
+
+        applySettingsSnapshot(
+          s
         );
 
-        return;
-      }
+
+        editingStyleName =
+          name;
 
 
-      var styles = loadStyles();
+        styleNameEl.value =
+          name;
 
-      var s = styles[name];
-
-      if (!s) {
 
         setStatus(
-          "Style not found: " + name
+          "Style applied: " +
+          name
         );
 
-        return;
+
+      } catch (e) {
+
+        alert(
+          "Apply style error: " +
+          e.message
+        );
+
       }
 
-
-      applySettingsSnapshot(s);
-
-      editingStyleName = name;
-      styleNameEl.value = name;
-
-
-      setStatus(
-        "Style applied: " + name
-      );
-
-    } catch (e) {
-
-      alert(
-        "Apply style error: " +
-        e.message
-      );
-    }
-  };
+    };
 
 
   /* =====================================================
      DELETE STYLE
      ===================================================== */
 
-  deleteStyleBtn.onclick = function () {
+  deleteStyleBtn.onclick =
+    function () {
 
-    try {
+      try {
 
-      var name =
-        styleSelectEl.value;
+        var name =
+          styleSelectEl.value;
 
-      if (!name) {
 
-        setStatus(
-          "No style selected."
+        if (!name) {
+
+          setStatus(
+            "No style selected."
+          );
+
+          return;
+        }
+
+
+        var styles =
+          loadStyles();
+
+
+        delete styles[name];
+
+
+        saveStylesObj(
+          styles
         );
 
-        return;
+
+        if (
+          editingStyleName ===
+          name
+        ) {
+
+          editingStyleName =
+            "";
+
+        }
+
+
+        refreshStyleSelect();
+
+
+        styleNameEl.value =
+          "";
+
+
+        setStatus(
+          "Style deleted: " +
+          name
+        );
+
+
+      } catch (e) {
+
+        alert(
+          "Delete style error: " +
+          e.message
+        );
+
       }
 
-
-      var styles = loadStyles();
-
-      delete styles[name];
-
-      saveStylesObj(styles);
-
-      if (
-        editingStyleName === name
-      ) {
-        editingStyleName = "";
-      }
-
-      refreshStyleSelect();
-
-      styleNameEl.value = "";
-
-      setStatus(
-        "Style deleted: " + name
-      );
-
-    } catch (e) {
-
-      alert(
-        "Delete style error: " +
-        e.message
-      );
-    }
-  };
+    };
 
 
   refreshStyleSelect();
@@ -1354,9 +1935,12 @@
     function (event) {
 
       if (
-        typeof event.data !== "string"
+        typeof event.data !==
+        "string"
       ) {
+
         return;
+
       }
 
 
@@ -1376,19 +1960,24 @@
 
         if (name) {
 
-          fontEl.value = name;
+          fontEl.value =
+            name;
+
 
           setStatus(
             "Font loaded and applied: " +
             name
           );
 
+
         } else {
 
           setStatus(
             "Font loaded, but its name could not be read."
           );
+
         }
+
 
         return;
       }
@@ -1405,14 +1994,18 @@
             "TYPERP_FONT_ERR:".length
           );
 
-        setStatus(
-          "Font load error: " + ferr
-        );
 
-        alert(
-          "TypeR-P BUILD-027 font error:\n" +
+        setStatus(
+          "Font load error: " +
           ferr
         );
+
+
+        alert(
+          "TypeR-P BUILD-028 font error:\n" +
+          ferr
+        );
+
 
         return;
       }
@@ -1430,6 +2023,7 @@
           )
         );
 
+
         return;
       }
 
@@ -1445,14 +2039,18 @@
             "TYPERP_ERR:".length
           );
 
-        setStatus(
-          "Error: " + error
-        );
 
-        alert(
-          "TypeR-P BUILD-027\n\n" +
+        setStatus(
+          "Error: " +
           error
         );
+
+
+        alert(
+          "TypeR-P BUILD-028\n\n" +
+          error
+        );
+
       }
 
     }
@@ -1464,9 +2062,11 @@
      ===================================================== */
 
   function jsString(value) {
+
     return JSON.stringify(
       String(value)
     );
+
   }
 
 
@@ -1487,6 +2087,7 @@
 
 
     saveCurrentLine();
+    saveFullText();
 
 
     var text =
@@ -1511,16 +2112,19 @@
        ------------------------------------------------- */
 
     var font =
-      fontEl.value || "ArialMT";
+      fontEl.value ||
+      "ArialMT";
 
 
     var initialSize =
-      Number(sizeEl.value) || 48;
+      Number(sizeEl.value) ||
+      48;
 
 
     var color =
       (
-        colorEl.value || "FF0000"
+        colorEl.value ||
+        "FF0000"
       )
         .replace(
           /[^0-9a-fA-F]/g,
@@ -1529,35 +2133,49 @@
         .slice(0, 6);
 
 
-    while (color.length < 6)
+    while (
+      color.length < 6
+    ) {
+
       color += "0";
+
+    }
 
 
     var align =
-      alignEl.value || "CENTER";
+      alignEl.value ||
+      "CENTER";
 
 
     var padding =
-      Number(paddingEl.value);
+      Number(
+        paddingEl.value
+      );
 
 
     if (
       !isFinite(padding) ||
       padding < 0
     ) {
+
       padding = 12;
+
     }
 
 
     var minSize =
-      Number(minSizeEl.value);
+      Number(
+        minSizeEl.value
+      );
 
 
     if (
       !isFinite(minSize) ||
       minSize < 1
     ) {
+
       minSize = 8;
+
     }
 
 
@@ -1570,27 +2188,39 @@
 
 
     var tracking =
-      Number(charSpacingEl.value);
+      Number(
+        charSpacingEl.value
+      );
 
 
-    if (!isFinite(tracking))
+    if (
+      !isFinite(tracking)
+    ) {
+
       tracking = 0;
+
+    }
 
 
     var wordSpacing =
-      Number(wordSpacingEl.value);
+      Number(
+        wordSpacingEl.value
+      );
 
 
     if (
       !isFinite(wordSpacing) ||
       wordSpacing < 0
     ) {
+
       wordSpacing = 0;
+
     }
 
 
     var vAlign =
-      vAlignEl.value || "MIDDLE";
+      vAlignEl.value ||
+      "MIDDLE";
 
 
     var bold =
@@ -1610,14 +2240,18 @@
 
 
     var strokeWidth =
-      Number(strokeWidthEl.value);
+      Number(
+        strokeWidthEl.value
+      );
 
 
     if (
       !isFinite(strokeWidth) ||
       strokeWidth < 0
     ) {
+
       strokeWidth = 3;
+
     }
 
 
@@ -1636,7 +2270,9 @@
     while (
       strokeColor.length < 6
     ) {
+
       strokeColor += "0";
+
     }
 
 
@@ -1646,8 +2282,13 @@
       );
 
 
-    if (!isFinite(strokeOpacity))
+    if (
+      !isFinite(strokeOpacity)
+    ) {
+
       strokeOpacity = 100;
+
+    }
 
 
     strokeOpacity =
@@ -1681,23 +2322,30 @@
         );
 
 
-    if (wordSpacing > 0) {
+    if (
+      wordSpacing > 0
+    ) {
 
       var extra = "";
+
 
       for (
         var w = 0;
         w < wordSpacing;
         w++
       ) {
+
         extra += " ";
+
       }
+
 
       text =
         text.replace(
           / /g,
           " " + extra
         );
+
     }
 
 
@@ -1764,12 +2412,25 @@
       "throw new Error('Selection has invalid dimensions.');\n" +
 
 
-      "var boxLeft=L+" + padding + ";\n" +
-      "var boxTop=T+" + padding + ";\n" +
-      "var boxRight=R-" + padding + ";\n" +
-      "var boxBottom=B-" + padding + ";\n" +
+      "var boxLeft=L+" +
+      padding +
+      ";\n" +
+
+      "var boxTop=T+" +
+      padding +
+      ";\n" +
+
+      "var boxRight=R-" +
+      padding +
+      ";\n" +
+
+      "var boxBottom=B-" +
+      padding +
+      ";\n" +
+
 
       "var boxWidth=boxRight-boxLeft;\n" +
+
       "var boxHeight=boxBottom-boxTop;\n" +
 
 
@@ -1782,11 +2443,17 @@
 
       "layer.kind=LayerKind.TEXT;\n" +
 
+
       "layer.name=" +
+
       jsString(
         "TTP: " +
-        text.substring(0, 45)
+        text.substring(
+          0,
+          45
+        )
       ) +
+
       ";\n" +
 
 
@@ -1812,6 +2479,7 @@
 
 
       "var fontStyle=" +
+
       jsString(
         bold && italic
           ? "Bold Italic"
@@ -1821,16 +2489,21 @@
           ? "Italic"
           : "Regular"
       ) +
+
       ";\n" +
 
 
       "if(" +
+
       jsString(mode) +
+
       "==='PARAGRAPH'){\n" +
+
 
       "ti.kind=TextType.PARAGRAPHTEXT;\n" +
 
       "ti.width=boxWidth;\n" +
+
       "ti.height=boxHeight;\n" +
 
       "ti.contents=" +
@@ -1867,9 +2540,6 @@
       initialSize +
       ";\n" +
 
-      "if(" +
-      autoFit +
-      "){\n" +
 
       "function estimateLines(str,size,width){\n" +
 
@@ -1880,6 +2550,7 @@
       "var parts=str.split(String.fromCharCode(10));\n" +
 
       "var total=0;\n" +
+
 
       "for(var p=0;p<parts.length;p++){\n" +
 
@@ -1893,11 +2564,13 @@
 
       "var count=1;\n" +
 
+
       "for(var q=0;q<words.length;q++){\n" +
 
       "var len=words[q].length;\n" +
 
       "var need=len+(chars>0?1:0);\n" +
+
 
       "if(chars+need>maxChars){count++;chars=len;}" +
 
@@ -1905,13 +2578,20 @@
 
       "}\n" +
 
+
       "total+=count;\n" +
 
       "}\n" +
 
+
       "return Math.max(1,total);\n" +
 
       "}\n" +
+
+
+      "if(" +
+      autoFit +
+      "){\n" +
 
 
       "var current=" +
@@ -1923,11 +2603,14 @@
       minSize +
       "){\n" +
 
+
       "var est=estimateLines(" +
       jsString(text) +
       ",current,boxWidth);\n" +
 
+
       "if(est*current*1.20<=boxHeight)break;\n" +
+
 
       "current--;\n" +
 
@@ -1935,27 +2618,28 @@
 
       "}\n" +
 
+
       "finalSize=current;\n" +
 
       "}\n" +
-
-
-      "var estLines=estimateLines?" +
-      "0:0;\n" +
 
 
       "var offset=0;\n" +
 
 
       "if(" +
+
       jsString(vAlign) +
+
       "==='MIDDLE')" +
 
       "offset=Math.max(0,boxHeight-finalSize*1.20)/2;\n" +
 
 
       "else if(" +
+
       jsString(vAlign) +
+
       "==='BOTTOM')" +
 
       "offset=Math.max(0,boxHeight-finalSize*1.20);\n" +
@@ -1965,6 +2649,7 @@
 
 
       "}else{\n" +
+
 
       "ti.kind=TextType.POINTTEXT;\n" +
 
@@ -1984,6 +2669,7 @@
       align +
       ";\n" +
 
+
       "var pc=new SolidColor();\n" +
 
       "pc.rgb.hexValue=" +
@@ -1992,19 +2678,27 @@
 
       "ti.color=pc;\n" +
 
+
       "var py=(T+B)/2;\n" +
 
+
       "if(" +
+
       jsString(vAlign) +
+
       "==='TOP')py=T+" +
       initialSize +
       ";\n" +
 
+
       "else if(" +
+
       jsString(vAlign) +
+
       "==='BOTTOM')py=B-(" +
       initialSize +
       "*0.3);\n" +
+
 
       "ti.position=[(L+R)/2,py];\n" +
 
@@ -2026,25 +2720,38 @@
 
 
       "if(" +
+
       strokeEnabled +
+
       "&&" +
+
       strokeWidth +
+
       ">0){\n" +
+
 
       "try{\n" +
 
+
       "function cTID(s){return app.charIDToTypeID(s);}\n" +
+
       "function sTID(s){return app.stringIDToTypeID(s);}\n" +
 
 
       "var strokePos='OutF';\n" +
 
+
       "if(" +
+
       jsString(strokePosition) +
+
       "==='CENTER')strokePos='CtrF';\n" +
 
+
       "else if(" +
+
       jsString(strokePosition) +
+
       "==='INSIDE')strokePos='InsF';\n" +
 
 
@@ -2052,49 +2759,66 @@
       jsString(strokeColor) +
       ";\n" +
 
+
       "var rr=parseInt(hex.substring(0,2),16);\n" +
+
       "var gg=parseInt(hex.substring(2,4),16);\n" +
+
       "var bb=parseInt(hex.substring(4,6),16);\n" +
 
 
       "var desc=new ActionDescriptor();\n" +
+
       "var ref=new ActionReference();\n" +
 
 
       "ref.putProperty(cTID('Prpr'),cTID('Lefx'));\n" +
+
       "ref.putEnumerated(cTID('Lyr '),cTID('Ordn'),cTID('Trgt'));\n" +
+
 
       "desc.putReference(cTID('null'),ref);\n" +
 
 
       "var fx=new ActionDescriptor();\n" +
+
       "var st=new ActionDescriptor();\n" +
 
 
       "st.putBoolean(cTID('enab'),true);\n" +
+
       "st.putBoolean(sTID('present'),true);\n" +
+
       "st.putBoolean(sTID('showInDialog'),true);\n" +
 
 
       "st.putEnumerated(cTID('Styl'),cTID('FStl'),cTID(strokePos));\n" +
+
       "st.putEnumerated(cTID('PntT'),cTID('FrFl'),cTID('SClr'));\n" +
+
       "st.putEnumerated(cTID('Md  '),cTID('BlnM'),cTID('Nrml'));\n" +
 
 
       "st.putUnitDouble(cTID('Opct'),cTID('#Prc')," +
+
       strokeOpacity +
+
       ");\n" +
 
 
       "st.putUnitDouble(cTID('Sz  '),cTID('#Pxl')," +
+
       strokeWidth +
+
       ");\n" +
 
 
       "var sc=new ActionDescriptor();\n" +
 
       "sc.putDouble(cTID('Rd  '),rr);\n" +
+
       "sc.putDouble(cTID('Grn '),gg);\n" +
+
       "sc.putDouble(cTID('Bl  '),bb);\n" +
 
 
@@ -2113,9 +2837,11 @@
 
       "strokeStatus='enabled';\n" +
 
+
       "}catch(se){" +
 
       "strokeStatus='failed:'+" +
+
       "(se&&se.message?se.message:String(se));" +
 
       "}\n" +
@@ -2132,14 +2858,18 @@
       "'TEXT INSERTED | selection='+" +
 
       "Math.round(L)+','+" +
+
       "Math.round(T)+','+" +
+
       "Math.round(R)+','+" +
+
       "Math.round(B)+" +
 
       "' | size='+ti.size+" +
 
       "' | bold=" +
       bold +
+
       " | italic=" +
       italic +
 
@@ -2155,6 +2885,7 @@
 
       "}catch(e){\n" +
 
+
       "try{" +
 
       "app.echoToOE(" +
@@ -2166,6 +2897,7 @@
       ");" +
 
       "}catch(eEcho2){}\n" +
+
 
       "}\n" +
 
@@ -2190,11 +2922,13 @@
           setStatus(
             "No response from Photopea after 6s."
           );
+
         }
 
       },
       6000
     );
+
   }
 
 
@@ -2203,13 +2937,39 @@
 
 
   /* =====================================================
+     RESTORE SAVED TEXT
+     ===================================================== */
+
+  var restored =
+    restoreFullText();
+
+
+  if (restored) {
+
+    /*
+     * Rebuild the line system from the
+     * restored Full Text.
+     */
+
+    loadTextIntoLines(
+      fullTextEl.value || ""
+    );
+
+  } else {
+
+    updateLine();
+
+  }
+
+
+  /* =====================================================
      READY
      ===================================================== */
 
-  updateLine();
-
   setStatus(
-    "Ready (BUILD-027)"
+    restored
+      ? "Ready (BUILD-028) — Full Text restored."
+      : "Ready (BUILD-028)"
   );
 
 
@@ -2218,16 +2978,27 @@
      ===================================================== */
 
   var debugBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
-  debugBtn.type = "button";
+
+  debugBtn.type =
+    "button";
+
 
   debugBtn.textContent =
     "DEBUG: Test Photopea Link";
 
-  debugBtn.style.width = "100%";
-  debugBtn.style.marginTop = "12px";
-  debugBtn.style.background = "#333";
+
+  debugBtn.style.width =
+    "100%";
+
+  debugBtn.style.marginTop =
+    "12px";
+
+  debugBtn.style.background =
+    "#333";
 
 
   settingsPanel.appendChild(
@@ -2235,37 +3006,40 @@
   );
 
 
-  debugBtn.onclick = function () {
+  debugBtn.onclick =
+    function () {
 
-    setStatus(
-      "Sending raw test script..."
-    );
-
-
-    window.parent.postMessage(
-      "alert('HELLO FROM TYPERP BUILD-027 - LINK WORKS');",
-      "*"
-    );
+      setStatus(
+        "Sending raw test script..."
+      );
 
 
-    setTimeout(
-      function () {
+      window.parent.postMessage(
+        "alert('HELLO FROM TYPERP BUILD-028 - LINK WORKS');",
+        "*"
+      );
 
-        if (
-          statusEl.textContent.indexOf(
-            "Sending raw test"
-          ) === 0
-        ) {
 
-          setStatus(
-            "Raw test also got NO response — link itself is broken."
-          );
-        }
+      setTimeout(
+        function () {
 
-      },
-      4000
-    );
-  };
+          if (
+            statusEl.textContent.indexOf(
+              "Sending raw test"
+            ) === 0
+          ) {
+
+            setStatus(
+              "Raw test also got NO response — link itself is broken."
+            );
+
+          }
+
+        },
+        4000
+      );
+
+    };
 
 
 })();
