@@ -660,5 +660,25 @@
 
   updateLine();
   setStatus("Ready (BUILD-024)");
+  /* ---------- DEBUG: تست خام ارتباط با Photopea ---------- */
+
+  var debugBtn = document.createElement("button");
+  debugBtn.type = "button";
+  debugBtn.textContent = "DEBUG: Test Photopea Link";
+  debugBtn.style.width = "100%";
+  debugBtn.style.marginTop = "12px";
+  debugBtn.style.background = "#333";
+  settingsPanel.appendChild(debugBtn);
+
+  debugBtn.onclick = function () {
+    setStatus("Sending raw test script...");
+    window.parent.postMessage("alert('HELLO FROM TYPERP - LINK WORKS');", "*");
+
+    setTimeout(function () {
+      if (statusEl.textContent.indexOf("Sending raw test") === 0) {
+        setStatus("Raw test also got NO response — link itself is broken.");
+      }
+    }, 4000);
+  };
 
 })();
