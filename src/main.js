@@ -517,7 +517,7 @@
 
     var script =
       "(function(){\n" +
-      "alert('STEP1: script parsed and started');\n" +
+      "alert('STEP1: started');\n" +
       "try{\n" +
       "var d=app.activeDocument;\n" +
       "if(!d){throw new Error('No active document.');}\n" +
@@ -525,6 +525,7 @@
       "var b;\n" +
       "try{ b=d.selection.bounds; }catch(e){ throw new Error('No active selection. Please make a selection first.'); }\n" +
       "if(!b||b.length!==4){ throw new Error('No active selection. Please make a selection first.'); }\n" +
+      "alert('STEP2: got bounds, length=' + b.length);\n" +
 
       "function px(v){\n" +
       "if(typeof v==='number')return v;\n" +
@@ -534,10 +535,12 @@
       "}\n" +
 
       "var L=px(b[0]); var T=px(b[1]); var R=px(b[2]); var B=px(b[3]);\n" +
+      "alert('STEP3: L='+L+' T='+T+' R='+R+' B='+B);\n" +
       "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){ throw new Error('Could not read selection coordinates.'); }\n" +
       "if(R<=L||B<=T){ throw new Error('Selection has invalid dimensions.'); }\n" +
 
       "try { app.preferences.rulerUnits = Units.PIXELS; app.preferences.typeUnits = TypeUnits.PIXELS; } catch(eUnits) {}\n" +
+      "alert('STEP4: units set');\n" +
 
       "var boxLeft=L+" + padding + ";\n" +
       "var boxTop=T+" + padding + ";\n" +
@@ -546,31 +549,40 @@
       "var boxWidth=boxRight-boxLeft;\n" +
       "var boxHeight=boxBottom-boxTop;\n" +
       "if(boxWidth<1||boxHeight<1){ throw new Error('Padding is too large for the selection.'); }\n" +
+      "alert('STEP5: boxWidth='+boxWidth+' boxHeight='+boxHeight);\n" +
 
       "var layer=d.artLayers.add();\n" +
+      "alert('STEP6: layer added');\n" +
       "layer.kind=LayerKind.TEXT;\n" +
       "layer.name=" + jsString("TTP: " + text.substring(0, 45)) + ";\n" +
       "var ti=layer.textItem;\n" +
+      "alert('STEP7: textItem obtained');\n" +
 
       "var trackingErr='';\n" +
       "var trackingReadback='unread';\n" +
       "try{ ti.tracking=" + charSpacing + "; trackingReadback=''+ti.tracking; }catch(eTrack){ trackingErr=' | tracking-failed:'+eTrack.message; }\n" +
+      "alert('STEP8: tracking done');\n" +
 
       "if(" + jsString(mode) + "==='PARAGRAPH'){\n" +
+      "alert('STEP9: entering PARAGRAPH branch');\n" +
       "ti.kind=TextType.PARAGRAPHTEXT;\n" +
       "ti.width=boxWidth;\n" +
       "ti.height=boxHeight;\n" +
+      "alert('STEP10: width/height set');\n" +
       "ti.contents=" + jsString(text) + ";\n" +
+      "alert('STEP11: contents set');\n" +
       "ti.font=" + jsString(font) + ";\n" +
       "ti.size=" + initialSize + ";\n" +
       "ti.justification=Justification." + align + ";\n" +
       "var c=new SolidColor();\n" +
       "c.rgb.hexValue=" + jsString(color) + ";\n" +
       "ti.color=c;\n" +
+      "alert('STEP12: font/size/color set');\n" +
 
       "var estimatedLines=1;\n" +
       "var finalSize=" + initialSize + ";\n" +
       "if(" + autoFit + "){\n" +
+      "alert('STEP13: entering autoFit loop');\n" +
       "function estimateLines(str,size,width){\n" +
       "var avg=size*0.52;\n" +
       "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
@@ -599,7 +611,10 @@
       "}\n" +
       "var current=" + initialSize + ";\n" +
       "var minimum=" + minSize + ";\n" +
+      "var __loopGuard=0;\n" +
       "while(current>minimum){\n" +
+      "__loopGuard++;\n" +
+      "if(__loopGuard>1000){ alert('STEP13b: LOOP GUARD TRIGGERED - infinite loop detected'); break; }\n" +
       "var est=estimateLines(" + jsString(text) + ",current,boxWidth);\n" +
       "var lh=current*1.20;\n" +
       "var neededHeight=est*lh;\n" +
@@ -609,6 +624,7 @@
       "estimatedLines=est;\n" +
       "}\n" +
       "finalSize=current;\n" +
+      "alert('STEP14: autoFit loop done, finalSize='+finalSize+' iterations='+__loopGuard);\n" +
       "}\n" +
 
       "var effLineHeight=finalSize*1.20;\n" +
@@ -619,6 +635,7 @@
       "if(" + jsString(vAlign) + "==='MIDDLE'){ vAlignOffset=extraSpace/2; }\n" +
       "else if(" + jsString(vAlign) + "==='BOTTOM'){ vAlignOffset=extraSpace; }\n" +
       "ti.position=[boxLeft,boxTop+vAlignOffset];\n" +
+      "alert('STEP15: position set');\n" +
 
       "}else{\n" +
       "ti.kind=TextType.POINTTEXT;\n" +
@@ -635,7 +652,9 @@
       "ti.position=[(L+R)/2,py];\n" +
       "}\n" +
 
+      "alert('STEP16: about to set activeLayer');\n" +
       "d.activeLayer=layer;\n" +
+      "alert('STEP17: activeLayer set, about to echo result');\n" +
 
       "var __resultMsg = 'TEXT INSERTED | selection='+L+','+T+','+R+','+B+' | box='+boxWidth+'x'+boxHeight+' | size='+ti.size+' | trackingSet=" + charSpacing + " trackingReadback='+trackingReadback+trackingErr;\n" +
       "try{ app.echoToOE('TYPERP_OK:'+__resultMsg); }catch(eEcho){}\n" +
