@@ -1,5 +1,5 @@
 // TypeR-P â€” main.js
-// BUILD: TYPERP-BUILD-019
+// BUILD: TYPERP-BUILD-020
 //
 // Ø§Ø¶Ø§ÙÙ‡â€ŒØ´Ø¯Ù‡ Ù†Ø³Ø¨Øª Ø¨Ù‡ build-018:
 //   - Character Spacing (ti.tracking)
@@ -267,6 +267,9 @@
 
     var vAlign = vAlignEl.value || "MIDDLE";
 
+    // --- ØªØ²Ø±ÛŒÙ‚ ÙØ§ØµÙ„Ù‡Ù” ÙˆØ§Ù‚Ø¹ÛŒ Ø¨Ø¹Ø¯ Ø§Ø² Â«ØŒÂ» Ùˆ Â«,Â» Ø¯Ø± ØµÙˆØ±Øª Ù†Ø¨ÙˆØ¯ ÙØ§ØµÙ„Ù‡ØŒ ØªØ§ Ù…ÙˆØªÙˆØ± Ù…ØªÙ† Photopea Ù†Ù‚Ø·Ù‡Ù” Ø´Ú©Ø³Øª Ù¾ÛŒØ¯Ø§ Ú©Ù†Ø¯ ---
+    text = text.replace(/ØŒ(?!\s)/g, "ØŒ ").replace(/,(?!\s)/g, ", ");
+
     // --- Ø´Ø¨ÛŒÙ‡â€ŒØ³Ø§Ø²ÛŒ Word Spacing: ÙØ§ØµÙ„Ù‡Ù” Ø§Ø¶Ø§ÙÙ‡ Ø¨ÛŒÙ† Ú©Ù„Ù…Ø§ØªØŒ Ù‡Ù…ÛŒÙ†Ø¬Ø§ Ø¯Ø± Ø³Ù…Øª Ù¾Ù„Ø§Ú¯ÛŒÙ† ---
     if (wordSpacingCount > 0) {
       var extra = "";
@@ -315,15 +318,18 @@
       "var ti=layer.textItem;\n" +
 
       "var trackingErr='';\n" +
-      "try{ ti.tracking=" + charSpacing + "; }catch(eTrack){ trackingErr=' | tracking-failed:'+eTrack.message; }\n" +
+      "var trackingReadback='unread';\n" +
+      "try{ ti.tracking=" + charSpacing + "; trackingReadback=''+ti.tracking; }catch(eTrack){ trackingErr=' | tracking-failed:'+eTrack.message; }\n" +
 
       "var leadingErr='';\n" +
       "var leadingApplied='auto';\n" +
+      "var leadingReadback='unread';\n" +
       (lineSpacing > 0 ?
         "try{\n" +
         "  ti.autoLeading=false;\n" +
         "  try{ ti.leading=new UnitValue(" + lineSpacing + ",'px'); leadingApplied='" + lineSpacing + "px(UnitValue)'; }\n" +
         "  catch(eL1){ try{ ti.leading=" + lineSpacing + "; leadingApplied='" + lineSpacing + "px(plain)'; } catch(eL2){ leadingErr=' | leading-failed:'+eL2.message; } }\n" +
+        "  try{ var lr=ti.leading; leadingReadback=(lr&&lr.value!==undefined)?(''+lr.value):(''+lr); }catch(eLR){ leadingReadback='read-error'; }\n" +
         "}catch(eLead){ leadingErr=' | leading-outer-failed:'+eLead.message; }\n"
         : "") +
 
@@ -409,9 +415,11 @@
       "d.activeLayer=layer;\n" +
 
       "app.echoToOE(\n" +
-      "'TYPERP_OK:TEXT INSERTED | selection='+Math.round(L)+','+Math.round(T)+','+Math.round(R)+','+Math.round(B)+\n" +
-      "' | box='+Math.round(boxWidth)+'x'+Math.round(boxHeight)+\n" +
-      "' | size='+ti.size+trackingErr+leadingErr\n" +
+      "'TYPERP_OK:TEXT INSERTED | selection='+L+','+T+','+R+','+B+\n" +
+      "' | box='+boxWidth+'x'+boxHeight+\n" +
+      "' | size='+ti.size+\n" +
+      "' | trackingSet=" + charSpacing + " trackingReadback='+trackingReadback+trackingErr+\n" +
+      "' | leadingApplied='+leadingApplied+' leadingReadback='+leadingReadback+leadingErr\n" +
       ");\n" +
 
       "}catch(e){\n" +
@@ -425,6 +433,6 @@
   insertLineBtn.onclick = insertCurrentLine;
 
   updateLine();
-  setStatus("Ready (BUILD-019)");
+  setStatus("Ready (BUILD-020)");
 
 })();
