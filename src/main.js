@@ -2,25 +2,23 @@
 // BUILD: TYPERP-BUILD-028
 //
 // BUILD-028
-// - Persistent Full Text
-// - Full Text survives panel close/reopen
-// - Automatically restores saved text
-// - Automatically restores loaded lines from saved text
-//
-// BUILD-027
-// - Bold / Italic
-// - Editable Saved Styles
-// - Load Style
-// - Update Style
-// - Save Style
-// - Delete Style
-// - Stroke / Outline
-// - Auto Fit
-// - Character Spacing
-// - Word Spacing
-// - Vertical Alignment
-// - Text Box / Point Text
+// - Persistent panel state
+// - Full text survives panel close/reopen
+// - Current line survives panel close/reopen
+// - Current line index survives panel close/reopen
+// - Font / Size / Color / Alignment survive
+// - Bold / Italic survive
+// - Padding survives
+// - Auto Fit / Minimum Font Size survive
+// - Text Mode survives
+// - Character Spacing survives
+// - Word Spacing survives
+// - Vertical Alignment survives
+// - Stroke settings survive
+// - Saved Styles
+// - Load / Update / Apply / Delete Style
 // - Load Font from Device
+// - Selection-based editable Text Layer
 //
 // Keeps text as editable Text Layer.
 
@@ -33,19 +31,41 @@
      BASIC UI
      ===================================================== */
 
-  var statusEl = document.getElementById("status");
-  var fullTextEl = document.getElementById("fullText");
-  var loadLinesBtn = document.getElementById("loadLines");
-  var currentLineEl = document.getElementById("currentLine");
-  var lineInfoEl = document.getElementById("lineInfo");
-  var previousLineBtn = document.getElementById("previousLine");
-  var nextLineBtn = document.getElementById("nextLine");
-  var insertLineBtn = document.getElementById("insertLine");
+  var statusEl =
+    document.getElementById("status");
 
-  var fontEl = document.getElementById("font");
-  var sizeEl = document.getElementById("size");
-  var colorEl = document.getElementById("color");
-  var alignEl = document.getElementById("align");
+  var fullTextEl =
+    document.getElementById("fullText");
+
+  var loadLinesBtn =
+    document.getElementById("loadLines");
+
+  var currentLineEl =
+    document.getElementById("currentLine");
+
+  var lineInfoEl =
+    document.getElementById("lineInfo");
+
+  var previousLineBtn =
+    document.getElementById("previousLine");
+
+  var nextLineBtn =
+    document.getElementById("nextLine");
+
+  var insertLineBtn =
+    document.getElementById("insertLine");
+
+  var fontEl =
+    document.getElementById("font");
+
+  var sizeEl =
+    document.getElementById("size");
+
+  var colorEl =
+    document.getElementById("color");
+
+  var alignEl =
+    document.getElementById("align");
 
 
   var required = [
@@ -63,19 +83,29 @@
     ["#align", alignEl]
   ];
 
+
   var missing = [];
 
-  for (var i = 0; i < required.length; i++) {
+
+  for (
+    var i = 0;
+    i < required.length;
+    i++
+  ) {
+
     if (!required[i][1]) {
       missing.push(required[i][0]);
     }
   }
 
+
   if (missing.length) {
+
     alert(
       "TypeR-P BUILD-028 UI ERROR\n\nMissing:\n" +
       missing.join("\n")
     );
+
     return;
   }
 
@@ -85,95 +115,10 @@
      ===================================================== */
 
   function setStatus(text) {
-    statusEl.textContent = text;
+
+    statusEl.textContent =
+      text;
   }
-
-
-  /* =====================================================
-     PERSISTENT FULL TEXT
-     ===================================================== */
-
-  var FULL_TEXT_KEY =
-    "typerp_full_text_v1";
-
-
-  function saveFullText() {
-
-    try {
-
-      localStorage.setItem(
-        FULL_TEXT_KEY,
-        fullTextEl.value || ""
-      );
-
-    } catch (e) {
-
-      /* Ignore storage errors.
-         The panel continues working normally. */
-
-    }
-  }
-
-
-  function restoreFullText() {
-
-    try {
-
-      var saved =
-        localStorage.getItem(
-          FULL_TEXT_KEY
-        );
-
-      if (
-        saved !== null &&
-        typeof saved === "string"
-      ) {
-
-        fullTextEl.value = saved;
-
-        return true;
-      }
-
-    } catch (e) {
-
-      /* Ignore storage errors. */
-
-    }
-
-    return false;
-  }
-
-
-  /*
-   * Save immediately whenever the user changes
-   * the Full Text box.
-   *
-   * input catches typing, paste, cut, etc.
-   */
-
-  fullTextEl.addEventListener(
-    "input",
-    function () {
-
-      saveFullText();
-
-    }
-  );
-
-
-  /*
-   * Also save on change in case the browser
-   * fires change without input.
-   */
-
-  fullTextEl.addEventListener(
-    "change",
-    function () {
-
-      saveFullText();
-
-    }
-  );
 
 
   /* =====================================================
@@ -181,22 +126,660 @@
      ===================================================== */
 
   var lines = [];
+
   var currentIndex = 0;
 
+
+  /* =====================================================
+     BUILD-028
+     PERSISTENT PANEL STATE
+     ===================================================== */
+
+  var PERSIST_KEY =
+    "typerp_panel_state_v2";
+
+
+  var restoringState = false;
+
+
+  function savePanelState() {
+
+    if (restoringState) {
+      return;
+    }
+
+
+    try {
+
+      var state = {
+
+        fullText:
+          fullTextEl.value || "",
+
+        lines:
+          lines.slice(),
+
+        currentIndex:
+          currentIndex,
+
+        currentLine:
+          currentLineEl.value || "",
+
+        font:
+          fontEl.value || "ArialMT",
+
+        size:
+          sizeEl.value || "48",
+
+        color:
+          colorEl.value || "FF0000",
+
+        align:
+          alignEl.value || "CENTER"
+      };
+
+
+      /*
+       * Dynamic controls may not exist during
+       * the very early initialization stage.
+       */
+
+      if (
+        typeof boldEl !==
+        "undefined"
+      ) {
+        state.bold =
+          !!boldEl.checked;
+      }
+
+
+      if (
+        typeof italicEl !==
+        "undefined"
+      ) {
+        state.italic =
+          !!italicEl.checked;
+      }
+
+
+      if (
+        typeof paddingEl !==
+        "undefined"
+      ) {
+        state.padding =
+          paddingEl.value;
+      }
+
+
+      if (
+        typeof fitEl !==
+        "undefined"
+      ) {
+        state.autoFit =
+          !!fitEl.checked;
+      }
+
+
+      if (
+        typeof minSizeEl !==
+        "undefined"
+      ) {
+        state.minSize =
+          minSizeEl.value;
+      }
+
+
+      if (
+        typeof modeEl !==
+        "undefined"
+      ) {
+        state.mode =
+          modeEl.value;
+      }
+
+
+      if (
+        typeof charSpacingEl !==
+        "undefined"
+      ) {
+        state.charSpacing =
+          charSpacingEl.value;
+      }
+
+
+      if (
+        typeof wordSpacingEl !==
+        "undefined"
+      ) {
+        state.wordSpacing =
+          wordSpacingEl.value;
+      }
+
+
+      if (
+        typeof vAlignEl !==
+        "undefined"
+      ) {
+        state.vAlign =
+          vAlignEl.value;
+      }
+
+
+      if (
+        typeof strokeEnabledEl !==
+        "undefined"
+      ) {
+        state.strokeEnabled =
+          !!strokeEnabledEl.checked;
+      }
+
+
+      if (
+        typeof strokeWidthEl !==
+        "undefined"
+      ) {
+        state.strokeWidth =
+          strokeWidthEl.value;
+      }
+
+
+      if (
+        typeof strokeColorEl !==
+        "undefined"
+      ) {
+        state.strokeColor =
+          strokeColorEl.value;
+      }
+
+
+      if (
+        typeof strokeOpacityEl !==
+        "undefined"
+      ) {
+        state.strokeOpacity =
+          strokeOpacityEl.value;
+      }
+
+
+      if (
+        typeof strokePositionEl !==
+        "undefined"
+      ) {
+        state.strokePosition =
+          strokePositionEl.value;
+      }
+
+
+      localStorage.setItem(
+        PERSIST_KEY,
+        JSON.stringify(state)
+      );
+
+    } catch (e) {
+
+      /*
+       * localStorage can fail in some
+       * embedded environments.
+       * The plugin should still work.
+       */
+
+    }
+  }
+
+
+  function restorePanelState() {
+
+    try {
+
+      var raw =
+        localStorage.getItem(
+          PERSIST_KEY
+        );
+
+
+      if (!raw) {
+        return false;
+      }
+
+
+      var state =
+        JSON.parse(raw);
+
+
+      if (
+        !state ||
+        typeof state !== "object"
+      ) {
+        return false;
+      }
+
+
+      restoringState = true;
+
+
+      /* -------------------------------------------------
+         FULL TEXT
+         ------------------------------------------------- */
+
+      if (
+        state.fullText !==
+        undefined
+      ) {
+
+        fullTextEl.value =
+          state.fullText;
+      }
+
+
+      /* -------------------------------------------------
+         LINES
+         ------------------------------------------------- */
+
+      if (
+        Array.isArray(state.lines) &&
+        state.lines.length
+      ) {
+
+        lines =
+          state.lines.slice();
+
+
+        currentIndex =
+          Number(
+            state.currentIndex
+          );
+
+
+        if (
+          !isFinite(currentIndex)
+        ) {
+          currentIndex = 0;
+        }
+
+
+        currentIndex =
+          Math.floor(currentIndex);
+
+
+        if (currentIndex < 0) {
+          currentIndex = 0;
+        }
+
+
+        if (
+          currentIndex >=
+          lines.length
+        ) {
+
+          currentIndex =
+            lines.length - 1;
+        }
+
+      } else {
+
+        /*
+         * If there was full text but no
+         * saved lines, reconstruct them.
+         */
+
+        if (
+          state.fullText &&
+          state.fullText.trim()
+        ) {
+
+          var restoredText =
+            state.fullText
+              .replace(/\r\n/g, "\n")
+              .replace(/\r/g, "\n");
+
+
+          lines =
+            restoredText.split("\n");
+
+
+          while (
+            lines.length > 0 &&
+            lines[
+              lines.length - 1
+            ].trim() === ""
+          ) {
+
+            lines.pop();
+          }
+
+        } else {
+
+          lines = [];
+        }
+
+
+        currentIndex = 0;
+      }
+
+
+      /* -------------------------------------------------
+         CURRENT LINE
+         ------------------------------------------------- */
+
+      if (
+        state.currentLine !==
+        undefined
+      ) {
+
+        currentLineEl.value =
+          state.currentLine;
+
+      } else if (
+        lines.length
+      ) {
+
+        currentLineEl.value =
+          lines[currentIndex] || "";
+      }
+
+
+      /* -------------------------------------------------
+         BASIC SETTINGS
+         ------------------------------------------------- */
+
+      if (
+        state.font !==
+        undefined
+      ) {
+
+        fontEl.value =
+          state.font;
+      }
+
+
+      if (
+        state.size !==
+        undefined
+      ) {
+
+        sizeEl.value =
+          state.size;
+      }
+
+
+      if (
+        state.color !==
+        undefined
+      ) {
+
+        colorEl.value =
+          state.color;
+      }
+
+
+      if (
+        state.align !==
+        undefined
+      ) {
+
+        alignEl.value =
+          state.align;
+      }
+
+
+      /* -------------------------------------------------
+         BOLD
+         ------------------------------------------------- */
+
+      if (
+        typeof boldEl !==
+        "undefined" &&
+        state.bold !==
+        undefined
+      ) {
+
+        boldEl.checked =
+          !!state.bold;
+      }
+
+
+      /* -------------------------------------------------
+         ITALIC
+         ------------------------------------------------- */
+
+      if (
+        typeof italicEl !==
+        "undefined" &&
+        state.italic !==
+        undefined
+      ) {
+
+        italicEl.checked =
+          !!state.italic;
+      }
+
+
+      /* -------------------------------------------------
+         PADDING
+         ------------------------------------------------- */
+
+      if (
+        typeof paddingEl !==
+        "undefined" &&
+        state.padding !==
+        undefined
+      ) {
+
+        paddingEl.value =
+          state.padding;
+      }
+
+
+      /* -------------------------------------------------
+         AUTO FIT
+         ------------------------------------------------- */
+
+      if (
+        typeof fitEl !==
+        "undefined" &&
+        state.autoFit !==
+        undefined
+      ) {
+
+        fitEl.checked =
+          !!state.autoFit;
+      }
+
+
+      /* -------------------------------------------------
+         MINIMUM SIZE
+         ------------------------------------------------- */
+
+      if (
+        typeof minSizeEl !==
+        "undefined" &&
+        state.minSize !==
+        undefined
+      ) {
+
+        minSizeEl.value =
+          state.minSize;
+      }
+
+
+      /* -------------------------------------------------
+         TEXT MODE
+         ------------------------------------------------- */
+
+      if (
+        typeof modeEl !==
+        "undefined" &&
+        state.mode !==
+        undefined
+      ) {
+
+        modeEl.value =
+          state.mode;
+      }
+
+
+      /* -------------------------------------------------
+         CHARACTER SPACING
+         ------------------------------------------------- */
+
+      if (
+        typeof charSpacingEl !==
+        "undefined" &&
+        state.charSpacing !==
+        undefined
+      ) {
+
+        charSpacingEl.value =
+          state.charSpacing;
+      }
+
+
+      /* -------------------------------------------------
+         WORD SPACING
+         ------------------------------------------------- */
+
+      if (
+        typeof wordSpacingEl !==
+        "undefined" &&
+        state.wordSpacing !==
+        undefined
+      ) {
+
+        wordSpacingEl.value =
+          state.wordSpacing;
+      }
+
+
+      /* -------------------------------------------------
+         VERTICAL ALIGNMENT
+         ------------------------------------------------- */
+
+      if (
+        typeof vAlignEl !==
+        "undefined" &&
+        state.vAlign !==
+        undefined
+      ) {
+
+        vAlignEl.value =
+          state.vAlign;
+      }
+
+
+      /* -------------------------------------------------
+         STROKE ENABLED
+         ------------------------------------------------- */
+
+      if (
+        typeof strokeEnabledEl !==
+        "undefined" &&
+        state.strokeEnabled !==
+        undefined
+      ) {
+
+        strokeEnabledEl.checked =
+          !!state.strokeEnabled;
+      }
+
+
+      /* -------------------------------------------------
+         STROKE WIDTH
+         ------------------------------------------------- */
+
+      if (
+        typeof strokeWidthEl !==
+        "undefined" &&
+        state.strokeWidth !==
+        undefined
+      ) {
+
+        strokeWidthEl.value =
+          state.strokeWidth;
+      }
+
+
+      /* -------------------------------------------------
+         STROKE COLOR
+         ------------------------------------------------- */
+
+      if (
+        typeof strokeColorEl !==
+        "undefined" &&
+        state.strokeColor !==
+        undefined
+      ) {
+
+        strokeColorEl.value =
+          state.strokeColor;
+      }
+
+
+      /* -------------------------------------------------
+         STROKE OPACITY
+         ------------------------------------------------- */
+
+      if (
+        typeof strokeOpacityEl !==
+        "undefined" &&
+        state.strokeOpacity !==
+        undefined
+      ) {
+
+        strokeOpacityEl.value =
+          state.strokeOpacity;
+      }
+
+
+      /* -------------------------------------------------
+         STROKE POSITION
+         ------------------------------------------------- */
+
+      if (
+        typeof strokePositionEl !==
+        "undefined" &&
+        state.strokePosition !==
+        undefined
+      ) {
+
+        strokePositionEl.value =
+          state.strokePosition;
+      }
+
+
+      restoringState = false;
+
+
+      return true;
+
+    } catch (e) {
+
+      restoringState = false;
+
+      return false;
+    }
+  }
+
+
+  /* =====================================================
+     LINE DISPLAY
+     ===================================================== */
 
   function updateLine() {
 
     if (!lines.length) {
 
       currentLineEl.value = "";
+
       lineInfoEl.textContent =
         "No lines loaded.";
 
       return;
     }
 
+
     currentLineEl.value =
       lines[currentIndex];
+
 
     lineInfoEl.textContent =
       "Line " +
@@ -208,147 +791,164 @@
 
   function saveCurrentLine() {
 
-    if (!lines.length) return;
+    if (!lines.length) {
+      return;
+    }
+
 
     lines[currentIndex] =
       currentLineEl.value;
+
+
+    savePanelState();
   }
 
 
-  function loadTextIntoLines(text) {
+  /* =====================================================
+     LOAD LINES
+     ===================================================== */
 
-    if (!text || !text.trim()) {
+  loadLinesBtn.onclick =
+    function () {
 
-      lines = [];
+      var text =
+        fullTextEl.value || "";
+
+
+      if (!text.trim()) {
+
+        lines = [];
+
+        currentIndex = 0;
+
+        updateLine();
+
+        savePanelState();
+
+
+        setStatus(
+          "Please enter the full text first."
+        );
+
+        return;
+      }
+
+
+      text =
+        text
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n");
+
+
+      lines =
+        text.split("\n");
+
+
+      while (
+        lines.length > 0 &&
+        lines[
+          lines.length - 1
+        ].trim() === ""
+      ) {
+
+        lines.pop();
+      }
+
+
       currentIndex = 0;
+
+
       updateLine();
 
-      return;
-    }
+      savePanelState();
 
-    text =
-      text
-        .replace(/\r\n/g, "\n")
-        .replace(/\r/g, "\n");
-
-    lines =
-      text.split("\n");
-
-    while (
-      lines.length > 0 &&
-      lines[lines.length - 1].trim() === ""
-    ) {
-
-      lines.pop();
-
-    }
-
-    currentIndex = 0;
-
-    updateLine();
-  }
-
-
-  loadLinesBtn.onclick = function () {
-
-    var text =
-      fullTextEl.value || "";
-
-
-    /*
-     * Always save the latest Full Text before
-     * creating the line list.
-     */
-
-    saveFullText();
-
-
-    if (!text.trim()) {
-
-      lines = [];
-      currentIndex = 0;
-      updateLine();
 
       setStatus(
-        "Please enter the full text first."
+        "Loaded " +
+        lines.length +
+        " line(s)."
       );
-
-      return;
-    }
+    };
 
 
-    loadTextIntoLines(text);
-
-
-    setStatus(
-      "Loaded " +
-      lines.length +
-      " line(s)."
-    );
-  };
-
+  /* =====================================================
+     CURRENT LINE EDIT
+     ===================================================== */
 
   currentLineEl.addEventListener(
     "input",
     function () {
 
       saveCurrentLine();
-
     }
   );
 
 
-  previousLineBtn.onclick = function () {
+  /* =====================================================
+     PREVIOUS LINE
+     ===================================================== */
 
-    if (!lines.length) {
+  previousLineBtn.onclick =
+    function () {
 
-      setStatus(
-        "Load lines first."
-      );
+      if (!lines.length) {
 
-      return;
-    }
+        setStatus(
+          "Load lines first."
+        );
 
-
-    saveCurrentLine();
-
-
-    if (currentIndex > 0) {
-      currentIndex--;
-    }
+        return;
+      }
 
 
-    updateLine();
-  };
+      saveCurrentLine();
 
 
-  nextLineBtn.onclick = function () {
+      if (currentIndex > 0) {
 
-    if (!lines.length) {
-
-      setStatus(
-        "Load lines first."
-      );
-
-      return;
-    }
+        currentIndex--;
+      }
 
 
-    saveCurrentLine();
+      updateLine();
+
+      savePanelState();
+    };
 
 
-    if (
-      currentIndex <
-      lines.length - 1
-    ) {
+  /* =====================================================
+     NEXT LINE
+     ===================================================== */
 
-      currentIndex++;
+  nextLineBtn.onclick =
+    function () {
 
-    }
+      if (!lines.length) {
+
+        setStatus(
+          "Load lines first."
+        );
+
+        return;
+      }
 
 
-    updateLine();
-  };
+      saveCurrentLine();
+
+
+      if (
+        currentIndex <
+        lines.length - 1
+      ) {
+
+        currentIndex++;
+      }
+
+
+      updateLine();
+
+      savePanelState();
+    };
 
 
   /* =====================================================
@@ -358,11 +958,11 @@
   var settingsPanel =
     fontEl.closest(".panel");
 
+
   if (!settingsPanel) {
 
     settingsPanel =
       fontEl.parentElement;
-
   }
 
 
@@ -371,9 +971,18 @@
     var label =
       document.createElement("label");
 
-    label.textContent = text;
-    label.style.display = "block";
-    label.style.marginTop = "8px";
+
+    label.textContent =
+      text;
+
+
+    label.style.display =
+      "block";
+
+
+    label.style.marginTop =
+      "8px";
+
 
     return label;
   }
@@ -388,14 +997,34 @@
     var input =
       document.createElement("input");
 
-    input.type = "number";
-    input.value = value;
-    input.min = min;
-    input.max = max;
-    input.step = "1";
 
-    input.style.width = "100%";
-    input.style.boxSizing = "border-box";
+    input.type =
+      "number";
+
+
+    input.value =
+      value;
+
+
+    input.min =
+      min;
+
+
+    input.max =
+      max;
+
+
+    input.step =
+      "1";
+
+
+    input.style.width =
+      "100%";
+
+
+    input.style.boxSizing =
+      "border-box";
+
 
     return input;
   }
@@ -408,10 +1037,14 @@
   var fontUploadInput =
     document.createElement("input");
 
-  fontUploadInput.type = "file";
+
+  fontUploadInput.type =
+    "file";
+
 
   fontUploadInput.accept =
     ".ttf,.otf,.woff,.woff2";
+
 
   fontUploadInput.style.display =
     "none";
@@ -420,13 +1053,18 @@
   var fontUploadBtn =
     document.createElement("button");
 
-  fontUploadBtn.type = "button";
+
+  fontUploadBtn.type =
+    "button";
+
 
   fontUploadBtn.textContent =
     "Load Font from Device";
 
+
   fontUploadBtn.style.width =
     "100%";
+
 
   fontUploadBtn.style.marginTop =
     "6px";
@@ -444,11 +1082,11 @@
   );
 
 
-  fontUploadBtn.onclick = function () {
+  fontUploadBtn.onclick =
+    function () {
 
-    fontUploadInput.click();
-
-  };
+      fontUploadInput.click();
+    };
 
 
   fontUploadInput.onchange =
@@ -458,7 +1096,10 @@
         fontUploadInput.files &&
         fontUploadInput.files[0];
 
-      if (!file) return;
+
+      if (!file) {
+        return;
+      }
 
 
       setStatus(
@@ -475,22 +1116,48 @@
 
           var script =
             "(function(){try{" +
-            "var before=(app.fonts&&app.fonts.length)?app.fonts.length:0;" +
+
+            "var before=" +
+            "(app.fonts&&app.fonts.length)?" +
+            "app.fonts.length:0;" +
+
             "app.open(" +
-            JSON.stringify(reader.result) +
+            JSON.stringify(
+              reader.result
+            ) +
             ");" +
-            "var after=(app.fonts&&app.fonts.length)?app.fonts.length:0;" +
+
+            "var after=" +
+            "(app.fonts&&app.fonts.length)?" +
+            "app.fonts.length:0;" +
+
             "var name='';" +
+
             "if(app.fonts&&after>0){" +
-            "var last=app.fonts[after-1];" +
+
+            "var last=" +
+            "app.fonts[after-1];" +
+
             "name=(last&&last.postScriptName)?" +
             "last.postScriptName:" +
-            "(last&&last.name?last.name:'');" +
+
+            "(last&&last.name?" +
+            "last.name:'');" +
+
             "}" +
-            "app.echoToOE('TYPERP_FONT_LOADED:'+name);" +
+
+            "app.echoToOE(" +
+            "'TYPERP_FONT_LOADED:'+name" +
+            ");" +
+
             "}catch(e){" +
-            "app.echoToOE('TYPERP_FONT_ERR:'+" +
-            "(e&&e.message?e.message:String(e)));" +
+
+            "app.echoToOE(" +
+            "'TYPERP_FONT_ERR:'+" +
+            "(e&&e.message?" +
+            "e.message:String(e))" +
+            ");" +
+
             "}})();";
 
 
@@ -498,7 +1165,6 @@
             script,
             "*"
           );
-
         };
 
 
@@ -508,12 +1174,10 @@
           setStatus(
             "Could not read the font file."
           );
-
         };
 
 
       reader.readAsDataURL(file);
-
     };
 
 
@@ -527,7 +1191,11 @@
 
 
   var paddingEl =
-    makeNumber(12, 0, 500);
+    makeNumber(
+      12,
+      0,
+      500
+    );
 
 
   settingsPanel.appendChild(
@@ -547,8 +1215,10 @@
   var styleRow =
     document.createElement("div");
 
+
   styleRow.style.display =
     "flex";
+
 
   styleRow.style.gap =
     "6px";
@@ -557,12 +1227,14 @@
   var boldLabel =
     document.createElement("label");
 
+
   boldLabel.style.flex =
     "1";
 
 
   var boldEl =
     document.createElement("input");
+
 
   boldEl.type =
     "checkbox";
@@ -571,6 +1243,7 @@
   boldLabel.appendChild(
     boldEl
   );
+
 
   boldLabel.appendChild(
     document.createTextNode(
@@ -582,12 +1255,14 @@
   var italicLabel =
     document.createElement("label");
 
+
   italicLabel.style.flex =
     "1";
 
 
   var italicEl =
     document.createElement("input");
+
 
   italicEl.type =
     "checkbox";
@@ -596,6 +1271,7 @@
   italicLabel.appendChild(
     italicEl
   );
+
 
   italicLabel.appendChild(
     document.createTextNode(
@@ -607,6 +1283,7 @@
   styleRow.appendChild(
     boldLabel
   );
+
 
   styleRow.appendChild(
     italicLabel
@@ -630,11 +1307,14 @@
   var fitRow =
     document.createElement("label");
 
+
   fitRow.style.display =
     "flex";
 
+
   fitRow.style.alignItems =
     "center";
+
 
   fitRow.style.gap =
     "6px";
@@ -643,8 +1323,10 @@
   var fitEl =
     document.createElement("input");
 
+
   fitEl.type =
     "checkbox";
+
 
   fitEl.checked =
     true;
@@ -653,6 +1335,7 @@
   fitRow.appendChild(
     fitEl
   );
+
 
   fitRow.appendChild(
     document.createTextNode(
@@ -695,32 +1378,45 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel("Text Mode")
+    makeLabel(
+      "Text Mode"
+    )
   );
 
 
   var modeEl =
-    document.createElement("select");
+    document.createElement(
+      "select"
+    );
+
 
   modeEl.style.width =
     "100%";
 
 
   var paragraphOption =
-    document.createElement("option");
+    document.createElement(
+      "option"
+    );
+
 
   paragraphOption.value =
     "PARAGRAPH";
+
 
   paragraphOption.textContent =
     "Text Box (recommended)";
 
 
   var pointOption =
-    document.createElement("option");
+    document.createElement(
+      "option"
+    );
+
 
   pointOption.value =
     "POINT";
+
 
   pointOption.textContent =
     "Point Text";
@@ -729,6 +1425,7 @@
   modeEl.appendChild(
     paragraphOption
   );
+
 
   modeEl.appendChild(
     pointOption
@@ -800,7 +1497,10 @@
 
 
   var vAlignEl =
-    document.createElement("select");
+    document.createElement(
+      "select"
+    );
+
 
   vAlignEl.style.width =
     "100%";
@@ -818,8 +1518,10 @@
           "option"
         );
 
+
       opt.value =
         pair[0];
+
 
       opt.textContent =
         pair[1];
@@ -832,14 +1534,12 @@
 
         opt.selected =
           true;
-
       }
 
 
       vAlignEl.appendChild(
         opt
       );
-
     }
   );
 
@@ -861,20 +1561,28 @@
 
 
   var strokeRow =
-    document.createElement("label");
+    document.createElement(
+      "label"
+    );
+
 
   strokeRow.style.display =
     "flex";
 
+
   strokeRow.style.alignItems =
     "center";
+
 
   strokeRow.style.gap =
     "6px";
 
 
   var strokeEnabledEl =
-    document.createElement("input");
+    document.createElement(
+      "input"
+    );
+
 
   strokeEnabledEl.type =
     "checkbox";
@@ -883,6 +1591,7 @@
   strokeRow.appendChild(
     strokeEnabledEl
   );
+
 
   strokeRow.appendChild(
     document.createTextNode(
@@ -924,19 +1633,26 @@
 
 
   var strokeColorEl =
-    document.createElement("input");
+    document.createElement(
+      "input"
+    );
+
 
   strokeColorEl.type =
     "text";
 
+
   strokeColorEl.value =
     "000000";
+
 
   strokeColorEl.placeholder =
     "000000";
 
+
   strokeColorEl.style.width =
     "100%";
+
 
   strokeColorEl.style.boxSizing =
     "border-box";
@@ -975,7 +1691,10 @@
 
 
   var strokePositionEl =
-    document.createElement("select");
+    document.createElement(
+      "select"
+    );
+
 
   strokePositionEl.style.width =
     "100%";
@@ -993,16 +1712,18 @@
           "option"
         );
 
+
       opt.value =
         pair[0];
+
 
       opt.textContent =
         pair[1];
 
+
       strokePositionEl.appendChild(
         opt
       );
-
     }
   );
 
@@ -1020,8 +1741,7 @@
     "typerp_styles_v4";
 
 
-  var memoryStyles =
-    {};
+  var memoryStyles = {};
 
 
   function loadStyles() {
@@ -1034,8 +1754,9 @@
         );
 
 
-      if (!raw)
+      if (!raw) {
         return {};
+      }
 
 
       var parsed =
@@ -1050,11 +1771,9 @@
         ? parsed
         : {};
 
-
     } catch (e) {
 
       return memoryStyles;
-
     }
   }
 
@@ -1068,12 +1787,10 @@
         JSON.stringify(obj)
       );
 
-
     } catch (e) {
 
       memoryStyles =
         obj;
-
     }
   }
 
@@ -1086,13 +1803,18 @@
 
 
   var styleSelectRow =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   styleSelectRow.style.display =
     "flex";
 
+
   styleSelectRow.style.gap =
     "5px";
+
 
   styleSelectRow.style.marginTop =
     "4px";
@@ -1103,6 +1825,7 @@
       "select"
     );
 
+
   styleSelectEl.style.flex =
     "1";
 
@@ -1112,8 +1835,10 @@
       "button"
     );
 
+
   loadStyleBtn.type =
     "button";
+
 
   loadStyleBtn.textContent =
     "Load";
@@ -1124,8 +1849,10 @@
       "button"
     );
 
+
   updateStyleBtn.type =
     "button";
+
 
   updateStyleBtn.textContent =
     "Update";
@@ -1136,8 +1863,10 @@
       "button"
     );
 
+
   applyStyleBtn.type =
     "button";
+
 
   applyStyleBtn.textContent =
     "Apply";
@@ -1148,8 +1877,10 @@
       "button"
     );
 
+
   deleteStyleBtn.type =
     "button";
+
 
   deleteStyleBtn.textContent =
     "Delete";
@@ -1159,17 +1890,21 @@
     styleSelectEl
   );
 
+
   styleSelectRow.appendChild(
     loadStyleBtn
   );
+
 
   styleSelectRow.appendChild(
     updateStyleBtn
   );
 
+
   styleSelectRow.appendChild(
     applyStyleBtn
   );
+
 
   styleSelectRow.appendChild(
     deleteStyleBtn
@@ -1186,11 +1921,14 @@
       "div"
     );
 
+
   styleSaveRow.style.display =
     "flex";
 
+
   styleSaveRow.style.gap =
     "6px";
+
 
   styleSaveRow.style.marginTop =
     "6px";
@@ -1201,14 +1939,18 @@
       "input"
     );
 
+
   styleNameEl.type =
     "text";
+
 
   styleNameEl.placeholder =
     "Style name...";
 
+
   styleNameEl.style.flex =
     "1";
+
 
   styleNameEl.style.boxSizing =
     "border-box";
@@ -1219,8 +1961,10 @@
       "button"
     );
 
+
   saveStyleBtn.type =
     "button";
+
 
   saveStyleBtn.textContent =
     "Save Style";
@@ -1229,6 +1973,7 @@
   styleSaveRow.appendChild(
     styleNameEl
   );
+
 
   styleSaveRow.appendChild(
     saveStyleBtn
@@ -1289,12 +2034,14 @@
         modeEl.value,
 
       charSpacing:
-        Number(charSpacingEl.value) ||
-        0,
+        Number(
+          charSpacingEl.value
+        ) || 0,
 
       wordSpacing:
-        Number(wordSpacingEl.value) ||
-        0,
+        Number(
+          wordSpacingEl.value
+        ) || 0,
 
       vAlign:
         vAlignEl.value,
@@ -1303,8 +2050,9 @@
         !!strokeEnabledEl.checked,
 
       strokeWidth:
-        Number(strokeWidthEl.value) ||
-        0,
+        Number(
+          strokeWidthEl.value
+        ) || 0,
 
       strokeColor:
         strokeColorEl.value ||
@@ -1317,159 +2065,198 @@
 
       strokePosition:
         strokePositionEl.value
-
     };
   }
 
 
   function applySettingsSnapshot(s) {
 
-    if (!s) return;
+    if (!s) {
+      return;
+    }
 
 
     if (
       s.font !==
       undefined
-    )
+    ) {
+
       fontEl.value =
         s.font;
+    }
 
 
     if (
       s.size !==
       undefined
-    )
+    ) {
+
       sizeEl.value =
         s.size;
+    }
 
 
     if (
       s.color !==
       undefined
-    )
+    ) {
+
       colorEl.value =
         s.color;
+    }
 
 
     if (
       s.align !==
       undefined
-    )
+    ) {
+
       alignEl.value =
         s.align;
+    }
 
 
     if (
       s.bold !==
       undefined
-    )
+    ) {
+
       boldEl.checked =
         !!s.bold;
+    }
 
 
     if (
       s.italic !==
       undefined
-    )
+    ) {
+
       italicEl.checked =
         !!s.italic;
+    }
 
 
     if (
       s.padding !==
       undefined
-    )
+    ) {
+
       paddingEl.value =
         s.padding;
+    }
 
 
     if (
       s.minSize !==
       undefined
-    )
+    ) {
+
       minSizeEl.value =
         s.minSize;
+    }
 
 
     if (
       s.autoFit !==
       undefined
-    )
+    ) {
+
       fitEl.checked =
         !!s.autoFit;
+    }
 
 
     if (
       s.mode !==
       undefined
-    )
+    ) {
+
       modeEl.value =
         s.mode;
+    }
 
 
     if (
       s.charSpacing !==
       undefined
-    )
+    ) {
+
       charSpacingEl.value =
         s.charSpacing;
+    }
 
 
     if (
       s.wordSpacing !==
       undefined
-    )
+    ) {
+
       wordSpacingEl.value =
         s.wordSpacing;
+    }
 
 
     if (
       s.vAlign !==
       undefined
-    )
+    ) {
+
       vAlignEl.value =
         s.vAlign;
+    }
 
 
     if (
       s.strokeEnabled !==
       undefined
-    )
+    ) {
+
       strokeEnabledEl.checked =
         !!s.strokeEnabled;
+    }
 
 
     if (
       s.strokeWidth !==
       undefined
-    )
+    ) {
+
       strokeWidthEl.value =
         s.strokeWidth;
+    }
 
 
     if (
       s.strokeColor !==
       undefined
-    )
+    ) {
+
       strokeColorEl.value =
         s.strokeColor;
+    }
 
 
     if (
       s.strokeOpacity !==
       undefined
-    )
+    ) {
+
       strokeOpacityEl.value =
         s.strokeOpacity;
+    }
 
 
     if (
       s.strokePosition !==
       undefined
-    )
+    ) {
+
       strokePositionEl.value =
         s.strokePosition;
+    }
 
+
+    savePanelState();
   }
 
 
@@ -1486,13 +2273,10 @@
 
 
     var names =
-      Object.keys(
-        styles
-      ).sort(
+      Object.keys(styles).sort(
         function (a, b) {
 
           return a.localeCompare(b);
-
         }
       );
 
@@ -1508,8 +2292,10 @@
           "option"
         );
 
+
       empty.value =
         "";
+
 
       empty.textContent =
         "(no styles saved)";
@@ -1518,6 +2304,7 @@
       styleSelectEl.appendChild(
         empty
       );
+
 
       return;
     }
@@ -1534,8 +2321,10 @@
           "option"
         );
 
+
       opt.value =
         names[i];
+
 
       opt.textContent =
         names[i];
@@ -1544,7 +2333,6 @@
       styleSelectEl.appendChild(
         opt
       );
-
     }
 
 
@@ -1555,9 +2343,7 @@
 
       styleSelectEl.value =
         selectName;
-
     }
-
   }
 
 
@@ -1595,9 +2381,7 @@
           currentSettingsSnapshot();
 
 
-        saveStylesObj(
-          styles
-        );
+        saveStylesObj(styles);
 
 
         refreshStyleSelect(
@@ -1618,16 +2402,13 @@
         styleNameEl.value =
           "";
 
-
       } catch (e) {
 
         alert(
           "Save style error: " +
           e.message
         );
-
       }
-
     };
 
 
@@ -1687,16 +2468,13 @@
           name
         );
 
-
       } catch (e) {
 
         alert(
           "Load style error: " +
           e.message
         );
-
       }
-
     };
 
 
@@ -1743,9 +2521,7 @@
           currentSettingsSnapshot();
 
 
-        saveStylesObj(
-          styles
-        );
+        saveStylesObj(styles);
 
 
         refreshStyleSelect(
@@ -1766,16 +2542,13 @@
           name
         );
 
-
       } catch (e) {
 
         alert(
           "Update style error: " +
           e.message
         );
-
       }
-
     };
 
 
@@ -1839,16 +2612,13 @@
           name
         );
 
-
       } catch (e) {
 
         alert(
           "Apply style error: " +
           e.message
         );
-
       }
-
     };
 
 
@@ -1894,7 +2664,6 @@
 
           editingStyleName =
             "";
-
         }
 
 
@@ -1910,16 +2679,13 @@
           name
         );
 
-
       } catch (e) {
 
         alert(
           "Delete style error: " +
           e.message
         );
-
       }
-
     };
 
 
@@ -1940,9 +2706,12 @@
       ) {
 
         return;
-
       }
 
+
+      /* -------------------------------------------------
+         FONT LOADED
+         ------------------------------------------------- */
 
       if (
         event.data.indexOf(
@@ -1953,7 +2722,8 @@
         var name =
           event.data
             .substring(
-              "TYPERP_FONT_LOADED:".length
+              "TYPERP_FONT_LOADED:"
+                .length
             )
             .split(" | ")[0];
 
@@ -1964,24 +2734,29 @@
             name;
 
 
+          savePanelState();
+
+
           setStatus(
             "Font loaded and applied: " +
             name
           );
-
 
         } else {
 
           setStatus(
             "Font loaded, but its name could not be read."
           );
-
         }
 
 
         return;
       }
 
+
+      /* -------------------------------------------------
+         FONT ERROR
+         ------------------------------------------------- */
 
       if (
         event.data.indexOf(
@@ -1991,7 +2766,8 @@
 
         var ferr =
           event.data.substring(
-            "TYPERP_FONT_ERR:".length
+            "TYPERP_FONT_ERR:"
+              .length
           );
 
 
@@ -2011,6 +2787,10 @@
       }
 
 
+      /* -------------------------------------------------
+         PHOTOPEA OK
+         ------------------------------------------------- */
+
       if (
         event.data.indexOf(
           "TYPERP_OK:"
@@ -2027,6 +2807,10 @@
         return;
       }
 
+
+      /* -------------------------------------------------
+         PHOTOPEA ERROR
+         ------------------------------------------------- */
 
       if (
         event.data.indexOf(
@@ -2050,7 +2834,6 @@
           "TypeR-P BUILD-028\n\n" +
           error
         );
-
       }
 
     }
@@ -2066,12 +2849,11 @@
     return JSON.stringify(
       String(value)
     );
-
   }
 
 
   /* =====================================================
-     INSERT
+     INSERT CURRENT LINE
      ===================================================== */
 
   function insertCurrentLine() {
@@ -2087,7 +2869,6 @@
 
 
     saveCurrentLine();
-    saveFullText();
 
 
     var text =
@@ -2138,7 +2919,6 @@
     ) {
 
       color += "0";
-
     }
 
 
@@ -2148,9 +2928,7 @@
 
 
     var padding =
-      Number(
-        paddingEl.value
-      );
+      Number(paddingEl.value);
 
 
     if (
@@ -2159,14 +2937,11 @@
     ) {
 
       padding = 12;
-
     }
 
 
     var minSize =
-      Number(
-        minSizeEl.value
-      );
+      Number(minSizeEl.value);
 
 
     if (
@@ -2175,7 +2950,6 @@
     ) {
 
       minSize = 8;
-
     }
 
 
@@ -2198,7 +2972,6 @@
     ) {
 
       tracking = 0;
-
     }
 
 
@@ -2214,7 +2987,6 @@
     ) {
 
       wordSpacing = 0;
-
     }
 
 
@@ -2251,7 +3023,6 @@
     ) {
 
       strokeWidth = 3;
-
     }
 
 
@@ -2272,7 +3043,6 @@
     ) {
 
       strokeColor += "0";
-
     }
 
 
@@ -2287,7 +3057,6 @@
     ) {
 
       strokeOpacity = 100;
-
     }
 
 
@@ -2336,7 +3105,6 @@
       ) {
 
         extra += " ";
-
       }
 
 
@@ -2345,7 +3113,6 @@
           / /g,
           " " + extra
         );
-
     }
 
 
@@ -2368,49 +3135,91 @@
       "if(!d)throw new Error('No active document.');\n" +
 
 
+      /* -------------------------------------------------
+         SELECTION
+         ------------------------------------------------- */
+
       "var b;\n" +
 
       "try{b=d.selection.bounds;}" +
 
-      "catch(e){throw new Error('No active selection. Please make a selection first.');}\n" +
+      "catch(e){" +
+
+      "throw new Error(" +
+      "'No active selection. Please make a selection first.'" +
+      ");" +
+
+      "}\n" +
 
 
       "if(!b||b.length!==4)" +
 
-      "throw new Error('No active selection. Please make a selection first.');\n" +
+      "throw new Error(" +
+      "'No active selection. Please make a selection first.'" +
+      ");\n" +
 
+
+      /* -------------------------------------------------
+         PIXEL CONVERSION
+         ------------------------------------------------- */
 
       "function px(v){\n" +
 
-      "try{if(typeof v==='number')return v;}" +
+      "try{" +
 
-      "catch(e){}\n" +
+      "if(typeof v==='number')" +
 
-      "try{if(v&&typeof v.as==='function')return Number(v.as('px'));}" +
+      "return v;" +
 
-      "catch(e){}\n" +
+      "}catch(e){}\n" +
 
-      "try{if(v&&v.value!==undefined)return Number(v.value);}" +
+      "try{" +
 
-      "catch(e){}\n" +
+      "if(v&&typeof v.as==='function')" +
+
+      "return Number(v.as('px'));" +
+
+      "}catch(e){}\n" +
+
+      "try{" +
+
+      "if(v&&v.value!==undefined)" +
+
+      "return Number(v.value);" +
+
+      "}catch(e){}\n" +
 
       "return NaN;\n" +
 
       "}\n" +
 
 
-      "var L=px(b[0]),T=px(b[1]),R=px(b[2]),B=px(b[3]);\n" +
+      "var L=px(b[0])," +
+      "T=px(b[1])," +
+      "R=px(b[2])," +
+      "B=px(b[3]);\n" +
 
 
-      "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B))" +
+      "if(!isFinite(L)||" +
+      "!isFinite(T)||" +
+      "!isFinite(R)||" +
+      "!isFinite(B))" +
 
-      "throw new Error('Could not read selection coordinates.');\n" +
+      "throw new Error(" +
+      "'Could not read selection coordinates.'" +
+      ");\n" +
 
 
       "if(R<=L||B<=T)" +
 
-      "throw new Error('Selection has invalid dimensions.');\n" +
+      "throw new Error(" +
+      "'Selection has invalid dimensions.'" +
+      ");\n" +
 
+
+      /* -------------------------------------------------
+         TEXT BOX
+         ------------------------------------------------- */
 
       "var boxLeft=L+" +
       padding +
@@ -2429,31 +3238,34 @@
       ";\n" +
 
 
-      "var boxWidth=boxRight-boxLeft;\n" +
+      "var boxWidth=" +
+      "boxRight-boxLeft;\n" +
 
-      "var boxHeight=boxBottom-boxTop;\n" +
+      "var boxHeight=" +
+      "boxBottom-boxTop;\n" +
 
 
-      "if(boxWidth<1||boxHeight<1)" +
+      "if(boxWidth<1||" +
+      "boxHeight<1)" +
 
-      "throw new Error('Padding is too large for the selection.');\n" +
+      "throw new Error(" +
+      "'Padding is too large for the selection.'" +
+      ");\n" +
 
+
+      /* -------------------------------------------------
+         LAYER
+         ------------------------------------------------- */
 
       "var layer=d.artLayers.add();\n" +
 
       "layer.kind=LayerKind.TEXT;\n" +
 
-
       "layer.name=" +
-
       jsString(
         "TTP: " +
-        text.substring(
-          0,
-          45
-        )
+        text.substring(0, 45)
       ) +
-
       ";\n" +
 
 
@@ -2464,13 +3276,17 @@
          TRACKING
          ------------------------------------------------- */
 
-      "try{ti.tracking=" +
+      "try{" +
+
+      "ti.tracking=" +
       tracking +
-      ";}catch(eTrack){}\n" +
+      ";" +
+
+      "}catch(eTrack){}\n" +
 
 
       /* -------------------------------------------------
-         FONT STYLE
+         FONT
          ------------------------------------------------- */
 
       "var fontName=" +
@@ -2479,7 +3295,6 @@
 
 
       "var fontStyle=" +
-
       jsString(
         bold && italic
           ? "Bold Italic"
@@ -2489,39 +3304,53 @@
           ? "Italic"
           : "Regular"
       ) +
-
       ";\n" +
 
 
+      /* =================================================
+         PARAGRAPH TEXT
+         ================================================= */
+
       "if(" +
-
       jsString(mode) +
-
       "==='PARAGRAPH'){\n" +
 
-
       "ti.kind=TextType.PARAGRAPHTEXT;\n" +
+
 
       "ti.width=boxWidth;\n" +
 
       "ti.height=boxHeight;\n" +
 
+
       "ti.contents=" +
       jsString(text) +
       ";\n" +
 
+
       "ti.font=fontName;\n" +
 
-      "try{ti.fontStyle=fontStyle;}catch(eStyle){}\n" +
+
+      "try{" +
+
+      "ti.fontStyle=fontStyle;" +
+
+      "}catch(eStyle){}\n" +
+
 
       "ti.size=" +
       initialSize +
       ";\n" +
 
+
       "ti.justification=Justification." +
       align +
       ";\n" +
 
+
+      /* -------------------------------------------------
+         COLOR
+         ------------------------------------------------- */
 
       "var c=new SolidColor();\n" +
 
@@ -2541,13 +3370,16 @@
       ";\n" +
 
 
-      "function estimateLines(str,size,width){\n" +
+      "function estimateLines(" +
+      "str,size,width){\n" +
 
       "var avg=size*0.52;\n" +
 
-      "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
+      "var maxChars=" +
+      "Math.max(1,Math.floor(width/avg));\n" +
 
-      "var parts=str.split(String.fromCharCode(10));\n" +
+      "var parts=" +
+      "str.split(String.fromCharCode(10));\n" +
 
       "var total=0;\n" +
 
@@ -2556,9 +3388,18 @@
 
       "var line=parts[p];\n" +
 
-      "if(line.trim()===''){total++;continue;}\n" +
 
-      "var words=line.trim().split(/\\s+/);\n" +
+      "if(line.trim()===''){" +
+
+      "total++;" +
+
+      "continue;" +
+
+      "}\n" +
+
+
+      "var words=" +
+      "line.trim().split(/\\s+/);\n" +
 
       "var chars=0;\n" +
 
@@ -2572,17 +3413,23 @@
       "var need=len+(chars>0?1:0);\n" +
 
 
-      "if(chars+need>maxChars){count++;chars=len;}" +
+      "if(chars+need>maxChars){" +
 
-      "else chars+=need;\n" +
+      "count++;" +
+
+      "chars=len;" +
+
+      "}else{" +
+
+      "chars+=need;" +
 
       "}\n" +
 
+      "}\n" +
 
       "total+=count;\n" +
 
       "}\n" +
-
 
       "return Math.max(1,total);\n" +
 
@@ -2593,7 +3440,6 @@
       autoFit +
       "){\n" +
 
-
       "var current=" +
       initialSize +
       ";\n" +
@@ -2603,13 +3449,15 @@
       minSize +
       "){\n" +
 
-
-      "var est=estimateLines(" +
+      "var est=" +
+      "estimateLines(" +
       jsString(text) +
       ",current,boxWidth);\n" +
 
 
-      "if(est*current*1.20<=boxHeight)break;\n" +
+      "if(est*current*1.20<=boxHeight)" +
+
+      "break;\n" +
 
 
       "current--;\n" +
@@ -2624,46 +3472,72 @@
       "}\n" +
 
 
+      /* -------------------------------------------------
+         VERTICAL ALIGNMENT
+         ------------------------------------------------- */
+
       "var offset=0;\n" +
 
 
       "if(" +
-
       jsString(vAlign) +
+      "==='MIDDLE'){" +
 
-      "==='MIDDLE')" +
+      "offset=Math.max(" +
+      "0," +
+      "boxHeight-finalSize*1.20" +
+      ")/2;" +
 
-      "offset=Math.max(0,boxHeight-finalSize*1.20)/2;\n" +
+      "}\n" +
 
 
       "else if(" +
-
       jsString(vAlign) +
+      "==='BOTTOM'){" +
 
-      "==='BOTTOM')" +
+      "offset=Math.max(" +
+      "0," +
+      "boxHeight-finalSize*1.20" +
+      ");" +
 
-      "offset=Math.max(0,boxHeight-finalSize*1.20);\n" +
+      "}\n" +
 
 
-      "ti.position=[boxLeft,boxTop+offset];\n" +
+      "ti.position=[" +
+      "boxLeft," +
+      "boxTop+offset" +
+      "];\n" +
 
 
       "}else{\n" +
 
 
+      /* =================================================
+         POINT TEXT
+         ================================================= */
+
       "ti.kind=TextType.POINTTEXT;\n" +
+
 
       "ti.contents=" +
       jsString(text) +
       ";\n" +
 
+
       "ti.font=fontName;\n" +
 
-      "try{ti.fontStyle=fontStyle;}catch(eStyle2){}\n" +
+
+      "try{" +
+
+      "ti.fontStyle=fontStyle;" +
+
+      "}catch(eStyle2){}\n" +
+
 
       "ti.size=" +
       initialSize +
       ";\n" +
+
 
       "ti.justification=Justification." +
       align +
@@ -2676,6 +3550,7 @@
       jsString(color) +
       ";\n" +
 
+
       "ti.color=pc;\n" +
 
 
@@ -2683,24 +3558,26 @@
 
 
       "if(" +
-
       jsString(vAlign) +
+      "==='TOP')" +
 
-      "==='TOP')py=T+" +
+      "py=T+" +
       initialSize +
       ";\n" +
 
 
       "else if(" +
-
       jsString(vAlign) +
+      "==='BOTTOM')" +
 
-      "==='BOTTOM')py=B-(" +
+      "py=B-(" +
       initialSize +
       "*0.3);\n" +
 
 
-      "ti.position=[(L+R)/2,py];\n" +
+      "ti.position=[" +
+      "(L+R)/2,py];\n" +
+
 
       "}\n" +
 
@@ -2720,39 +3597,40 @@
 
 
       "if(" +
-
       strokeEnabled +
-
       "&&" +
-
       strokeWidth +
-
       ">0){\n" +
 
 
       "try{\n" +
 
 
-      "function cTID(s){return app.charIDToTypeID(s);}\n" +
+      "function cTID(s){" +
+      "return app.charIDToTypeID(s);" +
+      "}\n" +
 
-      "function sTID(s){return app.stringIDToTypeID(s);}\n" +
+
+      "function sTID(s){" +
+      "return app.stringIDToTypeID(s);" +
+      "}\n" +
 
 
       "var strokePos='OutF';\n" +
 
 
       "if(" +
-
       jsString(strokePosition) +
+      "==='CENTER')" +
 
-      "==='CENTER')strokePos='CtrF';\n" +
+      "strokePos='CtrF';\n" +
 
 
       "else if(" +
-
       jsString(strokePosition) +
+      "==='INSIDE')" +
 
-      "==='INSIDE')strokePos='InsF';\n" +
+      "strokePos='InsF';\n" +
 
 
       "var hex=" +
@@ -2760,79 +3638,149 @@
       ";\n" +
 
 
-      "var rr=parseInt(hex.substring(0,2),16);\n" +
-
-      "var gg=parseInt(hex.substring(2,4),16);\n" +
-
-      "var bb=parseInt(hex.substring(4,6),16);\n" +
+      "var rr=parseInt(" +
+      "hex.substring(0,2),16);\n" +
 
 
-      "var desc=new ActionDescriptor();\n" +
-
-      "var ref=new ActionReference();\n" +
-
-
-      "ref.putProperty(cTID('Prpr'),cTID('Lefx'));\n" +
-
-      "ref.putEnumerated(cTID('Lyr '),cTID('Ordn'),cTID('Trgt'));\n" +
+      "var gg=parseInt(" +
+      "hex.substring(2,4),16);\n" +
 
 
-      "desc.putReference(cTID('null'),ref);\n" +
+      "var bb=parseInt(" +
+      "hex.substring(4,6),16);\n" +
 
 
-      "var fx=new ActionDescriptor();\n" +
-
-      "var st=new ActionDescriptor();\n" +
-
-
-      "st.putBoolean(cTID('enab'),true);\n" +
-
-      "st.putBoolean(sTID('present'),true);\n" +
-
-      "st.putBoolean(sTID('showInDialog'),true);\n" +
+      "var desc=" +
+      "new ActionDescriptor();\n" +
 
 
-      "st.putEnumerated(cTID('Styl'),cTID('FStl'),cTID(strokePos));\n" +
-
-      "st.putEnumerated(cTID('PntT'),cTID('FrFl'),cTID('SClr'));\n" +
-
-      "st.putEnumerated(cTID('Md  '),cTID('BlnM'),cTID('Nrml'));\n" +
+      "var ref=" +
+      "new ActionReference();\n" +
 
 
-      "st.putUnitDouble(cTID('Opct'),cTID('#Prc')," +
+      "ref.putProperty(" +
+      "cTID('Prpr')," +
+      "cTID('Lefx')" +
+      ");\n" +
 
+
+      "ref.putEnumerated(" +
+      "cTID('Lyr ')," +
+      "cTID('Ordn')," +
+      "cTID('Trgt')" +
+      ");\n" +
+
+
+      "desc.putReference(" +
+      "cTID('null'),ref" +
+      ");\n" +
+
+
+      "var fx=" +
+      "new ActionDescriptor();\n" +
+
+
+      "var st=" +
+      "new ActionDescriptor();\n" +
+
+
+      "st.putBoolean(" +
+      "cTID('enab'),true" +
+      ");\n" +
+
+
+      "st.putBoolean(" +
+      "sTID('present'),true" +
+      ");\n" +
+
+
+      "st.putBoolean(" +
+      "sTID('showInDialog'),true" +
+      ");\n" +
+
+
+      "st.putEnumerated(" +
+      "cTID('Styl')," +
+      "cTID('FStl')," +
+      "cTID(strokePos)" +
+      ");\n" +
+
+
+      "st.putEnumerated(" +
+      "cTID('PntT')," +
+      "cTID('FrFl')," +
+      "cTID('SClr')" +
+      ");\n" +
+
+
+      "st.putEnumerated(" +
+      "cTID('Md  ')," +
+      "cTID('BlnM')," +
+      "cTID('Nrml')" +
+      ");\n" +
+
+
+      "st.putUnitDouble(" +
+      "cTID('Opct')," +
+      "cTID('#Prc')," +
       strokeOpacity +
-
       ");\n" +
 
 
-      "st.putUnitDouble(cTID('Sz  '),cTID('#Pxl')," +
-
+      "st.putUnitDouble(" +
+      "cTID('Sz  ')," +
+      "cTID('#Pxl')," +
       strokeWidth +
-
       ");\n" +
 
 
-      "var sc=new ActionDescriptor();\n" +
-
-      "sc.putDouble(cTID('Rd  '),rr);\n" +
-
-      "sc.putDouble(cTID('Grn '),gg);\n" +
-
-      "sc.putDouble(cTID('Bl  '),bb);\n" +
+      "var sc=" +
+      "new ActionDescriptor();\n" +
 
 
-      "st.putObject(cTID('Clr '),cTID('RGBC'),sc);\n" +
-
-      "st.putBoolean(sTID('overprint'),false);\n" +
-
-
-      "fx.putObject(cTID('FrFX'),cTID('FrFX'),st);\n" +
-
-      "desc.putObject(cTID('T   '),cTID('Lefx'),fx);\n" +
+      "sc.putDouble(" +
+      "cTID('Rd  '),rr" +
+      ");\n" +
 
 
-      "executeAction(cTID('setd'),desc,DialogModes.NO);\n" +
+      "sc.putDouble(" +
+      "cTID('Grn '),gg" +
+      ");\n" +
+
+
+      "sc.putDouble(" +
+      "cTID('Bl  '),bb" +
+      ");\n" +
+
+
+      "st.putObject(" +
+      "cTID('Clr ')," +
+      "cTID('RGBC'),sc" +
+      ");\n" +
+
+
+      "st.putBoolean(" +
+      "sTID('overprint'),false" +
+      ");\n" +
+
+
+      "fx.putObject(" +
+      "cTID('FrFX')," +
+      "cTID('FrFX'),st" +
+      ");\n" +
+
+
+      "desc.putObject(" +
+      "cTID('T   ')," +
+      "cTID('Lefx'),fx" +
+      ");\n" +
+
+
+      "executeAction(" +
+      "cTID('setd')," +
+      "desc," +
+      "DialogModes.NO" +
+      ");\n" +
 
 
       "strokeStatus='enabled';\n" +
@@ -2840,11 +3788,15 @@
 
       "}catch(se){" +
 
-      "strokeStatus='failed:'+" +
 
-      "(se&&se.message?se.message:String(se));" +
+      "strokeStatus=" +
+      "'failed:'+" +
+      "(se&&se.message?" +
+      "se.message:String(se));" +
+
 
       "}\n" +
+
 
       "}\n" +
 
@@ -2858,11 +3810,8 @@
       "'TEXT INSERTED | selection='+" +
 
       "Math.round(L)+','+" +
-
       "Math.round(T)+','+" +
-
       "Math.round(R)+','+" +
-
       "Math.round(B)+" +
 
       "' | size='+ti.size+" +
@@ -2870,7 +3819,7 @@
       "' | bold=" +
       bold +
 
-      " | italic=" +
+      "' | italic=" +
       italic +
 
       "' | stroke='+strokeStatus;\n" +
@@ -2878,7 +3827,11 @@
 
       "try{" +
 
-      "app.echoToOE('TYPERP_OK:'+msg);" +
+      "app.echoToOE(" +
+
+      "'TYPERP_OK:'+msg" +
+
+      ");" +
 
       "}catch(eEcho){}\n" +
 
@@ -2892,7 +3845,8 @@
 
       "'TYPERP_ERR:'+" +
 
-      "(e&&e.message?e.message:String(e))" +
+      "(e&&e.message?" +
+      "e.message:String(e))" +
 
       ");" +
 
@@ -2910,6 +3864,10 @@
     );
 
 
+    /* -------------------------------------------------
+       RESPONSE TIMEOUT
+       ------------------------------------------------- */
+
     setTimeout(
       function () {
 
@@ -2922,13 +3880,11 @@
           setStatus(
             "No response from Photopea after 6s."
           );
-
         }
 
       },
       6000
     );
-
   }
 
 
@@ -2937,29 +3893,163 @@
 
 
   /* =====================================================
-     RESTORE SAVED TEXT
+     BUILD-028
+     AUTO SAVE
+     ===================================================== */
+
+  function watchPersistentElement(
+    element
+  ) {
+
+    if (!element) {
+      return;
+    }
+
+
+    element.addEventListener(
+      "input",
+      function () {
+
+        savePanelState();
+      }
+    );
+
+
+    element.addEventListener(
+      "change",
+      function () {
+
+        savePanelState();
+      }
+    );
+  }
+
+
+  /*
+   * Basic controls
+   */
+
+  watchPersistentElement(
+    fullTextEl
+  );
+
+
+  watchPersistentElement(
+    currentLineEl
+  );
+
+
+  watchPersistentElement(
+    fontEl
+  );
+
+
+  watchPersistentElement(
+    sizeEl
+  );
+
+
+  watchPersistentElement(
+    colorEl
+  );
+
+
+  watchPersistentElement(
+    alignEl
+  );
+
+
+  /*
+   * Dynamic controls
+   */
+
+  watchPersistentElement(
+    boldEl
+  );
+
+
+  watchPersistentElement(
+    italicEl
+  );
+
+
+  watchPersistentElement(
+    paddingEl
+  );
+
+
+  watchPersistentElement(
+    fitEl
+  );
+
+
+  watchPersistentElement(
+    minSizeEl
+  );
+
+
+  watchPersistentElement(
+    modeEl
+  );
+
+
+  watchPersistentElement(
+    charSpacingEl
+  );
+
+
+  watchPersistentElement(
+    wordSpacingEl
+  );
+
+
+  watchPersistentElement(
+    vAlignEl
+  );
+
+
+  watchPersistentElement(
+    strokeEnabledEl
+  );
+
+
+  watchPersistentElement(
+    strokeWidthEl
+  );
+
+
+  watchPersistentElement(
+    strokeColorEl
+  );
+
+
+  watchPersistentElement(
+    strokeOpacityEl
+  );
+
+
+  watchPersistentElement(
+    strokePositionEl
+  );
+
+
+  /* =====================================================
+     RESTORE SAVED STATE
      ===================================================== */
 
   var restored =
-    restoreFullText();
+    restorePanelState();
 
 
-  if (restored) {
+  updateLine();
 
-    /*
-     * Rebuild the line system from the
-     * restored Full Text.
-     */
 
-    loadTextIntoLines(
-      fullTextEl.value || ""
-    );
+  /*
+   * updateLine() can replace currentLineEl,
+   * so save once after restoration.
+   */
 
-  } else {
-
-    updateLine();
-
-  }
+  savePanelState();
 
 
   /* =====================================================
@@ -2968,7 +4058,7 @@
 
   setStatus(
     restored
-      ? "Ready (BUILD-028) — Full Text restored."
+      ? "Restored (BUILD-028)"
       : "Ready (BUILD-028)"
   );
 
@@ -2994,8 +4084,10 @@
   debugBtn.style.width =
     "100%";
 
+
   debugBtn.style.marginTop =
     "12px";
+
 
   debugBtn.style.background =
     "#333";
@@ -3032,13 +4124,11 @@
             setStatus(
               "Raw test also got NO response — link itself is broken."
             );
-
           }
 
         },
         4000
       );
-
     };
 
 
