@@ -1,8 +1,11 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-026
+// BUILD: TYPERP-BUILD-027
 //
-// BUILD-026
-// - Based on BUILD-025
+// BUILD-027
+// - Based on BUILD-026
+// - Bold
+// - Italic
+// - Bold / Italic saved in Saved Styles
 // - Stroke / Outline
 // - Stroke enable/disable
 // - Stroke width
@@ -21,6 +24,9 @@
 // IMPORTANT:
 // Stroke is applied using Photopea/Photoshop Action Manager
 // Layer Style "FrFX" instead of rasterizing the text.
+//
+// Bold / Italic use Photoshop/Photopea fauxBold / fauxItalic
+// so the text remains an editable Text Layer.
 
 (function () {
 
@@ -75,7 +81,7 @@
 
   if (missing.length) {
     alert(
-      "TypeR-P BUILD-026 UI ERROR\n\nMissing:\n" +
+      "TypeR-P BUILD-027 UI ERROR\n\nMissing:\n" +
       missing.join("\n")
     );
     return;
@@ -650,6 +656,113 @@
 
 
   /* =====================================================
+     BOLD / ITALIC
+     BUILD-027
+     ===================================================== */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Text Style"
+    )
+  );
+
+
+  var textStyleRow =
+    document.createElement("div");
+
+  textStyleRow.style.display =
+    "flex";
+
+  textStyleRow.style.alignItems =
+    "center";
+
+  textStyleRow.style.gap =
+    "12px";
+
+  textStyleRow.style.marginTop =
+    "4px";
+
+
+  /* ---------- Bold ---------- */
+
+  var boldLabel =
+    document.createElement("label");
+
+  boldLabel.style.display =
+    "flex";
+
+  boldLabel.style.alignItems =
+    "center";
+
+  boldLabel.style.gap =
+    "4px";
+
+
+  var boldEl =
+    document.createElement("input");
+
+  boldEl.type =
+    "checkbox";
+
+
+  boldLabel.appendChild(
+    boldEl
+  );
+
+  boldLabel.appendChild(
+    document.createTextNode(
+      "Bold"
+    )
+  );
+
+
+  /* ---------- Italic ---------- */
+
+  var italicLabel =
+    document.createElement("label");
+
+  italicLabel.style.display =
+    "flex";
+
+  italicLabel.style.alignItems =
+    "center";
+
+  italicLabel.style.gap =
+    "4px";
+
+
+  var italicEl =
+    document.createElement("input");
+
+  italicEl.type =
+    "checkbox";
+
+
+  italicLabel.appendChild(
+    italicEl
+  );
+
+  italicLabel.appendChild(
+    document.createTextNode(
+      "Italic"
+    )
+  );
+
+
+  textStyleRow.appendChild(
+    boldLabel
+  );
+
+  textStyleRow.appendChild(
+    italicLabel
+  );
+
+  settingsPanel.appendChild(
+    textStyleRow
+  );
+
+
+  /* =====================================================
      STROKE / OUTLINE
      ===================================================== */
 
@@ -833,7 +946,7 @@
      ===================================================== */
 
   var STYLES_KEY =
-    "typerp_styles_v3";
+    "typerp_styles_v4";
 
   var memoryStyles =
     {};
@@ -1095,6 +1208,10 @@
   }
 
 
+  /* =====================================================
+     CURRENT SETTINGS SNAPSHOT
+     ===================================================== */
+
   function currentSettingsSnapshot() {
 
     return {
@@ -1114,6 +1231,12 @@
       align:
         alignEl.value ||
         "CENTER",
+
+      bold:
+        !!boldEl.checked,
+
+      italic:
+        !!italicEl.checked,
 
       padding:
         Number(paddingEl.value),
@@ -1163,6 +1286,10 @@
   }
 
 
+  /* =====================================================
+     APPLY SETTINGS SNAPSHOT
+     ===================================================== */
+
   function applySettingsSnapshot(
     s
   ) {
@@ -1205,6 +1332,28 @@
     ) {
       alignEl.value =
         s.align;
+    }
+
+
+    /* ---------- Bold ---------- */
+
+    if (
+      s.bold !==
+      undefined
+    ) {
+      boldEl.checked =
+        !!s.bold;
+    }
+
+
+    /* ---------- Italic ---------- */
+
+    if (
+      s.italic !==
+      undefined
+    ) {
+      italicEl.checked =
+        !!s.italic;
     }
 
 
@@ -1586,7 +1735,7 @@
         );
 
         alert(
-          "TypeR-P BUILD-026\n\n" +
+          "TypeR-P BUILD-027\n\n" +
           error
         );
       }
@@ -1683,6 +1832,17 @@
     var align =
       alignEl.value ||
       "CENTER";
+
+
+    /* -------------------------------------------------
+       BOLD / ITALIC
+       ------------------------------------------------- */
+
+    var bold =
+      !!boldEl.checked;
+
+    var italic =
+      !!italicEl.checked;
 
 
     var padding =
@@ -2086,6 +2246,26 @@
       initialSize +
       ";\n" +
 
+
+      /* -------------------------------------------------
+         BOLD / ITALIC
+         ------------------------------------------------- */
+
+      "try{\n" +
+
+      "ti.fauxBold=" +
+      bold +
+      ";\n" +
+
+      "ti.fauxItalic=" +
+      italic +
+      ";\n" +
+
+      "}catch(eStyle){\n" +
+
+      "}\n" +
+
+
       "ti.justification=Justification." +
       align +
       ";\n" +
@@ -2309,6 +2489,26 @@
       "ti.size=" +
       initialSize +
       ";\n" +
+
+
+      /* -------------------------------------------------
+         BOLD / ITALIC
+         ------------------------------------------------- */
+
+      "try{\n" +
+
+      "ti.fauxBold=" +
+      bold +
+      ";\n" +
+
+      "ti.fauxItalic=" +
+      italic +
+      ";\n" +
+
+      "}catch(eStyle2){\n" +
+
+      "}\n" +
+
 
       "ti.justification=Justification." +
       align +
@@ -2660,6 +2860,14 @@
 
       "' | tracking='+trackingReadback+" +
 
+      "' | bold='+(" +
+      bold +
+      "? 'ON':'OFF')+" +
+
+      "' | italic='+(" +
+      italic +
+      "? 'ON':'OFF')+" +
+
       "' | stroke='+strokeStatus;\n" +
 
 
@@ -2743,7 +2951,7 @@
   updateLine();
 
   setStatus(
-    "Ready (BUILD-026)"
+    "Ready (BUILD-027)"
   );
 
 
@@ -2786,7 +2994,7 @@
 
 
       window.parent.postMessage(
-        "alert('HELLO FROM TYPERP BUILD-026 - LINK WORKS');",
+        "alert('HELLO FROM TYPERP BUILD-027 - LINK WORKS');",
         "*"
       );
 
