@@ -649,6 +649,12 @@
       "})();";
 
     window.parent.postMessage(script, "*");
+
+    setTimeout(function () {
+      if (statusEl.textContent.indexOf("Checking active selection...") === 0) {
+        setStatus("No response from Photopea after 6s — check if a selection exists, and if the plugin was re-added after the last push (cache).");
+      }
+    }, 6000);
   }
 
   insertLineBtn.onclick = insertCurrentLine;
