@@ -1,11 +1,10 @@
 // TypeR-P — main.js
 // BUILD: TYPERP-BUILD-025
 //
-// BUILD-025
-// - Fixed corrupted/duplicated insert script
+// Clean rebuild
+// - Full Text -> Lines -> Current Line
 // - Selection-aware text insertion
-// - Paragraph Text Box
-// - Point Text
+// - Paragraph Text / Point Text
 // - Padding
 // - Auto Fit
 // - Minimum Font Size
@@ -15,6 +14,10 @@
 // - Saved Styles
 // - Load Font from Device
 // - Photopea communication diagnostics
+//
+// IMPORTANT:
+// This file intentionally contains ONE insert script only.
+// Do not paste another "var script =" inside insertCurrentLine().
 
 (function () {
 
@@ -62,11 +65,9 @@
   var missing = [];
 
   for (var i = 0; i < required.length; i++) {
-
     if (!required[i][1]) {
       missing.push(required[i][0]);
     }
-
   }
 
   if (missing.length) {
@@ -85,9 +86,7 @@
      ===================================================== */
 
   function setStatus(text) {
-
     statusEl.textContent = text;
-
   }
 
 
@@ -104,8 +103,7 @@
     if (!lines.length) {
 
       currentLineEl.value = "";
-      lineInfoEl.textContent =
-        "No lines loaded.";
+      lineInfoEl.textContent = "No lines loaded.";
 
       return;
     }
@@ -156,8 +154,9 @@
     }
 
     text =
-      text.replace(/\r\n/g, "\n")
-          .replace(/\r/g, "\n");
+      text
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n");
 
     lines =
       text.split("\n");
@@ -166,9 +165,7 @@
       lines.length > 0 &&
       lines[lines.length - 1].trim() === ""
     ) {
-
       lines.pop();
-
     }
 
     currentIndex = 0;
@@ -180,20 +177,17 @@
       lines.length +
       " line(s)."
     );
-
   };
 
 
   /* =====================================================
-     CURRENT LINE
+     CURRENT LINE EDIT
      ===================================================== */
 
   currentLineEl.addEventListener(
     "input",
     function () {
-
       saveCurrentLine();
-
     }
   );
 
@@ -202,59 +196,53 @@
      PREVIOUS
      ===================================================== */
 
-  previousLineBtn.onclick =
-    function () {
+  previousLineBtn.onclick = function () {
 
-      if (!lines.length) {
+    if (!lines.length) {
 
-        setStatus(
-          "Load lines first."
-        );
+      setStatus(
+        "Load lines first."
+      );
 
-        return;
-      }
+      return;
+    }
 
-      saveCurrentLine();
+    saveCurrentLine();
 
-      if (currentIndex > 0) {
-        currentIndex--;
-      }
+    if (currentIndex > 0) {
+      currentIndex--;
+    }
 
-      updateLine();
-
-    };
+    updateLine();
+  };
 
 
   /* =====================================================
      NEXT
      ===================================================== */
 
-  nextLineBtn.onclick =
-    function () {
+  nextLineBtn.onclick = function () {
 
-      if (!lines.length) {
+    if (!lines.length) {
 
-        setStatus(
-          "Load lines first."
-        );
+      setStatus(
+        "Load lines first."
+      );
 
-        return;
-      }
+      return;
+    }
 
-      saveCurrentLine();
+    saveCurrentLine();
 
-      if (
-        currentIndex <
-        lines.length - 1
-      ) {
+    if (
+      currentIndex <
+      lines.length - 1
+    ) {
+      currentIndex++;
+    }
 
-        currentIndex++;
-
-      }
-
-      updateLine();
-
-    };
+    updateLine();
+  };
 
 
   /* =====================================================
@@ -275,7 +263,8 @@
     var label =
       document.createElement("label");
 
-    label.textContent = text;
+    label.textContent =
+      text;
 
     label.style.display =
       "block";
@@ -290,17 +279,27 @@
   function makeNumber(
     value,
     min,
-    max
+    max,
+    step
   ) {
 
     var input =
       document.createElement("input");
 
-    input.type = "number";
-    input.value = value;
-    input.min = min;
-    input.max = max;
-    input.step = "1";
+    input.type =
+      "number";
+
+    input.value =
+      value;
+
+    input.min =
+      min;
+
+    input.max =
+      max;
+
+    input.step =
+      step || "1";
 
     input.style.width =
       "100%";
@@ -360,7 +359,6 @@
     function () {
 
       fontUploadInput.click();
-
     };
 
 
@@ -379,7 +377,6 @@
         "Loading font file..."
       );
 
-
       var reader =
         new FileReader();
 
@@ -391,34 +388,49 @@
             reader.result;
 
 
-          var script =
+          var fontScript =
             "(function(){\n" +
 
             "try{\n" +
 
-            "var before=(app.fonts&&app.fonts.length)?app.fonts.length:0;\n" +
+            "var before=0;\n" +
+
+            "try{before=app.fonts.length;}catch(e){}\n" +
 
             "app.open(" +
             JSON.stringify(dataUrl) +
             ");\n" +
 
-            "var after=(app.fonts&&app.fonts.length)?app.fonts.length:0;\n" +
-
             "var name='';\n" +
 
-            "if(app.fonts&&after>0){\n" +
+            "try{\n" +
 
-            "var last=app.fonts[after-1];\n" +
+            "var after=app.fonts.length;\n" +
 
-            "name=(last&&last.postScriptName)?last.postScriptName:(last&&last.name?last.name:'');\n" +
+            "if(after>0){\n" +
+
+            "var f=app.fonts[after-1];\n" +
+
+            "if(f){\n" +
+
+            "name=f.postScriptName||f.name||'';\n" +
 
             "}\n" +
 
-            "app.echoToOE('TYPERP_FONT_LOADED:'+name+' | before='+before+' after='+after);\n" +
+            "}\n" +
+
+            "}catch(e2){}\n" +
+
+            "app.echoToOE(" +
+            "'TYPERP_FONT_LOADED:'+name" +
+            ");\n" +
 
             "}catch(e){\n" +
 
-            "app.echoToOE('TYPERP_FONT_ERR:'+(e&&e.message?e.message:String(e)));\n" +
+            "app.echoToOE(" +
+            "'TYPERP_FONT_ERR:'+" +
+            "(e&&e.message?e.message:String(e))" +
+            ");\n" +
 
             "}\n" +
 
@@ -426,10 +438,9 @@
 
 
           window.parent.postMessage(
-            script,
+            fontScript,
             "*"
           );
-
         };
 
 
@@ -439,12 +450,10 @@
           setStatus(
             "Could not read the font file."
           );
-
         };
 
 
       reader.readAsDataURL(file);
-
     };
 
 
@@ -460,7 +469,8 @@
     makeNumber(
       12,
       0,
-      500
+      500,
+      1
     );
 
   settingsPanel.appendChild(
@@ -475,6 +485,7 @@
   settingsPanel.appendChild(
     makeLabel("Auto Fit")
   );
+
 
   var fitRow =
     document.createElement("label");
@@ -524,11 +535,13 @@
     )
   );
 
+
   var minSizeEl =
     makeNumber(
       8,
       1,
-      500
+      500,
+      1
     );
 
   settingsPanel.appendChild(
@@ -597,11 +610,13 @@
     )
   );
 
+
   var charSpacingEl =
     makeNumber(
       0,
       -1000,
-      1000
+      1000,
+      10
     );
 
   settingsPanel.appendChild(
@@ -619,11 +634,13 @@
     )
   );
 
+
   var wordSpacingEl =
     makeNumber(
       0,
       0,
-      20
+      20,
+      1
     );
 
   settingsPanel.appendChild(
@@ -649,37 +666,40 @@
     "100%";
 
 
-  [
+  var vAlignOptions = [
     ["TOP", "Top"],
     ["MIDDLE", "Center"],
     ["BOTTOM", "Bottom"]
-  ].forEach(
-    function (pair) {
+  ];
 
-      var opt =
-        document.createElement("option");
 
-      opt.value =
-        pair[0];
+  for (
+    var va = 0;
+    va < vAlignOptions.length;
+    va++
+  ) {
 
-      opt.textContent =
-        pair[1];
+    var vOpt =
+      document.createElement("option");
 
-      if (
-        pair[0] === "MIDDLE"
-      ) {
+    vOpt.value =
+      vAlignOptions[va][0];
 
-        opt.selected =
-          true;
+    vOpt.textContent =
+      vAlignOptions[va][1];
 
-      }
-
-      vAlignEl.appendChild(
-        opt
-      );
-
+    if (
+      vAlignOptions[va][0] ===
+      "MIDDLE"
+    ) {
+      vOpt.selected =
+        true;
     }
-  );
+
+    vAlignEl.appendChild(
+      vOpt
+    );
+  }
 
 
   settingsPanel.appendChild(
@@ -713,19 +733,19 @@
       var parsed =
         JSON.parse(raw);
 
-      return (
+      if (
         parsed &&
         typeof parsed === "object"
-      )
-        ? parsed
-        : {};
+      ) {
+        return parsed;
+      }
+
+      return {};
 
     } catch (e) {
 
       return memoryStyles;
-
     }
-
   }
 
 
@@ -742,16 +762,12 @@
 
       memoryStyles =
         obj;
-
     }
-
   }
 
 
   settingsPanel.appendChild(
-    makeLabel(
-      "Saved Styles"
-    )
+    makeLabel("Saved Styles")
   );
 
 
@@ -860,89 +876,9 @@
     saveStyleBtn
   );
 
-
   settingsPanel.appendChild(
     styleSaveRow
   );
-
-
-  function refreshStyleSelect(
-    selectName
-  ) {
-
-    var styles =
-      loadStyles();
-
-    var names =
-      Object.keys(styles).sort(
-        function (a, b) {
-
-          return a.localeCompare(b);
-
-        }
-      );
-
-
-    styleSelectEl.innerHTML =
-      "";
-
-
-    if (!names.length) {
-
-      var emptyOpt =
-        document.createElement(
-          "option"
-        );
-
-      emptyOpt.value =
-        "";
-
-      emptyOpt.textContent =
-        "(no styles saved)";
-
-      styleSelectEl.appendChild(
-        emptyOpt
-      );
-
-      return;
-    }
-
-
-    for (
-      var i = 0;
-      i < names.length;
-      i++
-    ) {
-
-      var opt =
-        document.createElement(
-          "option"
-        );
-
-      opt.value =
-        names[i];
-
-      opt.textContent =
-        names[i];
-
-      styleSelectEl.appendChild(
-        opt
-      );
-
-    }
-
-
-    if (
-      selectName &&
-      styles[selectName]
-    ) {
-
-      styleSelectEl.value =
-        selectName;
-
-    }
-
-  }
 
 
   function currentSettingsSnapshot() {
@@ -966,10 +902,10 @@
         "CENTER",
 
       padding:
-        Number(paddingEl.value),
+        Number(paddingEl.value) || 0,
 
       minSize:
-        Number(minSizeEl.value),
+        Number(minSizeEl.value) || 8,
 
       autoFit:
         !!fitEl.checked,
@@ -978,20 +914,14 @@
         modeEl.value,
 
       charSpacing:
-        Number(
-          charSpacingEl.value
-        ),
+        Number(charSpacingEl.value) || 0,
 
       wordSpacing:
-        Number(
-          wordSpacingEl.value
-        ),
+        Number(wordSpacingEl.value) || 0,
 
       vAlign:
         vAlignEl.value
-
     };
-
   }
 
 
@@ -1001,242 +931,253 @@
       return;
     }
 
-    if (
-      s.font !== undefined
-    ) {
+    if (s.font !== undefined) {
       fontEl.value =
         s.font;
     }
 
-    if (
-      s.size !== undefined
-    ) {
+    if (s.size !== undefined) {
       sizeEl.value =
         s.size;
     }
 
-    if (
-      s.color !== undefined
-    ) {
+    if (s.color !== undefined) {
       colorEl.value =
         s.color;
     }
 
-    if (
-      s.align !== undefined
-    ) {
+    if (s.align !== undefined) {
       alignEl.value =
         s.align;
     }
 
-    if (
-      s.padding !== undefined
-    ) {
+    if (s.padding !== undefined) {
       paddingEl.value =
         s.padding;
     }
 
-    if (
-      s.minSize !== undefined
-    ) {
+    if (s.minSize !== undefined) {
       minSizeEl.value =
         s.minSize;
     }
 
-    if (
-      s.autoFit !== undefined
-    ) {
+    if (s.autoFit !== undefined) {
       fitEl.checked =
         !!s.autoFit;
     }
 
-    if (
-      s.mode !== undefined
-    ) {
+    if (s.mode !== undefined) {
       modeEl.value =
         s.mode;
     }
 
-    if (
-      s.charSpacing !== undefined
-    ) {
+    if (s.charSpacing !== undefined) {
       charSpacingEl.value =
         s.charSpacing;
     }
 
-    if (
-      s.wordSpacing !== undefined
-    ) {
+    if (s.wordSpacing !== undefined) {
       wordSpacingEl.value =
         s.wordSpacing;
     }
 
-    if (
-      s.vAlign !== undefined
-    ) {
+    if (s.vAlign !== undefined) {
       vAlignEl.value =
         s.vAlign;
     }
+  }
 
+
+  function refreshStyleSelect(
+    selectName
+  ) {
+
+    var styles =
+      loadStyles();
+
+    var names =
+      Object.keys(styles).sort(
+        function (a, b) {
+          return a.localeCompare(b);
+        }
+      );
+
+
+    styleSelectEl.innerHTML =
+      "";
+
+
+    if (!names.length) {
+
+      var emptyOpt =
+        document.createElement("option");
+
+      emptyOpt.value =
+        "";
+
+      emptyOpt.textContent =
+        "(no styles saved)";
+
+      styleSelectEl.appendChild(
+        emptyOpt
+      );
+
+      return;
+    }
+
+
+    for (
+      var i = 0;
+      i < names.length;
+      i++
+    ) {
+
+      var opt =
+        document.createElement("option");
+
+      opt.value =
+        names[i];
+
+      opt.textContent =
+        names[i];
+
+      styleSelectEl.appendChild(
+        opt
+      );
+    }
+
+
+    if (
+      selectName &&
+      styles[selectName]
+    ) {
+
+      styleSelectEl.value =
+        selectName;
+    }
   }
 
 
   saveStyleBtn.onclick =
     function () {
 
-      try {
-
-        var name =
-          (
-            styleNameEl.value ||
-            ""
-          ).trim();
+      var name =
+        (
+          styleNameEl.value ||
+          ""
+        ).trim();
 
 
-        if (!name) {
-
-          setStatus(
-            "Please type a style name first."
-          );
-
-          return;
-        }
-
-
-        var styles =
-          loadStyles();
-
-        styles[name] =
-          currentSettingsSnapshot();
-
-        saveStylesObj(
-          styles
-        );
-
-        refreshStyleSelect(
-          name
-        );
+      if (!name) {
 
         setStatus(
-          "Style saved: " +
-          name
+          "Please type a style name first."
         );
 
-        styleNameEl.value =
-          "";
-
-      } catch (e) {
-
-        alert(
-          "Save style error: " +
-          e.message
-        );
-
+        return;
       }
 
+
+      var styles =
+        loadStyles();
+
+      styles[name] =
+        currentSettingsSnapshot();
+
+      saveStylesObj(
+        styles
+      );
+
+      refreshStyleSelect(
+        name
+      );
+
+      styleNameEl.value =
+        "";
+
+      setStatus(
+        "Style saved: " +
+        name
+      );
     };
 
 
   applyStyleBtn.onclick =
     function () {
 
-      try {
+      var name =
+        styleSelectEl.value;
 
-        var name =
-          styleSelectEl.value;
-
-        if (!name) {
-
-          setStatus(
-            "No style selected."
-          );
-
-          return;
-        }
-
-
-        var styles =
-          loadStyles();
-
-        var s =
-          styles[name];
-
-
-        if (!s) {
-
-          setStatus(
-            "Style not found: " +
-            name
-          );
-
-          return;
-        }
-
-
-        applySettingsSnapshot(
-          s
-        );
+      if (!name) {
 
         setStatus(
-          "Style applied: " +
+          "No style selected."
+        );
+
+        return;
+      }
+
+
+      var styles =
+        loadStyles();
+
+      var style =
+        styles[name];
+
+
+      if (!style) {
+
+        setStatus(
+          "Style not found: " +
           name
         );
 
-      } catch (e) {
-
-        alert(
-          "Apply style error: " +
-          e.message
-        );
-
+        return;
       }
 
+
+      applySettingsSnapshot(
+        style
+      );
+
+      setStatus(
+        "Style applied: " +
+        name
+      );
     };
 
 
   deleteStyleBtn.onclick =
     function () {
 
-      try {
+      var name =
+        styleSelectEl.value;
 
-        var name =
-          styleSelectEl.value;
-
-        if (!name) {
-
-          setStatus(
-            "No style selected."
-          );
-
-          return;
-        }
-
-
-        var styles =
-          loadStyles();
-
-        delete styles[name];
-
-        saveStylesObj(
-          styles
-        );
-
-        refreshStyleSelect();
+      if (!name) {
 
         setStatus(
-          "Style deleted: " +
-          name
+          "No style selected."
         );
 
-      } catch (e) {
-
-        alert(
-          "Delete style error: " +
-          e.message
-        );
-
+        return;
       }
 
+
+      var styles =
+        loadStyles();
+
+      delete styles[name];
+
+      saveStylesObj(
+        styles
+      );
+
+      refreshStyleSelect();
+
+      setStatus(
+        "Style deleted: " +
+        name
+      );
     };
 
 
@@ -1259,39 +1200,37 @@
       }
 
 
+      var msg =
+        event.data;
+
+
       if (
-        event.data.indexOf(
+        msg.indexOf(
           "TYPERP_FONT_LOADED:"
         ) === 0
       ) {
 
-        var rest =
-          event.data.slice(
+        var fontName =
+          msg.substring(
             "TYPERP_FONT_LOADED:".length
           );
 
-        var name =
-          rest.split(
-            " | "
-          )[0];
 
-
-        if (name) {
+        if (fontName) {
 
           fontEl.value =
-            name;
+            fontName;
 
           setStatus(
-            "Font loaded and applied: " +
-            name
+            "Font loaded: " +
+            fontName
           );
 
         } else {
 
           setStatus(
-            "Font loaded, but could not read its name automatically."
+            "Font loaded, but its name could not be detected."
           );
-
         }
 
         return;
@@ -1299,24 +1238,24 @@
 
 
       if (
-        event.data.indexOf(
+        msg.indexOf(
           "TYPERP_FONT_ERR:"
         ) === 0
       ) {
 
-        var ferr =
-          event.data.slice(
+        var fontError =
+          msg.substring(
             "TYPERP_FONT_ERR:".length
           );
 
         setStatus(
           "Font load error: " +
-          ferr
+          fontError
         );
 
         alert(
-          "TypeR-P font load error:\n" +
-          ferr
+          "TypeR-P BUILD-025\n\nFont error:\n" +
+          fontError
         );
 
         return;
@@ -1324,13 +1263,13 @@
 
 
       if (
-        event.data.indexOf(
+        msg.indexOf(
           "TYPERP_OK:"
         ) === 0
       ) {
 
         setStatus(
-          event.data.substring(
+          msg.substring(
             "TYPERP_OK:".length
           )
         );
@@ -1340,34 +1279,36 @@
 
 
       if (
-        event.data.indexOf(
+        msg.indexOf(
           "TYPERP_ERR:"
         ) === 0
       ) {
 
         var error =
-          event.data.substring(
+          msg.substring(
             "TYPERP_ERR:".length
           );
+
 
         setStatus(
           "Error: " +
           error
         );
 
+
         alert(
           "TypeR-P BUILD-025\n\n" +
           error
         );
 
+        return;
       }
-
     }
   );
 
 
   /* =====================================================
-     SAFE STRING
+     SAFE JS STRING
      ===================================================== */
 
   function jsString(value) {
@@ -1375,7 +1316,6 @@
     return JSON.stringify(
       String(value)
     );
-
   }
 
 
@@ -1384,6 +1324,10 @@
      ===================================================== */
 
   function insertCurrentLine() {
+
+    /* ---------------------------------------------------
+       BASIC CHECKS
+       --------------------------------------------------- */
 
     if (!lines.length) {
 
@@ -1438,15 +1382,16 @@
           /[^0-9a-fA-F]/g,
           ""
         )
-        .slice(0, 6);
+        .slice(
+          0,
+          6
+        );
 
 
     while (
       color.length < 6
     ) {
-
       color += "0";
-
     }
 
 
@@ -1465,9 +1410,7 @@
       !isFinite(padding) ||
       padding < 0
     ) {
-
       padding = 12;
-
     }
 
 
@@ -1481,9 +1424,7 @@
       !isFinite(minSize) ||
       minSize < 1
     ) {
-
       minSize = 8;
-
     }
 
 
@@ -1505,9 +1446,7 @@
     if (
       !isFinite(charSpacing)
     ) {
-
       charSpacing = 0;
-
     }
 
 
@@ -1521,9 +1460,7 @@
       !isFinite(wordSpacingCount) ||
       wordSpacingCount < 0
     ) {
-
       wordSpacingCount = 0;
-
     }
 
 
@@ -1552,25 +1489,24 @@
       wordSpacingCount > 0
     ) {
 
-      var extra = "";
+      var extraSpaces =
+        "";
 
       for (
-        var w = 0;
-        w < wordSpacingCount;
-        w++
+        var ws = 0;
+        ws < wordSpacingCount;
+        ws++
       ) {
-
-        extra += " ";
-
+        extraSpaces += " ";
       }
 
 
       text =
         text.replace(
           / /g,
-          " " + extra
+          " " +
+          extraSpaces
         );
-
     }
 
 
@@ -1579,30 +1515,41 @@
        --------------------------------------------------- */
 
     setStatus(
-      "Checking active selection..."
+      "Reading active selection..."
     );
 
 
-    /* =====================================================
+    /* ===================================================
        PHOTOPEA SCRIPT
-       ===================================================== */
+       =================================================== */
 
     var script =
 
       "(function(){\n" +
 
+      "\"use strict\";\n" +
+
       "try{\n" +
-
-      "var d=app.activeDocument;\n" +
-
-      "if(!d){throw new Error('No active document.');}\n" +
 
 
       /* -------------------------------------------------
-         READ SELECTION
+         DOCUMENT
          ------------------------------------------------- */
 
-      "var b;\n" +
+      "var d=app.activeDocument;\n" +
+
+      "if(!d){\n" +
+
+      "throw new Error('No active document.');\n" +
+
+      "}\n" +
+
+
+      /* -------------------------------------------------
+         SELECTION
+         ------------------------------------------------- */
+
+      "var b=null;\n" +
 
       "try{\n" +
 
@@ -1623,12 +1570,16 @@
 
 
       /* -------------------------------------------------
-         UNIT CONVERSION
+         CONVERT UNIT
          ------------------------------------------------- */
 
       "function px(v){\n" +
 
-      "if(typeof v==='number')return v;\n" +
+      "if(typeof v==='number'){\n" +
+
+      "return Number(v);\n" +
+
+      "}\n" +
 
       "try{\n" +
 
@@ -1640,7 +1591,7 @@
 
       "}\n" +
 
-      "}catch(e){}\n" +
+      "}catch(e1){}\n" +
 
       "try{\n" +
 
@@ -1652,7 +1603,7 @@
 
       "}\n" +
 
-      "}catch(e){}\n" +
+      "}catch(e2){}\n" +
 
       "return NaN;\n" +
 
@@ -1680,7 +1631,7 @@
 
 
       /* -------------------------------------------------
-         BOX
+         SELECTION BOX
          ------------------------------------------------- */
 
       "var boxLeft=L+" +
@@ -1705,9 +1656,11 @@
       "var boxHeight=boxBottom-boxTop;\n" +
 
 
-      "if(boxWidth<1||boxHeight<1){\n" +
+      "if(boxWidth<=0||boxHeight<=0){\n" +
 
-      "throw new Error('Padding is too large for the selection.');\n" +
+      "throw new Error('Padding is too large for the selection. Selection='+Math.round(R-L)+'x'+Math.round(B-T)+', padding='+"
+      + padding +
+      ");\n" +
 
       "}\n" +
 
@@ -1721,21 +1674,19 @@
       "layer.kind=LayerKind.TEXT;\n" +
 
       "layer.name=" +
-
       jsString(
         "TTP: " +
-        text.substring(0, 45)
+        text.substring(0,45)
       ) +
-
       ";\n" +
 
 
       "var ti=layer.textItem;\n" +
 
 
-      /* =================================================
+      /* -------------------------------------------------
          PARAGRAPH TEXT
-         ================================================= */
+         ------------------------------------------------- */
 
       "if(" +
       jsString(mode) +
@@ -1746,16 +1697,15 @@
 
 
       /*
-       * IMPORTANT:
-       * Photoshop DOM expects dimensions as UnitValue.
+       * Set position and width BEFORE contents.
+       * Do not rely on textItem.height here because
+       * Photoshop/Photopea paragraph text handles its
+       * text box differently across versions.
        */
 
-      "ti.width=new UnitValue(boxWidth,'px');\n" +
-
-      "ti.height=new UnitValue(boxHeight,'px');\n" +
-
-
       "ti.position=[boxLeft,boxTop];\n" +
+
+      "ti.width=new UnitValue(boxWidth,'px');\n" +
 
 
       "ti.contents=" +
@@ -1789,13 +1739,7 @@
       "ti.color=c;\n" +
 
 
-      /* -------------------------------------------------
-         TRACKING
-         ------------------------------------------------- */
-
-      "var trackingReadback='unread';\n" +
-
-      "var trackingErr='';\n" +
+      /* TRACKING */
 
       "try{\n" +
 
@@ -1803,20 +1747,12 @@
       charSpacing +
       ";\n" +
 
-      "trackingReadback=''+ti.tracking;\n" +
-
-      "}catch(eTrack){\n" +
-
-      "trackingErr=' | tracking-failed:'+(eTrack&&eTrack.message?eTrack.message:String(eTrack));\n" +
-
-      "}\n" +
+      "}catch(eTracking){}\n" +
 
 
       /* -------------------------------------------------
          AUTO FIT
          ------------------------------------------------- */
-
-      "var estimatedLines=1;\n" +
 
       "var finalSize=" +
       initialSize +
@@ -1828,9 +1764,15 @@
       "){\n" +
 
 
-      "function estimateLines(str,size,width){\n" +
+      "function estimateLines(str,size,width,tracking){\n" +
 
       "var avg=size*0.52;\n" +
+
+      "var trackingPx=(tracking/1000)*size;\n" +
+
+      "avg+=trackingPx;\n" +
+
+      "if(avg<0.1)avg=0.1;\n" +
 
       "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
 
@@ -1925,36 +1867,25 @@
       initialSize +
       ";\n" +
 
-
       "var minimum=" +
       minSize +
       ";\n" +
 
 
-      "var guard=0;\n" +
-
-
       "while(current>minimum){\n" +
 
-      "guard++;\n" +
-
-      "if(guard>1000){break;}\n" +
-
-
-      "var est=estimateLines(" +
+      "var estimated=estimateLines(" +
       jsString(text) +
-      ",current,boxWidth);\n" +
+      ",current,boxWidth," +
+      charSpacing +
+      ");\n" +
+
+      "var lineHeight=current*1.20;\n" +
+
+      "var requiredHeight=estimated*lineHeight;\n" +
 
 
-      "var lh=current*1.20;\n" +
-
-      "var neededHeight=est*lh;\n" +
-
-
-      "estimatedLines=est;\n" +
-
-
-      "if(neededHeight<=boxHeight){\n" +
+      "if(requiredHeight<=boxHeight){\n" +
 
       "break;\n" +
 
@@ -1970,6 +1901,7 @@
 
       "finalSize=current;\n" +
 
+
       "}\n" +
 
 
@@ -1977,40 +1909,131 @@
          VERTICAL ALIGNMENT
          ------------------------------------------------- */
 
-      "var effLineHeight=finalSize*1.20;\n" +
+      /*
+       * Paragraph text starts at boxTop.
+       * For TOP we leave it there.
+       *
+       * For CENTER/BOTTOM we estimate the rendered
+       * text height and move the text box downward.
+       */
 
-      "var actualTextHeight=estimatedLines*effLineHeight;\n" +
+      "var estimatedFinalLines=1;\n" +
 
-      "var extraSpace=boxHeight-actualTextHeight;\n" +
+      "var avgFinal=" +
+      "finalSize*0.52;\n" +
+
+      "if(avgFinal<0.1)avgFinal=0.1;\n" +
+
+      "var maxFinalChars=Math.max(1,Math.floor(boxWidth/avgFinal));\n" +
+
+      "var finalParagraphs=" +
+      jsString(text) +
+      ".split(String.fromCharCode(10));\n" +
+
+      "estimatedFinalLines=0;\n" +
 
 
-      "if(extraSpace<0)extraSpace=0;\n" +
+      "for(var fp=0;fp<finalParagraphs.length;fp++){\n" +
+
+      "var fpara=finalParagraphs[fp];\n" +
+
+      "if(fpara.trim()===''){\n" +
+
+      "estimatedFinalLines++;\n" +
+
+      "continue;\n" +
+
+      "}\n" +
+
+      "var fwords=fpara.trim().split(/\\s+/);\n" +
+
+      "var fchars=0;\n" +
+
+      "var flines=1;\n" +
 
 
-      "var vAlignOffset=0;\n" +
+      "for(var fw=0;fw<fwords.length;fw++){\n" +
+
+      "var flen=fwords[fw].length;\n" +
+
+      "if(flen>maxFinalChars){\n" +
+
+      "if(fchars>0){\n" +
+
+      "flines++;\n" +
+
+      "fchars=0;\n" +
+
+      "}\n" +
+
+      "flines+=Math.floor(flen/maxFinalChars);\n" +
+
+      "fchars=flen%maxFinalChars;\n" +
+
+      "if(fchars===0){\n" +
+
+      "fchars=maxFinalChars;\n" +
+
+      "flines--;\n" +
+
+      "}\n" +
+
+      "}else{\n" +
+
+      "var fneed=flen+(fchars>0?1:0);\n" +
+
+      "if(fchars+fneed>maxFinalChars){\n" +
+
+      "flines++;\n" +
+
+      "fchars=flen;\n" +
+
+      "}else{\n" +
+
+      "fchars+=fneed;\n" +
+
+      "}\n" +
+
+      "}\n" +
+
+      "}\n" +
+
+      "estimatedFinalLines+=flines;\n" +
+
+      "}\n" +
+
+
+      "var estimatedTextHeight=estimatedFinalLines*finalSize*1.20;\n" +
+
+      "var freeHeight=boxHeight-estimatedTextHeight;\n" +
+
+      "if(freeHeight<0)freeHeight=0;\n" +
+
+
+      "var offsetY=0;\n" +
 
 
       "if(" +
       jsString(vAlign) +
       "==='MIDDLE'){\n" +
 
-      "vAlignOffset=extraSpace/2;\n" +
+      "offsetY=freeHeight/2;\n" +
 
       "}else if(" +
       jsString(vAlign) +
       "==='BOTTOM'){\n" +
 
-      "vAlignOffset=extraSpace;\n" +
+      "offsetY=freeHeight;\n" +
 
       "}\n" +
 
 
-      "ti.position=[boxLeft,boxTop+vAlignOffset];\n" +
+      "ti.position=[boxLeft,boxTop+offsetY];\n" +
 
 
-      /* =================================================
+      /* -------------------------------------------------
          POINT TEXT
-         ================================================= */
+         ------------------------------------------------- */
 
       "}else{\n" +
 
@@ -2053,17 +2076,21 @@
       charSpacing +
       ";\n" +
 
-      "}catch(eTrackingPoint){}\n" +
+      "}catch(ePointTracking){}\n" +
 
 
-      "var py=(T+B)/2;\n" +
+      /* POINT TEXT POSITION */
+
+      "var pointX=(L+R)/2;\n" +
+
+      "var pointY=(T+B)/2;\n" +
 
 
       "if(" +
       jsString(vAlign) +
       "==='TOP'){\n" +
 
-      "py=T+" +
+      "pointY=T+" +
       initialSize +
       ";\n" +
 
@@ -2071,26 +2098,31 @@
       jsString(vAlign) +
       "==='BOTTOM'){\n" +
 
-      "py=B-(" +
+      "pointY=B-(" +
       initialSize +
-      "*0.3);\n" +
+      "*0.30);\n" +
 
       "}\n" +
 
 
-      "ti.position=[(L+R)/2,py];\n" +
+      "ti.position=[pointX,pointY];\n" +
+
 
       "}\n" +
 
 
       /* -------------------------------------------------
-         FINISH
+         ACTIVATE LAYER
          ------------------------------------------------- */
 
       "d.activeLayer=layer;\n" +
 
 
-      "var __resultMsg=" +
+      /* -------------------------------------------------
+         RESULT
+         ------------------------------------------------- */
+
+      "var result=" +
 
       "'TEXT INSERTED | selection='+" +
 
@@ -2105,37 +2137,39 @@
 
       "' | size='+ti.size+" +
 
-      "' | trackingSet=" +
-      charSpacing +
+      "' | mode='+" +
+      jsString(mode) +
 
-      " | trackingReadback='+trackingReadback+trackingErr;\n" +
+      ";\n" +
 
 
-      "try{\n" +
+      "app.echoToOE(" +
+      "'TYPERP_OK:'+result" +
+      ");\n" +
 
-      "app.echoToOE('TYPERP_OK:'+__resultMsg);\n" +
 
-      "}catch(eEcho){}\n" +
-
+      /* -------------------------------------------------
+         ERROR
+         ------------------------------------------------- */
 
       "}catch(e){\n" +
 
+      "var errorMessage=" +
 
-      "var __errMsg=(e&&e.message?e.message:String(e));\n" +
-
-
-      "try{\n" +
-
-      "app.echoToOE('TYPERP_ERR:'+__errMsg);\n" +
-
-      "}catch(eEcho2){}\n" +
+      "(e&&e.message?" +
+      "e.message:" +
+      "String(e));\n" +
 
 
       "try{\n" +
 
-      "alert('TypeR-P ERROR: '+__errMsg);\n" +
+      "app.echoToOE(" +
 
-      "}catch(eAlert){}\n" +
+      "'TYPERP_ERR:'+errorMessage" +
+
+      ");\n" +
+
+      "}catch(e2){}\n" +
 
 
       "}\n" +
@@ -2143,9 +2177,9 @@
       "})();";
 
 
-    /* =====================================================
-       SEND TO PHOTOPEA
-       ===================================================== */
+    /* ===================================================
+       SEND SCRIPT TO PHOTOPEA
+       =================================================== */
 
     window.parent.postMessage(
       script,
@@ -2153,29 +2187,38 @@
     );
 
 
-    /* =====================================================
+    /* ===================================================
        RESPONSE TIMEOUT
-       ===================================================== */
+       =================================================== */
+
+    var requestStarted =
+      Date.now();
+
 
     setTimeout(
       function () {
 
         if (
-          statusEl.textContent.indexOf(
-            "Checking active selection..."
-          ) === 0
+          statusEl.textContent ===
+          "Reading active selection..."
         ) {
 
           setStatus(
-            "No response from Photopea after 6s."
+            "No response from Photopea."
           );
 
+          console.log(
+            "TypeR-P BUILD-025: " +
+            "No Photopea response after " +
+            (Date.now() -
+              requestStarted) +
+            "ms"
+          );
         }
 
       },
       6000
     );
-
   }
 
 
@@ -2188,24 +2231,11 @@
 
 
   /* =====================================================
-     INITIAL STATE
-     ===================================================== */
-
-  updateLine();
-
-  setStatus(
-    "Ready (BUILD-025)"
-  );
-
-
-  /* =====================================================
      DEBUG BUTTON
      ===================================================== */
 
   var debugBtn =
-    document.createElement(
-      "button"
-    );
+    document.createElement("button");
 
   debugBtn.type =
     "button";
@@ -2229,12 +2259,12 @@
     function () {
 
       setStatus(
-        "Sending raw test script..."
+        "Sending raw test..."
       );
 
 
       window.parent.postMessage(
-        "alert('HELLO FROM TYPERP BUILD-025 - LINK WORKS');",
+        "alert('TypeR-P BUILD-025: Photopea connection works.');",
         "*"
       );
 
@@ -2243,22 +2273,34 @@
         function () {
 
           if (
-            statusEl.textContent.indexOf(
-              "Sending raw test"
-            ) === 0
+            statusEl.textContent ===
+            "Sending raw test..."
           ) {
 
             setStatus(
-              "Raw test got no response."
+              "No response from Photopea."
             );
-
           }
 
         },
         4000
       );
-
     };
 
+
+  /* =====================================================
+     INITIAL STATE
+     ===================================================== */
+
+  updateLine();
+
+  setStatus(
+    "Ready (BUILD-025)"
+  );
+
+
+  console.log(
+    "TypeR-P BUILD-025 loaded successfully."
+  );
 
 })();
