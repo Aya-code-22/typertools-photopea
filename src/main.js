@@ -1,23 +1,26 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-025
+// BUILD: TYPERP-BUILD-026
 //
-// Clean rebuild
-// - Full Text -> Lines -> Current Line
-// - Selection-aware text insertion
-// - Paragraph Text / Point Text
-// - Padding
-// - Auto Fit
-// - Minimum Font Size
-// - Character Spacing
-// - Word Spacing
-// - Vertical Alignment
-// - Saved Styles
-// - Load Font from Device
-// - Photopea communication diagnostics
+// BUILD-026
+// - Based on BUILD-025
+// - Stroke / Outline
+// - Stroke enable/disable
+// - Stroke width
+// - Stroke color
+// - Stroke opacity
+// - Stroke position
+// - Keeps text as editable Text Layer
+// - Keeps Selection -> Text Box workflow
+// - Keeps Auto Fit
+// - Keeps Character Spacing
+// - Keeps Word Spacing
+// - Keeps Vertical Alignment
+// - Keeps Saved Styles
+// - Keeps Load Font from Device
 //
 // IMPORTANT:
-// This file intentionally contains ONE insert script only.
-// Do not paste another "var script =" inside insertCurrentLine().
+// Stroke is applied using Photopea/Photoshop Action Manager
+// Layer Style "FrFX" instead of rasterizing the text.
 
 (function () {
 
@@ -25,7 +28,7 @@
 
 
   /* =====================================================
-     UI REFERENCES
+     BASIC UI
      ===================================================== */
 
   var statusEl = document.getElementById("status");
@@ -71,12 +74,10 @@
   }
 
   if (missing.length) {
-
     alert(
-      "TypeR-P BUILD-025 UI ERROR\n\nMissing:\n" +
+      "TypeR-P BUILD-026 UI ERROR\n\nMissing:\n" +
       missing.join("\n")
     );
-
     return;
   }
 
@@ -97,7 +98,6 @@
   var lines = [];
   var currentIndex = 0;
 
-
   function updateLine() {
 
     if (!lines.length) {
@@ -108,8 +108,7 @@
       return;
     }
 
-    currentLineEl.value =
-      lines[currentIndex];
+    currentLineEl.value = lines[currentIndex];
 
     lineInfoEl.textContent =
       "Line " +
@@ -129,10 +128,6 @@
       currentLineEl.value;
   }
 
-
-  /* =====================================================
-     LOAD LINES
-     ===================================================== */
 
   loadLinesBtn.onclick = function () {
 
@@ -180,10 +175,6 @@
   };
 
 
-  /* =====================================================
-     CURRENT LINE EDIT
-     ===================================================== */
-
   currentLineEl.addEventListener(
     "input",
     function () {
@@ -191,10 +182,6 @@
     }
   );
 
-
-  /* =====================================================
-     PREVIOUS
-     ===================================================== */
 
   previousLineBtn.onclick = function () {
 
@@ -216,10 +203,6 @@
     updateLine();
   };
 
-
-  /* =====================================================
-     NEXT
-     ===================================================== */
 
   nextLineBtn.onclick = function () {
 
@@ -263,8 +246,7 @@
     var label =
       document.createElement("label");
 
-    label.textContent =
-      text;
+    label.textContent = text;
 
     label.style.display =
       "block";
@@ -279,27 +261,17 @@
   function makeNumber(
     value,
     min,
-    max,
-    step
+    max
   ) {
 
     var input =
       document.createElement("input");
 
-    input.type =
-      "number";
-
-    input.value =
-      value;
-
-    input.min =
-      min;
-
-    input.max =
-      max;
-
-    input.step =
-      step || "1";
+    input.type = "number";
+    input.value = value;
+    input.min = min;
+    input.max = max;
+    input.step = "1";
 
     input.style.width =
       "100%";
@@ -359,6 +331,7 @@
     function () {
 
       fontUploadInput.click();
+
     };
 
 
@@ -380,65 +353,47 @@
       var reader =
         new FileReader();
 
-
       reader.onload =
         function () {
 
           var dataUrl =
             reader.result;
 
-
-          var fontScript =
+          var script =
             "(function(){\n" +
 
             "try{\n" +
 
-            "var before=0;\n" +
-
-            "try{before=app.fonts.length;}catch(e){}\n" +
+            "var before=(app.fonts&&app.fonts.length)?app.fonts.length:0;\n" +
 
             "app.open(" +
             JSON.stringify(dataUrl) +
             ");\n" +
 
+            "var after=(app.fonts&&app.fonts.length)?app.fonts.length:0;\n" +
+
             "var name='';\n" +
 
-            "try{\n" +
+            "if(app.fonts&&after>0){\n" +
 
-            "var after=app.fonts.length;\n" +
+            "var last=app.fonts[after-1];\n" +
 
-            "if(after>0){\n" +
-
-            "var f=app.fonts[after-1];\n" +
-
-            "if(f){\n" +
-
-            "name=f.postScriptName||f.name||'';\n" +
+            "name=(last&&last.postScriptName)?last.postScriptName:(last&&last.name?last.name:'');\n" +
 
             "}\n" +
 
-            "}\n" +
-
-            "}catch(e2){}\n" +
-
-            "app.echoToOE(" +
-            "'TYPERP_FONT_LOADED:'+name" +
-            ");\n" +
+            "app.echoToOE('TYPERP_FONT_LOADED:'+name+' | before='+before+' after='+after);\n" +
 
             "}catch(e){\n" +
 
-            "app.echoToOE(" +
-            "'TYPERP_FONT_ERR:'+" +
-            "(e&&e.message?e.message:String(e))" +
-            ");\n" +
+            "app.echoToOE('TYPERP_FONT_ERR:'+(e&&e.message?e.message:String(e)));\n" +
 
             "}\n" +
 
             "})();";
 
-
           window.parent.postMessage(
-            fontScript,
+            script,
             "*"
           );
         };
@@ -450,6 +405,7 @@
           setStatus(
             "Could not read the font file."
           );
+
         };
 
 
@@ -469,8 +425,7 @@
     makeNumber(
       12,
       0,
-      500,
-      1
+      500
     );
 
   settingsPanel.appendChild(
@@ -485,7 +440,6 @@
   settingsPanel.appendChild(
     makeLabel("Auto Fit")
   );
-
 
   var fitRow =
     document.createElement("label");
@@ -535,13 +489,11 @@
     )
   );
 
-
   var minSizeEl =
     makeNumber(
       8,
       1,
-      500,
-      1
+      500
     );
 
   settingsPanel.appendChild(
@@ -558,7 +510,6 @@
       "Text Mode"
     )
   );
-
 
   var modeEl =
     document.createElement("select");
@@ -610,13 +561,11 @@
     )
   );
 
-
   var charSpacingEl =
     makeNumber(
       0,
       -1000,
-      1000,
-      10
+      1000
     );
 
   settingsPanel.appendChild(
@@ -634,13 +583,11 @@
     )
   );
 
-
   var wordSpacingEl =
     makeNumber(
       0,
       0,
-      20,
-      1
+      20
     );
 
   settingsPanel.appendChild(
@@ -658,7 +605,6 @@
     )
   );
 
-
   var vAlignEl =
     document.createElement("select");
 
@@ -666,44 +612,219 @@
     "100%";
 
 
-  var vAlignOptions = [
+  [
     ["TOP", "Top"],
     ["MIDDLE", "Center"],
     ["BOTTOM", "Bottom"]
-  ];
+  ].forEach(
+    function (pair) {
 
+      var opt =
+        document.createElement(
+          "option"
+        );
 
-  for (
-    var va = 0;
-    va < vAlignOptions.length;
-    va++
-  ) {
+      opt.value =
+        pair[0];
 
-    var vOpt =
-      document.createElement("option");
+      opt.textContent =
+        pair[1];
 
-    vOpt.value =
-      vAlignOptions[va][0];
+      if (
+        pair[0] ===
+        "MIDDLE"
+      ) {
+        opt.selected =
+          true;
+      }
 
-    vOpt.textContent =
-      vAlignOptions[va][1];
-
-    if (
-      vAlignOptions[va][0] ===
-      "MIDDLE"
-    ) {
-      vOpt.selected =
-        true;
+      vAlignEl.appendChild(
+        opt
+      );
     }
-
-    vAlignEl.appendChild(
-      vOpt
-    );
-  }
-
+  );
 
   settingsPanel.appendChild(
     vAlignEl
+  );
+
+
+  /* =====================================================
+     STROKE / OUTLINE
+     ===================================================== */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Stroke / Outline"
+    )
+  );
+
+
+  var strokeEnableRow =
+    document.createElement("label");
+
+  strokeEnableRow.style.display =
+    "flex";
+
+  strokeEnableRow.style.alignItems =
+    "center";
+
+  strokeEnableRow.style.gap =
+    "6px";
+
+
+  var strokeEnabledEl =
+    document.createElement(
+      "input"
+    );
+
+  strokeEnabledEl.type =
+    "checkbox";
+
+  strokeEnabledEl.checked =
+    false;
+
+
+  strokeEnableRow.appendChild(
+    strokeEnabledEl
+  );
+
+  strokeEnableRow.appendChild(
+    document.createTextNode(
+      "Enable Stroke"
+    )
+  );
+
+  settingsPanel.appendChild(
+    strokeEnableRow
+  );
+
+
+  /* ---------- Stroke Width ---------- */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Stroke Width (px)"
+    )
+  );
+
+  var strokeWidthEl =
+    makeNumber(
+      3,
+      0,
+      100
+    );
+
+  settingsPanel.appendChild(
+    strokeWidthEl
+  );
+
+
+  /* ---------- Stroke Color ---------- */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Stroke Color"
+    )
+  );
+
+  var strokeColorEl =
+    document.createElement(
+      "input"
+    );
+
+  strokeColorEl.type =
+    "text";
+
+  strokeColorEl.value =
+    "000000";
+
+  strokeColorEl.placeholder =
+    "000000";
+
+  strokeColorEl.style.width =
+    "100%";
+
+  strokeColorEl.style.boxSizing =
+    "border-box";
+
+  settingsPanel.appendChild(
+    strokeColorEl
+  );
+
+
+  /* ---------- Stroke Opacity ---------- */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Stroke Opacity (%)"
+    )
+  );
+
+  var strokeOpacityEl =
+    makeNumber(
+      100,
+      0,
+      100
+    );
+
+  settingsPanel.appendChild(
+    strokeOpacityEl
+  );
+
+
+  /* ---------- Stroke Position ---------- */
+
+  settingsPanel.appendChild(
+    makeLabel(
+      "Stroke Position"
+    )
+  );
+
+  var strokePositionEl =
+    document.createElement(
+      "select"
+    );
+
+  strokePositionEl.style.width =
+    "100%";
+
+
+  [
+    ["OUTSIDE", "Outside"],
+    ["CENTER", "Center"],
+    ["INSIDE", "Inside"]
+  ].forEach(
+    function (pair) {
+
+      var opt =
+        document.createElement(
+          "option"
+        );
+
+      opt.value =
+        pair[0];
+
+      opt.textContent =
+        pair[1];
+
+      if (
+        pair[0] ===
+        "OUTSIDE"
+      ) {
+        opt.selected =
+          true;
+      }
+
+      strokePositionEl.appendChild(
+        opt
+      );
+    }
+  );
+
+
+  settingsPanel.appendChild(
+    strokePositionEl
   );
 
 
@@ -712,9 +833,10 @@
      ===================================================== */
 
   var STYLES_KEY =
-    "typerp_styles_v2";
+    "typerp_styles_v3";
 
-  var memoryStyles = {};
+  var memoryStyles =
+    {};
 
 
   function loadStyles() {
@@ -733,18 +855,18 @@
       var parsed =
         JSON.parse(raw);
 
-      if (
+      return (
         parsed &&
-        typeof parsed === "object"
-      ) {
-        return parsed;
-      }
-
-      return {};
+        typeof parsed ===
+        "object"
+      )
+        ? parsed
+        : {};
 
     } catch (e) {
 
       return memoryStyles;
+
     }
   }
 
@@ -762,17 +884,22 @@
 
       memoryStyles =
         obj;
+
     }
   }
 
 
   settingsPanel.appendChild(
-    makeLabel("Saved Styles")
+    makeLabel(
+      "Saved Styles"
+    )
   );
 
 
   var styleSelectRow =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   styleSelectRow.style.display =
     "flex";
@@ -785,14 +912,18 @@
 
 
   var styleSelectEl =
-    document.createElement("select");
+    document.createElement(
+      "select"
+    );
 
   styleSelectEl.style.flex =
     "1";
 
 
   var applyStyleBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
   applyStyleBtn.type =
     "button";
@@ -802,7 +933,9 @@
 
 
   var deleteStyleBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
   deleteStyleBtn.type =
     "button";
@@ -823,14 +956,15 @@
     deleteStyleBtn
   );
 
-
   settingsPanel.appendChild(
     styleSelectRow
   );
 
 
   var styleSaveRow =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   styleSaveRow.style.display =
     "flex";
@@ -843,7 +977,9 @@
 
 
   var styleNameEl =
-    document.createElement("input");
+    document.createElement(
+      "input"
+    );
 
   styleNameEl.type =
     "text";
@@ -859,7 +995,9 @@
 
 
   var saveStyleBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
   saveStyleBtn.type =
     "button";
@@ -881,113 +1019,6 @@
   );
 
 
-  function currentSettingsSnapshot() {
-
-    return {
-
-      font:
-        fontEl.value ||
-        "ArialMT",
-
-      size:
-        Number(sizeEl.value) ||
-        48,
-
-      color:
-        colorEl.value ||
-        "FF0000",
-
-      align:
-        alignEl.value ||
-        "CENTER",
-
-      padding:
-        Number(paddingEl.value) || 0,
-
-      minSize:
-        Number(minSizeEl.value) || 8,
-
-      autoFit:
-        !!fitEl.checked,
-
-      mode:
-        modeEl.value,
-
-      charSpacing:
-        Number(charSpacingEl.value) || 0,
-
-      wordSpacing:
-        Number(wordSpacingEl.value) || 0,
-
-      vAlign:
-        vAlignEl.value
-    };
-  }
-
-
-  function applySettingsSnapshot(s) {
-
-    if (!s) {
-      return;
-    }
-
-    if (s.font !== undefined) {
-      fontEl.value =
-        s.font;
-    }
-
-    if (s.size !== undefined) {
-      sizeEl.value =
-        s.size;
-    }
-
-    if (s.color !== undefined) {
-      colorEl.value =
-        s.color;
-    }
-
-    if (s.align !== undefined) {
-      alignEl.value =
-        s.align;
-    }
-
-    if (s.padding !== undefined) {
-      paddingEl.value =
-        s.padding;
-    }
-
-    if (s.minSize !== undefined) {
-      minSizeEl.value =
-        s.minSize;
-    }
-
-    if (s.autoFit !== undefined) {
-      fitEl.checked =
-        !!s.autoFit;
-    }
-
-    if (s.mode !== undefined) {
-      modeEl.value =
-        s.mode;
-    }
-
-    if (s.charSpacing !== undefined) {
-      charSpacingEl.value =
-        s.charSpacing;
-    }
-
-    if (s.wordSpacing !== undefined) {
-      wordSpacingEl.value =
-        s.wordSpacing;
-    }
-
-    if (s.vAlign !== undefined) {
-      vAlignEl.value =
-        s.vAlign;
-    }
-  }
-
-
   function refreshStyleSelect(
     selectName
   ) {
@@ -996,7 +1027,9 @@
       loadStyles();
 
     var names =
-      Object.keys(styles).sort(
+      Object.keys(
+        styles
+      ).sort(
         function (a, b) {
           return a.localeCompare(b);
         }
@@ -1010,7 +1043,9 @@
     if (!names.length) {
 
       var emptyOpt =
-        document.createElement("option");
+        document.createElement(
+          "option"
+        );
 
       emptyOpt.value =
         "";
@@ -1033,7 +1068,9 @@
     ) {
 
       var opt =
-        document.createElement("option");
+        document.createElement(
+          "option"
+        );
 
       opt.value =
         names[i];
@@ -1058,126 +1095,376 @@
   }
 
 
+  function currentSettingsSnapshot() {
+
+    return {
+
+      font:
+        fontEl.value ||
+        "ArialMT",
+
+      size:
+        Number(sizeEl.value) ||
+        48,
+
+      color:
+        colorEl.value ||
+        "FF0000",
+
+      align:
+        alignEl.value ||
+        "CENTER",
+
+      padding:
+        Number(paddingEl.value),
+
+      minSize:
+        Number(minSizeEl.value),
+
+      autoFit:
+        !!fitEl.checked,
+
+      mode:
+        modeEl.value,
+
+      charSpacing:
+        Number(
+          charSpacingEl.value
+        ),
+
+      wordSpacing:
+        Number(
+          wordSpacingEl.value
+        ),
+
+      vAlign:
+        vAlignEl.value,
+
+      strokeEnabled:
+        !!strokeEnabledEl.checked,
+
+      strokeWidth:
+        Number(
+          strokeWidthEl.value
+        ),
+
+      strokeColor:
+        strokeColorEl.value ||
+        "000000",
+
+      strokeOpacity:
+        Number(
+          strokeOpacityEl.value
+        ),
+
+      strokePosition:
+        strokePositionEl.value
+    };
+  }
+
+
+  function applySettingsSnapshot(
+    s
+  ) {
+
+    if (!s) {
+      return;
+    }
+
+
+    if (
+      s.font !==
+      undefined
+    ) {
+      fontEl.value =
+        s.font;
+    }
+
+
+    if (
+      s.size !==
+      undefined
+    ) {
+      sizeEl.value =
+        s.size;
+    }
+
+
+    if (
+      s.color !==
+      undefined
+    ) {
+      colorEl.value =
+        s.color;
+    }
+
+
+    if (
+      s.align !==
+      undefined
+    ) {
+      alignEl.value =
+        s.align;
+    }
+
+
+    if (
+      s.padding !==
+      undefined
+    ) {
+      paddingEl.value =
+        s.padding;
+    }
+
+
+    if (
+      s.minSize !==
+      undefined
+    ) {
+      minSizeEl.value =
+        s.minSize;
+    }
+
+
+    if (
+      s.autoFit !==
+      undefined
+    ) {
+      fitEl.checked =
+        !!s.autoFit;
+    }
+
+
+    if (
+      s.mode !==
+      undefined
+    ) {
+      modeEl.value =
+        s.mode;
+    }
+
+
+    if (
+      s.charSpacing !==
+      undefined
+    ) {
+      charSpacingEl.value =
+        s.charSpacing;
+    }
+
+
+    if (
+      s.wordSpacing !==
+      undefined
+    ) {
+      wordSpacingEl.value =
+        s.wordSpacing;
+    }
+
+
+    if (
+      s.vAlign !==
+      undefined
+    ) {
+      vAlignEl.value =
+        s.vAlign;
+    }
+
+
+    if (
+      s.strokeEnabled !==
+      undefined
+    ) {
+      strokeEnabledEl.checked =
+        !!s.strokeEnabled;
+    }
+
+
+    if (
+      s.strokeWidth !==
+      undefined
+    ) {
+      strokeWidthEl.value =
+        s.strokeWidth;
+    }
+
+
+    if (
+      s.strokeColor !==
+      undefined
+    ) {
+      strokeColorEl.value =
+        s.strokeColor;
+    }
+
+
+    if (
+      s.strokeOpacity !==
+      undefined
+    ) {
+      strokeOpacityEl.value =
+        s.strokeOpacity;
+    }
+
+
+    if (
+      s.strokePosition !==
+      undefined
+    ) {
+      strokePositionEl.value =
+        s.strokePosition;
+    }
+  }
+
+
   saveStyleBtn.onclick =
     function () {
 
-      var name =
-        (
-          styleNameEl.value ||
-          ""
-        ).trim();
+      try {
+
+        var name =
+          (
+            styleNameEl.value ||
+            ""
+          ).trim();
+
+        if (!name) {
+
+          setStatus(
+            "Please type a style name first."
+          );
+
+          return;
+        }
 
 
-      if (!name) {
+        var styles =
+          loadStyles();
 
-        setStatus(
-          "Please type a style name first."
+        styles[name] =
+          currentSettingsSnapshot();
+
+        saveStylesObj(
+          styles
         );
 
-        return;
+        refreshStyleSelect(
+          name
+        );
+
+        setStatus(
+          "Style saved: " +
+          name
+        );
+
+        styleNameEl.value =
+          "";
+
+      } catch (e) {
+
+        alert(
+          "Save style error: " +
+          e.message
+        );
       }
-
-
-      var styles =
-        loadStyles();
-
-      styles[name] =
-        currentSettingsSnapshot();
-
-      saveStylesObj(
-        styles
-      );
-
-      refreshStyleSelect(
-        name
-      );
-
-      styleNameEl.value =
-        "";
-
-      setStatus(
-        "Style saved: " +
-        name
-      );
     };
 
 
   applyStyleBtn.onclick =
     function () {
 
-      var name =
-        styleSelectEl.value;
+      try {
 
-      if (!name) {
+        var name =
+          styleSelectEl.value;
 
-        setStatus(
-          "No style selected."
+        if (!name) {
+
+          setStatus(
+            "No style selected."
+          );
+
+          return;
+        }
+
+
+        var styles =
+          loadStyles();
+
+        var s =
+          styles[name];
+
+        if (!s) {
+
+          setStatus(
+            "Style not found: " +
+            name
+          );
+
+          return;
+        }
+
+
+        applySettingsSnapshot(
+          s
         );
 
-        return;
-      }
-
-
-      var styles =
-        loadStyles();
-
-      var style =
-        styles[name];
-
-
-      if (!style) {
-
         setStatus(
-          "Style not found: " +
+          "Style applied: " +
           name
         );
 
-        return;
+      } catch (e) {
+
+        alert(
+          "Apply style error: " +
+          e.message
+        );
       }
-
-
-      applySettingsSnapshot(
-        style
-      );
-
-      setStatus(
-        "Style applied: " +
-        name
-      );
     };
 
 
   deleteStyleBtn.onclick =
     function () {
 
-      var name =
-        styleSelectEl.value;
+      try {
 
-      if (!name) {
+        var name =
+          styleSelectEl.value;
 
-        setStatus(
-          "No style selected."
+        if (!name) {
+
+          setStatus(
+            "No style selected."
+          );
+
+          return;
+        }
+
+
+        var styles =
+          loadStyles();
+
+        delete styles[name];
+
+        saveStylesObj(
+          styles
         );
 
-        return;
+        refreshStyleSelect();
+
+        setStatus(
+          "Style deleted: " +
+          name
+        );
+
+      } catch (e) {
+
+        alert(
+          "Delete style error: " +
+          e.message
+        );
       }
-
-
-      var styles =
-        loadStyles();
-
-      delete styles[name];
-
-      saveStylesObj(
-        styles
-      );
-
-      refreshStyleSelect();
-
-      setStatus(
-        "Style deleted: " +
-        name
-      );
     };
 
 
@@ -1200,36 +1487,39 @@
       }
 
 
-      var msg =
-        event.data;
-
-
       if (
-        msg.indexOf(
+        event.data.indexOf(
           "TYPERP_FONT_LOADED:"
         ) === 0
       ) {
 
-        var fontName =
-          msg.substring(
-            "TYPERP_FONT_LOADED:".length
+        var rest =
+          event.data.slice(
+            "TYPERP_FONT_LOADED:"
+              .length
           );
 
+        var name =
+          rest.split(
+            " | "
+          )[0];
 
-        if (fontName) {
+
+        if (name) {
 
           fontEl.value =
-            fontName;
+            name;
 
           setStatus(
-            "Font loaded: " +
-            fontName
+            "Font loaded and applied: " +
+            name
           );
 
         } else {
 
           setStatus(
-            "Font loaded, but its name could not be detected."
+            "Font loaded, but could not read its name automatically. " +
+            rest
           );
         }
 
@@ -1238,24 +1528,25 @@
 
 
       if (
-        msg.indexOf(
+        event.data.indexOf(
           "TYPERP_FONT_ERR:"
         ) === 0
       ) {
 
-        var fontError =
-          msg.substring(
-            "TYPERP_FONT_ERR:".length
+        var ferr =
+          event.data.slice(
+            "TYPERP_FONT_ERR:"
+              .length
           );
 
         setStatus(
           "Font load error: " +
-          fontError
+          ferr
         );
 
         alert(
-          "TypeR-P BUILD-025\n\nFont error:\n" +
-          fontError
+          "TypeR-P font load error:\n" +
+          ferr
         );
 
         return;
@@ -1263,13 +1554,13 @@
 
 
       if (
-        msg.indexOf(
+        event.data.indexOf(
           "TYPERP_OK:"
         ) === 0
       ) {
 
         setStatus(
-          msg.substring(
+          event.data.substring(
             "TYPERP_OK:".length
           )
         );
@@ -1279,36 +1570,33 @@
 
 
       if (
-        msg.indexOf(
+        event.data.indexOf(
           "TYPERP_ERR:"
         ) === 0
       ) {
 
         var error =
-          msg.substring(
+          event.data.substring(
             "TYPERP_ERR:".length
           );
-
 
         setStatus(
           "Error: " +
           error
         );
 
-
         alert(
-          "TypeR-P BUILD-025\n\n" +
+          "TypeR-P BUILD-026\n\n" +
           error
         );
-
-        return;
       }
+
     }
   );
 
 
   /* =====================================================
-     SAFE JS STRING
+     STRING HELPER
      ===================================================== */
 
   function jsString(value) {
@@ -1324,10 +1612,6 @@
      ===================================================== */
 
   function insertCurrentLine() {
-
-    /* ---------------------------------------------------
-       BASIC CHECKS
-       --------------------------------------------------- */
 
     if (!lines.length) {
 
@@ -1359,9 +1643,9 @@
     }
 
 
-    /* ---------------------------------------------------
-       READ SETTINGS
-       --------------------------------------------------- */
+    /* -------------------------------------------------
+       BASIC SETTINGS
+       ------------------------------------------------- */
 
     var font =
       fontEl.value ||
@@ -1369,8 +1653,9 @@
 
 
     var initialSize =
-      Number(sizeEl.value) ||
-      48;
+      Number(
+        sizeEl.value
+      ) || 48;
 
 
     var color =
@@ -1410,6 +1695,7 @@
       !isFinite(padding) ||
       padding < 0
     ) {
+
       padding = 12;
     }
 
@@ -1424,17 +1710,17 @@
       !isFinite(minSize) ||
       minSize < 1
     ) {
+
       minSize = 8;
     }
 
 
     var autoFit =
-      !!fitEl.checked;
+      fitEl.checked;
 
 
     var mode =
-      modeEl.value ||
-      "PARAGRAPH";
+      modeEl.value;
 
 
     var charSpacing =
@@ -1446,6 +1732,7 @@
     if (
       !isFinite(charSpacing)
     ) {
+
       charSpacing = 0;
     }
 
@@ -1460,6 +1747,7 @@
       !isFinite(wordSpacingCount) ||
       wordSpacingCount < 0
     ) {
+
       wordSpacingCount = 0;
     }
 
@@ -1469,9 +1757,88 @@
       "MIDDLE";
 
 
-    /* ---------------------------------------------------
+    /* -------------------------------------------------
+       STROKE SETTINGS
+       ------------------------------------------------- */
+
+    var strokeEnabled =
+      !!strokeEnabledEl.checked;
+
+
+    var strokeWidth =
+      Number(
+        strokeWidthEl.value
+      );
+
+
+    if (
+      !isFinite(strokeWidth) ||
+      strokeWidth < 0
+    ) {
+
+      strokeWidth = 3;
+    }
+
+
+    var strokeColor =
+      (
+        strokeColorEl.value ||
+        "000000"
+      )
+        .replace(
+          /[^0-9a-fA-F]/g,
+          ""
+        )
+        .slice(
+          0,
+          6
+        );
+
+
+    while (
+      strokeColor.length < 6
+    ) {
+
+      strokeColor += "0";
+    }
+
+
+    var strokeOpacity =
+      Number(
+        strokeOpacityEl.value
+      );
+
+
+    if (
+      !isFinite(strokeOpacity)
+    ) {
+
+      strokeOpacity = 100;
+    }
+
+
+    if (
+      strokeOpacity < 0
+    ) {
+      strokeOpacity = 0;
+    }
+
+
+    if (
+      strokeOpacity > 100
+    ) {
+      strokeOpacity = 100;
+    }
+
+
+    var strokePosition =
+      strokePositionEl.value ||
+      "OUTSIDE";
+
+
+    /* -------------------------------------------------
        WORD SPACING
-       --------------------------------------------------- */
+       ------------------------------------------------- */
 
     text =
       text
@@ -1489,67 +1856,56 @@
       wordSpacingCount > 0
     ) {
 
-      var extraSpaces =
+      var extra =
         "";
 
       for (
-        var ws = 0;
-        ws < wordSpacingCount;
-        ws++
+        var w = 0;
+        w < wordSpacingCount;
+        w++
       ) {
-        extraSpaces += " ";
+
+        extra +=
+          " ";
       }
 
 
       text =
         text.replace(
           / /g,
-          " " +
-          extraSpaces
+          " " + extra
         );
     }
 
 
-    /* ---------------------------------------------------
+    /* -------------------------------------------------
        STATUS
-       --------------------------------------------------- */
+       ------------------------------------------------- */
 
     setStatus(
-      "Reading active selection..."
+      "Checking active selection..."
     );
 
 
-    /* ===================================================
+    /* =================================================
        PHOTOPEA SCRIPT
-       =================================================== */
+       ================================================= */
 
     var script =
-
       "(function(){\n" +
-
-      "\"use strict\";\n" +
 
       "try{\n" +
 
-
-      /* -------------------------------------------------
-         DOCUMENT
-         ------------------------------------------------- */
-
       "var d=app.activeDocument;\n" +
 
-      "if(!d){\n" +
-
-      "throw new Error('No active document.');\n" +
-
-      "}\n" +
+      "if(!d){throw new Error('No active document.');}\n" +
 
 
       /* -------------------------------------------------
          SELECTION
          ------------------------------------------------- */
 
-      "var b=null;\n" +
+      "var b;\n" +
 
       "try{\n" +
 
@@ -1561,7 +1917,6 @@
 
       "}\n" +
 
-
       "if(!b||b.length!==4){\n" +
 
       "throw new Error('No active selection. Please make a selection first.');\n" +
@@ -1570,16 +1925,12 @@
 
 
       /* -------------------------------------------------
-         CONVERT UNIT
+         UNIT CONVERSION
          ------------------------------------------------- */
 
       "function px(v){\n" +
 
-      "if(typeof v==='number'){\n" +
-
-      "return Number(v);\n" +
-
-      "}\n" +
+      "if(typeof v==='number')return v;\n" +
 
       "try{\n" +
 
@@ -1591,7 +1942,7 @@
 
       "}\n" +
 
-      "}catch(e1){}\n" +
+      "}catch(e){}\n" +
 
       "try{\n" +
 
@@ -1603,7 +1954,7 @@
 
       "}\n" +
 
-      "}catch(e2){}\n" +
+      "}catch(e){}\n" +
 
       "return NaN;\n" +
 
@@ -1625,13 +1976,13 @@
 
       "if(R<=L||B<=T){\n" +
 
-      "throw new Error('Selection has invalid dimensions: '+L+','+T+','+R+','+B);\n" +
+      "throw new Error('Selection has invalid dimensions.');\n" +
 
       "}\n" +
 
 
       /* -------------------------------------------------
-         SELECTION BOX
+         TEXT BOX
          ------------------------------------------------- */
 
       "var boxLeft=L+" +
@@ -1650,17 +2001,14 @@
       padding +
       ";\n" +
 
-
       "var boxWidth=boxRight-boxLeft;\n" +
 
       "var boxHeight=boxBottom-boxTop;\n" +
 
 
-      "if(boxWidth<=0||boxHeight<=0){\n" +
+      "if(boxWidth<1||boxHeight<1){\n" +
 
-      "throw new Error('Padding is too large for the selection. Selection='+Math.round(R-L)+'x'+Math.round(B-T)+', padding='+"
-      + padding +
-      ");\n" +
+      "throw new Error('Padding is too large for the selection.');\n" +
 
       "}\n" +
 
@@ -1674,19 +2022,46 @@
       "layer.kind=LayerKind.TEXT;\n" +
 
       "layer.name=" +
+
       jsString(
         "TTP: " +
-        text.substring(0,45)
+        text.substring(
+          0,
+          45
+        )
       ) +
-      ";\n" +
 
+      ";\n" +
 
       "var ti=layer.textItem;\n" +
 
 
       /* -------------------------------------------------
-         PARAGRAPH TEXT
+         CHARACTER SPACING
          ------------------------------------------------- */
+
+      "var trackingErr='';\n" +
+
+      "var trackingReadback='unread';\n" +
+
+      "try{\n" +
+
+      "ti.tracking=" +
+      charSpacing +
+      ";\n" +
+
+      "trackingReadback=''+ti.tracking;\n" +
+
+      "}catch(eTrack){\n" +
+
+      "trackingErr=' | tracking-failed:'+(eTrack&&eTrack.message?eTrack.message:String(eTrack));\n" +
+
+      "}\n" +
+
+
+      /* =================================================
+         PARAGRAPH TEXT
+         ================================================= */
 
       "if(" +
       jsString(mode) +
@@ -1695,33 +2070,21 @@
 
       "ti.kind=TextType.PARAGRAPHTEXT;\n" +
 
+      "ti.width=boxWidth;\n" +
 
-      /*
-       * Set position and width BEFORE contents.
-       * Do not rely on textItem.height here because
-       * Photoshop/Photopea paragraph text handles its
-       * text box differently across versions.
-       */
-
-      "ti.position=[boxLeft,boxTop];\n" +
-
-      "ti.width=new UnitValue(boxWidth,'px');\n" +
-
+      "ti.height=boxHeight;\n" +
 
       "ti.contents=" +
       jsString(text) +
       ";\n" +
 
-
       "ti.font=" +
       jsString(font) +
       ";\n" +
 
-
       "ti.size=" +
       initialSize +
       ";\n" +
-
 
       "ti.justification=Justification." +
       align +
@@ -1739,20 +2102,11 @@
       "ti.color=c;\n" +
 
 
-      /* TRACKING */
-
-      "try{\n" +
-
-      "ti.tracking=" +
-      charSpacing +
-      ";\n" +
-
-      "}catch(eTracking){}\n" +
-
-
       /* -------------------------------------------------
          AUTO FIT
          ------------------------------------------------- */
+
+      "var estimatedLines=1;\n" +
 
       "var finalSize=" +
       initialSize +
@@ -1764,15 +2118,9 @@
       "){\n" +
 
 
-      "function estimateLines(str,size,width,tracking){\n" +
+      "function estimateLines(str,size,width){\n" +
 
       "var avg=size*0.52;\n" +
-
-      "var trackingPx=(tracking/1000)*size;\n" +
-
-      "avg+=trackingPx;\n" +
-
-      "if(avg<0.1)avg=0.1;\n" +
 
       "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
 
@@ -1784,6 +2132,7 @@
       "for(var p=0;p<paragraphs.length;p++){\n" +
 
       "var paragraph=paragraphs[p];\n" +
+
 
       "if(paragraph.trim()===''){\n" +
 
@@ -1821,6 +2170,7 @@
       "lineCount+=Math.floor(len/maxChars);\n" +
 
       "chars=len%maxChars;\n" +
+
 
       "if(chars===0){\n" +
 
@@ -1874,18 +2224,18 @@
 
       "while(current>minimum){\n" +
 
-      "var estimated=estimateLines(" +
+      "var est=estimateLines(" +
       jsString(text) +
-      ",current,boxWidth," +
-      charSpacing +
-      ");\n" +
+      ",current,boxWidth);\n" +
 
-      "var lineHeight=current*1.20;\n" +
+      "var lh=current*1.20;\n" +
 
-      "var requiredHeight=estimated*lineHeight;\n" +
+      "var neededHeight=est*lh;\n" +
 
 
-      "if(requiredHeight<=boxHeight){\n" +
+      "if(neededHeight<=boxHeight){\n" +
+
+      "estimatedLines=est;\n" +
 
       "break;\n" +
 
@@ -1896,11 +2246,12 @@
 
       "ti.size=current;\n" +
 
+      "estimatedLines=est;\n" +
+
       "}\n" +
 
 
       "finalSize=current;\n" +
-
 
       "}\n" +
 
@@ -1909,152 +2260,55 @@
          VERTICAL ALIGNMENT
          ------------------------------------------------- */
 
-      /*
-       * Paragraph text starts at boxTop.
-       * For TOP we leave it there.
-       *
-       * For CENTER/BOTTOM we estimate the rendered
-       * text height and move the text box downward.
-       */
+      "var effLineHeight=finalSize*1.20;\n" +
 
-      "var estimatedFinalLines=1;\n" +
+      "var actualTextHeight=estimatedLines*effLineHeight;\n" +
 
-      "var avgFinal=" +
-      "finalSize*0.52;\n" +
-
-      "if(avgFinal<0.1)avgFinal=0.1;\n" +
-
-      "var maxFinalChars=Math.max(1,Math.floor(boxWidth/avgFinal));\n" +
-
-      "var finalParagraphs=" +
-      jsString(text) +
-      ".split(String.fromCharCode(10));\n" +
-
-      "estimatedFinalLines=0;\n" +
+      "var extraSpace=boxHeight-actualTextHeight;\n" +
 
 
-      "for(var fp=0;fp<finalParagraphs.length;fp++){\n" +
+      "if(extraSpace<0)extraSpace=0;\n" +
 
-      "var fpara=finalParagraphs[fp];\n" +
-
-      "if(fpara.trim()===''){\n" +
-
-      "estimatedFinalLines++;\n" +
-
-      "continue;\n" +
-
-      "}\n" +
-
-      "var fwords=fpara.trim().split(/\\s+/);\n" +
-
-      "var fchars=0;\n" +
-
-      "var flines=1;\n" +
-
-
-      "for(var fw=0;fw<fwords.length;fw++){\n" +
-
-      "var flen=fwords[fw].length;\n" +
-
-      "if(flen>maxFinalChars){\n" +
-
-      "if(fchars>0){\n" +
-
-      "flines++;\n" +
-
-      "fchars=0;\n" +
-
-      "}\n" +
-
-      "flines+=Math.floor(flen/maxFinalChars);\n" +
-
-      "fchars=flen%maxFinalChars;\n" +
-
-      "if(fchars===0){\n" +
-
-      "fchars=maxFinalChars;\n" +
-
-      "flines--;\n" +
-
-      "}\n" +
-
-      "}else{\n" +
-
-      "var fneed=flen+(fchars>0?1:0);\n" +
-
-      "if(fchars+fneed>maxFinalChars){\n" +
-
-      "flines++;\n" +
-
-      "fchars=flen;\n" +
-
-      "}else{\n" +
-
-      "fchars+=fneed;\n" +
-
-      "}\n" +
-
-      "}\n" +
-
-      "}\n" +
-
-      "estimatedFinalLines+=flines;\n" +
-
-      "}\n" +
-
-
-      "var estimatedTextHeight=estimatedFinalLines*finalSize*1.20;\n" +
-
-      "var freeHeight=boxHeight-estimatedTextHeight;\n" +
-
-      "if(freeHeight<0)freeHeight=0;\n" +
-
-
-      "var offsetY=0;\n" +
+      "var vAlignOffset=0;\n" +
 
 
       "if(" +
       jsString(vAlign) +
       "==='MIDDLE'){\n" +
 
-      "offsetY=freeHeight/2;\n" +
+      "vAlignOffset=extraSpace/2;\n" +
 
       "}else if(" +
       jsString(vAlign) +
       "==='BOTTOM'){\n" +
 
-      "offsetY=freeHeight;\n" +
+      "vAlignOffset=extraSpace;\n" +
 
       "}\n" +
 
 
-      "ti.position=[boxLeft,boxTop+offsetY];\n" +
+      "ti.position=[boxLeft,boxTop+vAlignOffset];\n" +
 
 
-      /* -------------------------------------------------
+      /* =================================================
          POINT TEXT
-         ------------------------------------------------- */
+         ================================================= */
 
       "}else{\n" +
 
-
       "ti.kind=TextType.POINTTEXT;\n" +
-
 
       "ti.contents=" +
       jsString(text) +
       ";\n" +
 
-
       "ti.font=" +
       jsString(font) +
       ";\n" +
 
-
       "ti.size=" +
       initialSize +
       ";\n" +
-
 
       "ti.justification=Justification." +
       align +
@@ -2070,27 +2324,14 @@
       "ti.color=pc;\n" +
 
 
-      "try{\n" +
-
-      "ti.tracking=" +
-      charSpacing +
-      ";\n" +
-
-      "}catch(ePointTracking){}\n" +
-
-
-      /* POINT TEXT POSITION */
-
-      "var pointX=(L+R)/2;\n" +
-
-      "var pointY=(T+B)/2;\n" +
+      "var py=(T+B)/2;\n" +
 
 
       "if(" +
       jsString(vAlign) +
       "==='TOP'){\n" +
 
-      "pointY=T+" +
+      "py=T+" +
       initialSize +
       ";\n" +
 
@@ -2098,31 +2339,311 @@
       jsString(vAlign) +
       "==='BOTTOM'){\n" +
 
-      "pointY=B-(" +
+      "py=B-(" +
       initialSize +
-      "*0.30);\n" +
+      "*0.3);\n" +
 
       "}\n" +
 
 
-      "ti.position=[pointX,pointY];\n" +
-
+      "ti.position=[(L+R)/2,py];\n" +
 
       "}\n" +
 
 
-      /* -------------------------------------------------
-         ACTIVATE LAYER
-         ------------------------------------------------- */
+      /* =================================================
+         SELECT NEW LAYER
+         ================================================= */
 
       "d.activeLayer=layer;\n" +
 
 
-      /* -------------------------------------------------
-         RESULT
-         ------------------------------------------------- */
+      /* =================================================
+         STROKE
+         ================================================= */
 
-      "var result=" +
+      "var strokeStatus='disabled';\n" +
+
+
+      "if(" +
+      strokeEnabled +
+      " && " +
+      strokeWidth +
+      ">0){\n" +
+
+
+      "try{\n" +
+
+      "function cTID(s){return app.charIDToTypeID(s);}\n" +
+
+      "function sTID(s){return app.stringIDToTypeID(s);}\n" +
+
+
+      "var strokePos='OutF';\n" +
+
+
+      "if(" +
+      jsString(strokePosition) +
+      "==='CENTER'){\n" +
+
+      "strokePos='CtrF';\n" +
+
+      "}else if(" +
+      jsString(strokePosition) +
+      "==='INSIDE'){\n" +
+
+      "strokePos='InsF';\n" +
+
+      "}\n" +
+
+
+      "var rgbHex=" +
+      jsString(strokeColor) +
+      ";\n" +
+
+      "var rr=parseInt(rgbHex.substring(0,2),16);\n" +
+
+      "var gg=parseInt(rgbHex.substring(2,4),16);\n" +
+
+      "var bb=parseInt(rgbHex.substring(4,6),16);\n" +
+
+
+      "if(!isFinite(rr))rr=0;\n" +
+
+      "if(!isFinite(gg))gg=0;\n" +
+
+      "if(!isFinite(bb))bb=0;\n" +
+
+
+      "var desc=new ActionDescriptor();\n" +
+
+      "var ref=new ActionReference();\n" +
+
+
+      "ref.putProperty(\n" +
+
+      "cTID('Prpr'),\n" +
+
+      "cTID('Lefx')\n" +
+
+      ");\n" +
+
+
+      "ref.putEnumerated(\n" +
+
+      "cTID('Lyr '),\n" +
+
+      "cTID('Ordn'),\n" +
+
+      "cTID('Trgt')\n" +
+
+      ");\n" +
+
+
+      "desc.putReference(\n" +
+
+      "cTID('null'),\n" +
+
+      "ref\n" +
+
+      ");\n" +
+
+
+      "var fxDesc=\n" +
+
+      "new ActionDescriptor();\n" +
+
+
+      "var strokeDesc=\n" +
+
+      "new ActionDescriptor();\n" +
+
+
+      "strokeDesc.putBoolean(\n" +
+
+      "cTID('enab'),\n" +
+
+      "true\n" +
+
+      ");\n" +
+
+
+      "strokeDesc.putBoolean(\n" +
+
+      "sTID('present'),\n" +
+
+      "true\n" +
+
+      ");\n" +
+
+
+      "strokeDesc.putBoolean(\n" +
+
+      "sTID('showInDialog'),\n" +
+
+      "true\n" +
+
+      ");\n" +
+
+
+      "strokeDesc.putEnumerated(\n" +
+
+      "cTID('Styl'),\n" +
+
+      "cTID('FStl'),\n" +
+
+      "cTID(strokePos)\n" +
+
+      ");\n" +
+
+
+      "strokeDesc.putEnumerated(\n" +
+
+      "cTID('PntT'),\n" +
+
+      "cTID('FrFl'),\n" +
+
+      "cTID('SClr')\n" +
+
+      ");\n" +
+
+
+      "strokeDesc.putEnumerated(\n" +
+
+      "cTID('Md  '),\n" +
+
+      "cTID('BlnM'),\n" +
+
+      "cTID('Nrml')\n" +
+
+      ");\n" +
+
+
+      "strokeDesc.putUnitDouble(\n" +
+
+      "cTID('Opct'),\n" +
+
+      "cTID('#Prc'),\n" +
+
+      strokeOpacity +
+
+      ");\n" +
+
+
+      "strokeDesc.putUnitDouble(\n" +
+
+      "cTID('Sz  '),\n" +
+
+      "cTID('#Pxl'),\n" +
+
+      strokeWidth +
+
+      ");\n" +
+
+
+      "var colorDesc=\n" +
+
+      "new ActionDescriptor();\n" +
+
+
+      "colorDesc.putDouble(\n" +
+
+      "cTID('Rd  '),\n" +
+
+      "rr\n" +
+
+      ");\n" +
+
+
+      "colorDesc.putDouble(\n" +
+
+      "cTID('Grn '),\n" +
+
+      "gg\n" +
+
+      ");\n" +
+
+
+      "colorDesc.putDouble(\n" +
+
+      "cTID('Bl  '),\n" +
+
+      "bb\n" +
+
+      ");\n" +
+
+
+      "strokeDesc.putObject(\n" +
+
+      "cTID('Clr '),\n" +
+
+      "cTID('RGBC'),\n" +
+
+      "colorDesc\n" +
+
+      ");\n" +
+
+
+      "strokeDesc.putBoolean(\n" +
+
+      "sTID('overprint'),\n" +
+
+      "false\n" +
+
+      ");\n" +
+
+
+      "fxDesc.putObject(\n" +
+
+      "cTID('FrFX'),\n" +
+
+      "cTID('FrFX'),\n" +
+
+      "strokeDesc\n" +
+
+      ");\n" +
+
+
+      "desc.putObject(\n" +
+
+      "cTID('T   '),\n" +
+
+      "cTID('Lefx'),\n" +
+
+      "fxDesc\n" +
+
+      ");\n" +
+
+
+      "executeAction(\n" +
+
+      "cTID('setd'),\n" +
+
+      "desc,\n" +
+
+      "DialogModes.NO\n" +
+
+      ");\n" +
+
+
+      "strokeStatus='enabled width='+strokeWidth+' color='+rgbHex+' opacity='+strokeOpacity+' position='+strokePos;\n" +
+
+
+      "}catch(strokeError){\n" +
+
+      "strokeStatus='failed:'+(strokeError&&strokeError.message?strokeError.message:String(strokeError));\n" +
+
+      "}\n" +
+
+
+      "}\n" +
+
+
+      /* =================================================
+         SUCCESS MESSAGE
+         ================================================= */
+
+      "var __resultMsg=" +
 
       "'TEXT INSERTED | selection='+" +
 
@@ -2137,39 +2658,39 @@
 
       "' | size='+ti.size+" +
 
-      "' | mode='+" +
-      jsString(mode) +
+      "' | tracking='+trackingReadback+" +
 
-      ";\n" +
-
-
-      "app.echoToOE(" +
-      "'TYPERP_OK:'+result" +
-      ");\n" +
-
-
-      /* -------------------------------------------------
-         ERROR
-         ------------------------------------------------- */
-
-      "}catch(e){\n" +
-
-      "var errorMessage=" +
-
-      "(e&&e.message?" +
-      "e.message:" +
-      "String(e));\n" +
+      "' | stroke='+strokeStatus;\n" +
 
 
       "try{\n" +
 
-      "app.echoToOE(" +
+      "app.echoToOE(\n" +
 
-      "'TYPERP_ERR:'+errorMessage" +
+      "'TYPERP_OK:'+__resultMsg\n" +
 
       ");\n" +
 
-      "}catch(e2){}\n" +
+      "}catch(eEcho){}\n" +
+
+
+      "}catch(e){\n" +
+
+
+      "var __errMsg=" +
+
+      "(e&&e.message?e.message:String(e));\n" +
+
+
+      "try{\n" +
+
+      "app.echoToOE(\n" +
+
+      "'TYPERP_ERR:'+__errMsg\n" +
+
+      ");\n" +
+
+      "}catch(eEcho2){}\n" +
 
 
       "}\n" +
@@ -2177,9 +2698,9 @@
       "})();";
 
 
-    /* ===================================================
-       SEND SCRIPT TO PHOTOPEA
-       =================================================== */
+    /* =================================================
+       SEND TO PHOTOPEA
+       ================================================= */
 
     window.parent.postMessage(
       script,
@@ -2187,32 +2708,21 @@
     );
 
 
-    /* ===================================================
-       RESPONSE TIMEOUT
-       =================================================== */
-
-    var requestStarted =
-      Date.now();
-
+    /* =================================================
+       TIMEOUT
+       ================================================= */
 
     setTimeout(
       function () {
 
         if (
-          statusEl.textContent ===
-          "Reading active selection..."
+          statusEl.textContent.indexOf(
+            "Checking active selection..."
+          ) === 0
         ) {
 
           setStatus(
-            "No response from Photopea."
-          );
-
-          console.log(
-            "TypeR-P BUILD-025: " +
-            "No Photopea response after " +
-            (Date.now() -
-              requestStarted) +
-            "ms"
+            "No response from Photopea after 6s."
           );
         }
 
@@ -2222,12 +2732,19 @@
   }
 
 
-  /* =====================================================
-     INSERT BUTTON
-     ===================================================== */
-
   insertLineBtn.onclick =
     insertCurrentLine;
+
+
+  /* =====================================================
+     READY
+     ===================================================== */
+
+  updateLine();
+
+  setStatus(
+    "Ready (BUILD-026)"
+  );
 
 
   /* =====================================================
@@ -2235,7 +2752,9 @@
      ===================================================== */
 
   var debugBtn =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
 
   debugBtn.type =
     "button";
@@ -2249,6 +2768,9 @@
   debugBtn.style.marginTop =
     "12px";
 
+  debugBtn.style.background =
+    "#333";
+
 
   settingsPanel.appendChild(
     debugBtn
@@ -2259,12 +2781,12 @@
     function () {
 
       setStatus(
-        "Sending raw test..."
+        "Sending raw test script..."
       );
 
 
       window.parent.postMessage(
-        "alert('TypeR-P BUILD-025: Photopea connection works.');",
+        "alert('HELLO FROM TYPERP BUILD-026 - LINK WORKS');",
         "*"
       );
 
@@ -2273,12 +2795,13 @@
         function () {
 
           if (
-            statusEl.textContent ===
-            "Sending raw test..."
+            statusEl.textContent.indexOf(
+              "Sending raw test"
+            ) === 0
           ) {
 
             setStatus(
-              "No response from Photopea."
+              "Raw test also got NO response — link itself is broken."
             );
           }
 
@@ -2287,20 +2810,5 @@
       );
     };
 
-
-  /* =====================================================
-     INITIAL STATE
-     ===================================================== */
-
-  updateLine();
-
-  setStatus(
-    "Ready (BUILD-025)"
-  );
-
-
-  console.log(
-    "TypeR-P BUILD-025 loaded successfully."
-  );
 
 })();
