@@ -624,6 +624,97 @@
       "}\n" +
       "finalSize=current;\n" +
       "alert('STEP14: autoFit loop done, finalSize='+finalSize+' iterations='+__loopGuard);\n" +
+      "}\nvar script =
+      "(function(){\n" +
+      "try{\n" +
+      "var d=app.activeDocument;\n" +
+      "if(!d){throw new Error('No active document.');}\n" +
+
+      "var b;\n" +
+      "try{ b=d.selection.bounds; }catch(e){ throw new Error('No active selection. Please make a selection first.'); }\n" +
+      "if(!b||b.length!==4){ throw new Error('No active selection. Please make a selection first.'); }\n" +
+
+      "function px(v){\n" +
+      "if(typeof v==='number')return v;\n" +
+      "try{ if(v&&typeof v.as==='function'){ var a=Number(v.as('px')); if(isFinite(a))return a; } }catch(e){}\n" +
+      "try{ if(v&&v.value!==undefined){ var n=Number(v.value); if(isFinite(n))return n; } }catch(e){}\n" +
+      "return NaN;\n" +
+      "}\n" +
+
+      "var L=px(b[0]); var T=px(b[1]); var R=px(b[2]); var B=px(b[3]);\n" +
+      "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){ throw new Error('Could not read selection coordinates.'); }\n" +
+      "if(R<=L||B<=T){ throw new Error('Selection has invalid dimensions.'); }\n" +
+
+      "var boxLeft=L+" + padding + ";\n" +
+      "var boxTop=T+" + padding + ";\n" +
+      "var boxRight=R-" + padding + ";\n" +
+      "var boxBottom=B-" + padding + ";\n" +
+      "var boxWidth=boxRight-boxLeft;\n" +
+      "var boxHeight=boxBottom-boxTop;\n" +
+      "if(boxWidth<1||boxHeight<1){ throw new Error('Padding is too large for the selection.'); }\n" +
+
+      "var layer=d.artLayers.add();\n" +
+      "layer.kind=LayerKind.TEXT;\n" +
+      "layer.name=" + jsString("TTP: " + text.substring(0, 45)) + ";\n" +
+      "var ti=layer.textItem;\n" +
+
+      "var trackingErr='';\n" +
+      "var trackingReadback='unread';\n" +
+      "try{ ti.tracking=" + charSpacing + "; trackingReadback=''+ti.tracking; }catch(eTrack){ trackingErr=' | tracking-failed:'+eTrack.message; }\n" +
+
+      "if(" + jsString(mode) + "==='PARAGRAPH'){\n" +
+      "ti.kind=TextType.PARAGRAPHTEXT;\n" +
+      "ti.width=boxWidth;\n" +
+      "ti.height=boxHeight;\n" +
+      "ti.contents=" + jsString(text) + ";\n" +
+      "ti.font=" + jsString(font) + ";\n" +
+      "ti.size=" + initialSize + ";\n" +
+      "ti.justification=Justification." + align + ";\n" +
+      "var c=new SolidColor();\n" +
+      "c.rgb.hexValue=" + jsString(color) + ";\n" +
+      "ti.color=c;\n" +
+
+      "var estimatedLines=1;\n" +
+      "var finalSize=" + initialSize + ";\n" +
+      "if(" + autoFit + "){\n" +
+      "function estimateLines(str,size,width){\n" +
+      "var avg=size*0.52;\n" +
+      "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
+      "var paragraphs=str.split(String.fromCharCode(10));\n" +
+      "var total=0;\n" +
+      "for(var p=0;p<paragraphs.length;p++){\n" +
+      "var paragraph=paragraphs[p];\n" +
+      "if(paragraph.trim()===''){ total++; continue; }\n" +
+      "var words=paragraph.trim().split(/\\s+/);\n" +
+      "var chars=0; var lineCount=1;\n" +
+      "for(var w=0;w<words.length;w++){\n" +
+      "var word=words[w]; var len=word.length;\n" +
+      "if(len>maxChars){\n" +
+      "if(chars>0){ lineCount++; chars=0; }\n" +
+      "lineCount+=Math.floor(len/maxChars);\n" +
+      "chars=len%maxChars;\n" +
+      "if(chars===0){ chars=maxChars; lineCount--; }\n" +
+      "continue;\n" +
+      "}\n" +
+      "var needed=len+(chars>0?1:0);\n" +
+      "if(chars+needed>maxChars){ lineCount++; chars=len; } else { chars+=needed; }\n" +
+      "}\n" +
+      "total+=lineCount;\n" +
+      "}\n" +
+      "return Math.max(1,total);\n" +
+      "}\n" +
+      "var current=" + initialSize + ";\n" +
+      "var minimum=" + minSize + ";\n" +
+      "while(current>minimum){\n" +
+      "var est=estimateLines(" + jsString(text) + ",current,boxWidth);\n" +
+      "var lh=current*1.20;\n" +
+      "var neededHeight=est*lh;\n" +
+      "if(neededHeight<=boxHeight){ estimatedLines=est; break; }\n" +
+      "current--;\n" +
+      "ti.size=current;\n" +
+      "estimatedLines=est;\n" +
+      "}\n" +
+      "finalSize=current;\n" +
       "}\n" +
 
       "var effLineHeight=finalSize*1.20;\n" +
@@ -634,7 +725,6 @@
       "if(" + jsString(vAlign) + "==='MIDDLE'){ vAlignOffset=extraSpace/2; }\n" +
       "else if(" + jsString(vAlign) + "==='BOTTOM'){ vAlignOffset=extraSpace; }\n" +
       "ti.position=[boxLeft,boxTop+vAlignOffset];\n" +
-      "alert('STEP15: position set');\n" +
 
       "}else{\n" +
       "ti.kind=TextType.POINTTEXT;\n" +
@@ -651,13 +741,10 @@
       "ti.position=[(L+R)/2,py];\n" +
       "}\n" +
 
-      "alert('STEP16: about to set activeLayer');\n" +
       "d.activeLayer=layer;\n" +
-      "alert('STEP17: activeLayer set, about to echo result');\n" +
 
       "var __resultMsg = 'TEXT INSERTED | selection='+L+','+T+','+R+','+B+' | box='+boxWidth+'x'+boxHeight+' | size='+ti.size+' | trackingSet=" + charSpacing + " trackingReadback='+trackingReadback+trackingErr;\n" +
       "try{ app.echoToOE('TYPERP_OK:'+__resultMsg); }catch(eEcho){}\n" +
-      "alert('TypeR-P OK: '+__resultMsg);\n" +
 
       "}catch(e){\n" +
       "var __errMsg = (e&&e.message?e.message:String(e));\n" +
