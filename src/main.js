@@ -1,5 +1,5 @@
 // TypeR-P â€” main.js
-// BUILD: TYPERP-BUILD-021
+// BUILD: TYPERP-BUILD-022
 //
 // Ø§Ø¶Ø§ÙÙ‡â€ŒØ´Ø¯Ù‡ Ù†Ø³Ø¨Øª Ø¨Ù‡ build-018:
 //   - Character Spacing (ti.tracking)
@@ -41,7 +41,7 @@
   }
 
   if (missing.length) {
-    alert("TypeR-P BUILD-019 UI ERROR\n\nMissing:\n" + missing.join("\n"));
+    alert("TypeR-P BUILD-022 UI ERROR\n\nMissing:\n" + missing.join("\n"));
     return;
   }
 
@@ -180,7 +180,77 @@
   var wordSpacingEl = makeNumber(0, 0, 20);
   settingsPanel.appendChild(wordSpacingEl);
 
-  // --- Ø¬Ø¯ÛŒØ¯: Vertical Alignment ---
+  // --- Ø¬Ø¯ÛŒØ¯: Ù…Ø¯ÛŒØ±ÛŒØª ÙÙˆÙ†Øª â€” Ø¯Ø±ÛŒØ§ÙØª Ù„ÛŒØ³Øª ÙˆØ§Ù‚Ø¹ÛŒ ÙÙˆÙ†Øªâ€ŒÙ‡Ø§ÛŒ Photopea ---
+  var fontRefreshBtn = document.createElement("button");
+  fontRefreshBtn.type = "button";
+  fontRefreshBtn.textContent = "Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù„ÛŒØ³Øª ÙÙˆÙ†Øªâ€ŒÙ‡Ø§";
+  fontRefreshBtn.style.width = "100%";
+  fontRefreshBtn.style.marginTop = "6px";
+  fontEl.parentElement.insertBefore(fontRefreshBtn, fontEl.nextSibling);
+
+  var fontListLoaded = false;
+
+  function requestFontList() {
+    var script =
+      "(function(){\n" +
+      "try{\n" +
+      "  var names=[];\n" +
+      "  var f=app.fonts;\n" +
+      "  if(!f) throw new Error('app.fonts not available');\n" +
+      "  for (var i=0;i<f.length;i++){\n" +
+      "    var one=f[i];\n" +
+      "    var nm=(one && one.postScriptName) ? one.postScriptName : (one && one.name ? one.name : String(one));\n" +
+      "    if (nm) names.push(nm);\n" +
+      "  }\n" +
+      "  app.echoToOE('TYPERP_FONTS:'+JSON.stringify(names));\n" +
+      "}catch(e){\n" +
+      "  app.echoToOE('TYPERP_FONTS_ERR:'+(e&&e.message?e.message:String(e)));\n" +
+      "}\n" +
+      "})();";
+
+    window.parent.postMessage(script, "*");
+  }
+
+  function replaceFontInputWithSelect(fontNames) {
+    var currentValue = fontEl.value || "ArialMT";
+
+    var select = document.createElement("select");
+    select.id = "font";
+    select.style.width = "100%";
+
+    fontNames.sort();
+
+    var hasCurrent = false;
+    for (var i = 0; i < fontNames.length; i++) {
+      var opt = document.createElement("option");
+      opt.value = fontNames[i];
+      opt.textContent = fontNames[i];
+      if (fontNames[i] === currentValue) {
+        opt.selected = true;
+        hasCurrent = true;
+      }
+      select.appendChild(opt);
+    }
+
+    if (!hasCurrent && currentValue) {
+      var extraOpt = document.createElement("option");
+      extraOpt.value = currentValue;
+      extraOpt.textContent = currentValue + " (ÙØ¹Ù„ÛŒ)";
+      extraOpt.selected = true;
+      select.insertBefore(extraOpt, select.firstChild);
+    }
+
+    fontEl.parentElement.replaceChild(select, fontEl);
+    fontEl = select; // Ù…Ø±Ø¬Ø¹ Ø±Ø§ Ø¢Ù¾Ø¯ÛŒØª Ù…ÛŒâ€ŒÚ©Ù†ÛŒÙ… ØªØ§ Ø¨Ù‚ÛŒÙ‡ Ú©Ø¯ Ø¨Ø¯ÙˆÙ† ØªØºÛŒÛŒØ± Ú©Ø§Ø± Ú©Ù†Ø¯
+  }
+
+  fontRefreshBtn.onclick = function () {
+    setStatus("Loading font list...");
+    requestFontList();
+  };
+
+  // ÛŒÚ© ØªÙ„Ø§Ø´ Ø®ÙˆØ¯Ú©Ø§Ø± Ù…ÙˆÙ‚Ø¹ Ø¨Ø§Ù„Ø§ Ø¢Ù…Ø¯Ù† Ù¾Ù„Ø§Ú¯ÛŒÙ† (Ø¨Ø§ Ú©Ù…ÛŒ ØªØ£Ø®ÛŒØ±ØŒ Ú†ÙˆÙ† Ù…Ù…Ú©Ù† Ø§Ø³Øª Photopea Ù‡Ù†ÙˆØ² Ø¢Ù…Ø§Ø¯Ù‡ Ù†Ø¨Ø§Ø´Ø¯)
+  setTimeout(requestFontList, 800);
   settingsPanel.appendChild(makeLabel("Vertical Alignment"));
   var vAlignEl = document.createElement("select");
   vAlignEl.style.width = "100%";
@@ -200,6 +270,28 @@
   window.addEventListener("message", function (event) {
     if (typeof event.data !== "string") return;
 
+    if (event.data.indexOf("TYPERP_FONTS:") === 0) {
+      try {
+        var namesJson = event.data.slice("TYPERP_FONTS:".length);
+        var names = JSON.parse(namesJson);
+        if (names && names.length) {
+          replaceFontInputWithSelect(names);
+          fontListLoaded = true;
+          setStatus("Loaded " + names.length + " font(s). Ready (BUILD-022)");
+        } else {
+          setStatus("Font list was empty â€” keeping manual font input. Ready (BUILD-022)");
+        }
+      } catch (eParse) {
+        setStatus("Could not parse font list â€” keeping manual font input.");
+      }
+      return;
+    }
+
+    if (event.data.indexOf("TYPERP_FONTS_ERR:") === 0) {
+      setStatus("Font list unavailable (" + event.data.slice("TYPERP_FONTS_ERR:".length) + ") â€” keeping manual font input. Ready (BUILD-022)");
+      return;
+    }
+
     if (event.data.indexOf("TYPERP_OK:") === 0) {
       setStatus(event.data.substring(10));
       return;
@@ -208,7 +300,7 @@
     if (event.data.indexOf("TYPERP_ERR:") === 0) {
       var error = event.data.substring(11);
       setStatus("Error: " + error);
-      alert("TypeR-P BUILD-019\n\n" + error);
+      alert("TypeR-P BUILD-022\n\n" + error);
     }
   });
 
@@ -421,6 +513,6 @@
   insertLineBtn.onclick = insertCurrentLine;
 
   updateLine();
-  setStatus("Ready (BUILD-021)");
+  setStatus("Ready (BUILD-022) â€” loading fonts...");
 
 })();
