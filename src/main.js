@@ -1468,9 +1468,25 @@
      ===================================================== */
 
   function jsString(value) {
-    return JSON.stringify(
+
+    // U+2028 (Line Separator) and U+2029 (Paragraph Separator)
+    // are valid in JSON strings but are NOT valid inside a raw
+    // JS string literal in older engines. If pasted text (very
+    // common when copying from Word/Google Docs) contains them,
+    // JSON.stringify leaves them as literal characters, which
+    // silently breaks the generated script's syntax entirely —
+    // Photopea then never runs it and never echoes anything back
+    // (this is what causes "no response from Photopea after 6s").
+    // Normalize them to a normal newline first, which is also
+    // more useful anyway (keeps the intended line break).
+
+    var s =
       String(value)
-    );
+        .replace(/\u2028/g, "\n")
+        .replace(/\u2029/g, "\n")
+        .replace(/\uFEFF/g, "");
+
+    return JSON.stringify(s);
   }
 
 
