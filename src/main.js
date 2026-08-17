@@ -1,19 +1,14 @@
-// TypeR-P â€” main.js
-// BUILD: TYPERP-BUILD-023
+// TypeR-P — main.js
+// BUILD: TYPERP-BUILD-024
 //
-// Ø§Ø¶Ø§ÙÙ‡â€ŒØ´Ø¯Ù‡ Ù†Ø³Ø¨Øª Ø¨Ù‡ build-018:
-//   - Character Spacing (ti.tracking)
-//   - Line Spacing (ti.leading, Ø¨Ø§ autoLeading=false)
-//   - Word Spacing (Ø´Ø¨ÛŒÙ‡â€ŒØ³Ø§Ø²ÛŒ Ø¨Ø§ ØªØ²Ø±ÛŒÙ‚ space Ø§Ø¶Ø§ÙÙ‡ Ø¨ÛŒÙ† Ú©Ù„Ù…Ø§Øª)
-//   - Vertical Alignment: Top / Center / Bottom (Ù…Ø­Ø§Ø³Ø¨Ù‡ Ø¯Ø³ØªÛŒ Ø¨Ø¹Ø¯ Ø§Ø² Auto Fit)
+// تغییرات نسبت به build-023:
+//   - حذف کامل requestFontList / replaceFontInputWithSelect (علت هنگی گوشی)
+//   - اضافه شدن "Load Font from Device" سبک با app.open (فقط اسم فونت جدید برمی‌گردد، نه کل لیست)
+//   - برگرداندن Saved Styles (که در build-023 گم شده بود) با فیلدهای جدید
 
 (function () {
 
   "use strict";
-
-  /* =====================================================
-     UI - Ø¹Ù†Ø§ØµØ± Ù…ÙˆØ¬ÙˆØ¯
-     ===================================================== */
 
   var statusEl = document.getElementById("status");
   var fullTextEl = document.getElementById("fullText");
@@ -41,7 +36,7 @@
   }
 
   if (missing.length) {
-    alert("TypeR-P BUILD-023 UI ERROR\n\nMissing:\n" + missing.join("\n"));
+    alert("TypeR-P BUILD-024 UI ERROR\n\nMissing:\n" + missing.join("\n"));
     return;
   }
 
@@ -50,7 +45,7 @@
   }
 
   /* =====================================================
-     LINE SYSTEM (Ø¨Ø¯ÙˆÙ† ØªØºÛŒÛŒØ± Ù†Ø³Ø¨Øª Ø¨Ù‡ build-018)
+     LINE SYSTEM (بدون تغییر)
      ===================================================== */
 
   var lines = [];
@@ -131,12 +126,72 @@
     return input;
   }
 
-  // Padding
+  /* ---------- Load Font from Device (سبک، بدون لیست کامل) ---------- */
+
+  var fontUploadInput = document.createElement("input");
+  fontUploadInput.type = "file";
+  fontUploadInput.accept = ".ttf,.otf,.woff,.woff2";
+  fontUploadInput.style.display = "none";
+
+  var fontUploadBtn = document.createElement("button");
+  fontUploadBtn.type = "button";
+  fontUploadBtn.textContent = "Load Font from Device";
+  fontUploadBtn.style.width = "100%";
+  fontUploadBtn.style.marginTop = "6px";
+
+  fontEl.parentElement.insertBefore(fontUploadBtn, fontEl.nextSibling);
+  fontEl.parentElement.insertBefore(fontUploadInput, fontUploadBtn.nextSibling);
+
+  fontUploadBtn.onclick = function () {
+    fontUploadInput.click();
+  };
+
+  fontUploadInput.onchange = function () {
+    var file = fontUploadInput.files && fontUploadInput.files[0];
+    if (!file) return;
+
+    setStatus("Loading font file...");
+
+    var reader = new FileReader();
+
+    reader.onload = function () {
+      var dataUrl = reader.result;
+
+      var script =
+        "(function(){\n" +
+        "try{\n" +
+        "  var before = (app.fonts && app.fonts.length) ? app.fonts.length : 0;\n" +
+        "  app.open(" + JSON.stringify(dataUrl) + ");\n" +
+        "  var after = (app.fonts && app.fonts.length) ? app.fonts.length : 0;\n" +
+        "  var name = '';\n" +
+        "  if (app.fonts && after > 0) {\n" +
+        "    var last = app.fonts[after - 1];\n" +
+        "    name = (last && last.postScriptName) ? last.postScriptName : (last && last.name ? last.name : '');\n" +
+        "  }\n" +
+        "  app.echoToOE('TYPERP_FONT_LOADED:' + name + ' | before=' + before + ' after=' + after);\n" +
+        "}catch(e){\n" +
+        "  app.echoToOE('TYPERP_FONT_ERR:' + (e && e.message ? e.message : String(e)));\n" +
+        "}\n" +
+        "})();";
+
+      window.parent.postMessage(script, "*");
+    };
+
+    reader.onerror = function () {
+      setStatus("Could not read the font file.");
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  /* ---------- Padding ---------- */
+
   settingsPanel.appendChild(makeLabel("Padding"));
   var paddingEl = makeNumber(12, 0, 500);
   settingsPanel.appendChild(paddingEl);
 
-  // Auto Fit
+  /* ---------- Auto Fit ---------- */
+
   settingsPanel.appendChild(makeLabel("Auto Fit"));
   var fitRow = document.createElement("label");
   fitRow.style.display = "flex";
@@ -149,12 +204,14 @@
   fitRow.appendChild(document.createTextNode("Automatically reduce font size"));
   settingsPanel.appendChild(fitRow);
 
-  // Minimum Font Size
+  /* ---------- Minimum Font Size ---------- */
+
   settingsPanel.appendChild(makeLabel("Minimum Font Size"));
   var minSizeEl = makeNumber(8, 1, 500);
   settingsPanel.appendChild(minSizeEl);
 
-  // Text Mode
+  /* ---------- Text Mode ---------- */
+
   settingsPanel.appendChild(makeLabel("Text Mode"));
   var modeEl = document.createElement("select");
   modeEl.style.width = "100%";
@@ -168,89 +225,20 @@
   modeEl.appendChild(pointOption);
   settingsPanel.appendChild(modeEl);
 
-  // --- ØªÙˆØ¬Ù‡: Line Spacing Ø­Ø°Ù Ø´Ø¯ â€” ti.leading Ø¯Ø± Ù…ÙˆØªÙˆØ± Ø±Ù†Ø¯Ø± Photopea ÙˆØ§Ù‚Ø¹Ø§Ù‹ Ø§Ø«Ø±ÛŒ Ù†Ø¯Ø§Ø±Ø¯ ---
+  /* ---------- Character Spacing (Tracking) ---------- */
 
-  // --- Ø¬Ø¯ÛŒØ¯: Character Spacing (Tracking) ---
   settingsPanel.appendChild(makeLabel("Character Spacing (Tracking)"));
   var charSpacingEl = makeNumber(0, -1000, 1000);
   settingsPanel.appendChild(charSpacingEl);
 
-  // --- Ø¬Ø¯ÛŒØ¯: Word Spacing (Ø´Ø¨ÛŒÙ‡â€ŒØ³Ø§Ø²ÛŒâ€ŒØ´Ø¯Ù‡) ---
+  /* ---------- Word Spacing (شبیه‌سازی‌شده) ---------- */
+
   settingsPanel.appendChild(makeLabel("Word Spacing (extra spaces)"));
   var wordSpacingEl = makeNumber(0, 0, 20);
   settingsPanel.appendChild(wordSpacingEl);
 
-  // --- Ø¬Ø¯ÛŒØ¯: Ù…Ø¯ÛŒØ±ÛŒØª ÙÙˆÙ†Øª â€” Ø¯Ø±ÛŒØ§ÙØª Ù„ÛŒØ³Øª ÙˆØ§Ù‚Ø¹ÛŒ ÙÙˆÙ†Øªâ€ŒÙ‡Ø§ÛŒ Photopea ---
-  var fontRefreshBtn = document.createElement("button");
-  fontRefreshBtn.type = "button";
-  fontRefreshBtn.textContent = "Load Font List";
-  fontRefreshBtn.style.width = "100%";
-  fontRefreshBtn.style.marginTop = "6px";
-  fontEl.parentElement.insertBefore(fontRefreshBtn, fontEl.nextSibling);
+  /* ---------- Vertical Alignment ---------- */
 
-  var fontListLoaded = false;
-
-  function requestFontList() {
-    var script =
-      "(function(){\n" +
-      "try{\n" +
-      "  var names=[];\n" +
-      "  var f=app.fonts;\n" +
-      "  if(!f) throw new Error('app.fonts not available');\n" +
-      "  for (var i=0;i<f.length;i++){\n" +
-      "    var one=f[i];\n" +
-      "    var nm=(one && one.postScriptName) ? one.postScriptName : (one && one.name ? one.name : String(one));\n" +
-      "    if (nm) names.push(nm);\n" +
-      "  }\n" +
-      "  app.echoToOE('TYPERP_FONTS:'+JSON.stringify(names));\n" +
-      "}catch(e){\n" +
-      "  app.echoToOE('TYPERP_FONTS_ERR:'+(e&&e.message?e.message:String(e)));\n" +
-      "}\n" +
-      "})();";
-
-    window.parent.postMessage(script, "*");
-  }
-
-  function replaceFontInputWithSelect(fontNames) {
-    var currentValue = fontEl.value || "ArialMT";
-
-    var select = document.createElement("select");
-    select.id = "font";
-    select.style.width = "100%";
-
-    fontNames.sort();
-
-    var hasCurrent = false;
-    for (var i = 0; i < fontNames.length; i++) {
-      var opt = document.createElement("option");
-      opt.value = fontNames[i];
-      opt.textContent = fontNames[i];
-      if (fontNames[i] === currentValue) {
-        opt.selected = true;
-        hasCurrent = true;
-      }
-      select.appendChild(opt);
-    }
-
-    if (!hasCurrent && currentValue) {
-      var extraOpt = document.createElement("option");
-      extraOpt.value = currentValue;
-      extraOpt.textContent = currentValue + " (current)";
-      extraOpt.selected = true;
-      select.insertBefore(extraOpt, select.firstChild);
-    }
-
-    fontEl.parentElement.replaceChild(select, fontEl);
-    fontEl = select; // Ù…Ø±Ø¬Ø¹ Ø±Ø§ Ø¢Ù¾Ø¯ÛŒØª Ù…ÛŒâ€ŒÚ©Ù†ÛŒÙ… ØªØ§ Ø¨Ù‚ÛŒÙ‡ Ú©Ø¯ Ø¨Ø¯ÙˆÙ† ØªØºÛŒÛŒØ± Ú©Ø§Ø± Ú©Ù†Ø¯
-  }
-
-  fontRefreshBtn.onclick = function () {
-    setStatus("Loading font list...");
-    requestFontList();
-  };
-
-  // ÛŒÚ© ØªÙ„Ø§Ø´ Ø®ÙˆØ¯Ú©Ø§Ø± Ù…ÙˆÙ‚Ø¹ Ø¨Ø§Ù„Ø§ Ø¢Ù…Ø¯Ù† Ù¾Ù„Ø§Ú¯ÛŒÙ† (Ø¨Ø§ Ú©Ù…ÛŒ ØªØ£Ø®ÛŒØ±ØŒ Ú†ÙˆÙ† Ù…Ù…Ú©Ù† Ø§Ø³Øª Photopea Ù‡Ù†ÙˆØ² Ø¢Ù…Ø§Ø¯Ù‡ Ù†Ø¨Ø§Ø´Ø¯)
-  setTimeout(requestFontList, 800);
   settingsPanel.appendChild(makeLabel("Vertical Alignment"));
   var vAlignEl = document.createElement("select");
   vAlignEl.style.width = "100%";
@@ -264,31 +252,202 @@
   settingsPanel.appendChild(vAlignEl);
 
   /* =====================================================
+     SAVED STYLES (برگردانده‌شده از build-008/009)
+     ===================================================== */
+
+  var STYLES_KEY = "typerp_styles_v2";
+  var memoryStyles = {};
+
+  function loadStyles() {
+    try {
+      var raw = localStorage.getItem(STYLES_KEY);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return (parsed && typeof parsed === "object") ? parsed : {};
+    } catch (e) {
+      return memoryStyles;
+    }
+  }
+
+  function saveStylesObj(obj) {
+    try {
+      localStorage.setItem(STYLES_KEY, JSON.stringify(obj));
+    } catch (e) {
+      memoryStyles = obj;
+    }
+  }
+
+  settingsPanel.appendChild(makeLabel("Saved Styles"));
+
+  var styleSelectRow = document.createElement("div");
+  styleSelectRow.style.display = "flex";
+  styleSelectRow.style.gap = "6px";
+  styleSelectRow.style.marginTop = "4px";
+
+  var styleSelectEl = document.createElement("select");
+  styleSelectEl.style.flex = "1";
+
+  var applyStyleBtn = document.createElement("button");
+  applyStyleBtn.type = "button";
+  applyStyleBtn.textContent = "Apply";
+
+  var deleteStyleBtn = document.createElement("button");
+  deleteStyleBtn.type = "button";
+  deleteStyleBtn.textContent = "Delete";
+
+  styleSelectRow.appendChild(styleSelectEl);
+  styleSelectRow.appendChild(applyStyleBtn);
+  styleSelectRow.appendChild(deleteStyleBtn);
+  settingsPanel.appendChild(styleSelectRow);
+
+  var styleSaveRow = document.createElement("div");
+  styleSaveRow.style.display = "flex";
+  styleSaveRow.style.gap = "6px";
+  styleSaveRow.style.marginTop = "6px";
+
+  var styleNameEl = document.createElement("input");
+  styleNameEl.type = "text";
+  styleNameEl.placeholder = "Style name...";
+  styleNameEl.style.flex = "1";
+  styleNameEl.style.boxSizing = "border-box";
+
+  var saveStyleBtn = document.createElement("button");
+  saveStyleBtn.type = "button";
+  saveStyleBtn.textContent = "Save Style";
+
+  styleSaveRow.appendChild(styleNameEl);
+  styleSaveRow.appendChild(saveStyleBtn);
+  settingsPanel.appendChild(styleSaveRow);
+
+  function refreshStyleSelect(selectName) {
+    var styles = loadStyles();
+    var names = Object.keys(styles).sort(function (a, b) { return a.localeCompare(b); });
+
+    styleSelectEl.innerHTML = "";
+
+    if (names.length === 0) {
+      var emptyOpt = document.createElement("option");
+      emptyOpt.value = "";
+      emptyOpt.textContent = "(no styles saved)";
+      styleSelectEl.appendChild(emptyOpt);
+      return;
+    }
+
+    for (var i = 0; i < names.length; i++) {
+      var opt = document.createElement("option");
+      opt.value = names[i];
+      opt.textContent = names[i];
+      styleSelectEl.appendChild(opt);
+    }
+
+    if (selectName && styles[selectName]) styleSelectEl.value = selectName;
+  }
+
+  function currentSettingsSnapshot() {
+    return {
+      font: fontEl.value || "ArialMT",
+      size: Number(sizeEl.value) || 48,
+      color: colorEl.value || "FF0000",
+      align: alignEl.value || "CENTER",
+      padding: Number(paddingEl.value),
+      minSize: Number(minSizeEl.value),
+      autoFit: !!fitEl.checked,
+      mode: modeEl.value,
+      charSpacing: Number(charSpacingEl.value),
+      wordSpacing: Number(wordSpacingEl.value),
+      vAlign: vAlignEl.value
+    };
+  }
+
+  function applySettingsSnapshot(s) {
+    if (!s) return;
+    if (s.font !== undefined) fontEl.value = s.font;
+    if (s.size !== undefined) sizeEl.value = s.size;
+    if (s.color !== undefined) colorEl.value = s.color;
+    if (s.align !== undefined) alignEl.value = s.align;
+    if (s.padding !== undefined) paddingEl.value = s.padding;
+    if (s.minSize !== undefined) minSizeEl.value = s.minSize;
+    if (s.autoFit !== undefined) fitEl.checked = !!s.autoFit;
+    if (s.mode !== undefined) modeEl.value = s.mode;
+    if (s.charSpacing !== undefined) charSpacingEl.value = s.charSpacing;
+    if (s.wordSpacing !== undefined) wordSpacingEl.value = s.wordSpacing;
+    if (s.vAlign !== undefined) vAlignEl.value = s.vAlign;
+  }
+
+  saveStyleBtn.onclick = function () {
+    try {
+      var name = (styleNameEl.value || "").trim();
+      if (!name) { setStatus("Please type a style name first."); return; }
+
+      var styles = loadStyles();
+      styles[name] = currentSettingsSnapshot();
+      saveStylesObj(styles);
+
+      refreshStyleSelect(name);
+      setStatus("Style saved: " + name);
+      styleNameEl.value = "";
+    } catch (e) {
+      alert("Save style error: " + e.message);
+    }
+  };
+
+  applyStyleBtn.onclick = function () {
+    try {
+      var name = styleSelectEl.value;
+      if (!name) { setStatus("No style selected."); return; }
+
+      var styles = loadStyles();
+      var s = styles[name];
+      if (!s) { setStatus("Style not found: " + name); return; }
+
+      applySettingsSnapshot(s);
+      setStatus("Style applied: " + name);
+    } catch (e) {
+      alert("Apply style error: " + e.message);
+    }
+  };
+
+  deleteStyleBtn.onclick = function () {
+    try {
+      var name = styleSelectEl.value;
+      if (!name) { setStatus("No style selected."); return; }
+
+      var styles = loadStyles();
+      delete styles[name];
+      saveStylesObj(styles);
+
+      refreshStyleSelect();
+      setStatus("Style deleted: " + name);
+    } catch (e) {
+      alert("Delete style error: " + e.message);
+    }
+  };
+
+  refreshStyleSelect();
+
+  /* =====================================================
      PHOTOPEA MESSAGE LISTENER
      ===================================================== */
 
   window.addEventListener("message", function (event) {
     if (typeof event.data !== "string") return;
 
-    if (event.data.indexOf("TYPERP_FONTS:") === 0) {
-      try {
-        var namesJson = event.data.slice("TYPERP_FONTS:".length);
-        var names = JSON.parse(namesJson);
-        if (names && names.length) {
-          replaceFontInputWithSelect(names);
-          fontListLoaded = true;
-          setStatus("Loaded " + names.length + " font(s). Ready (BUILD-023)");
-        } else {
-          setStatus("Font list was empty â€” keeping manual font input. Ready (BUILD-023)");
-        }
-      } catch (eParse) {
-        setStatus("Could not parse font list â€” keeping manual font input.");
+    if (event.data.indexOf("TYPERP_FONT_LOADED:") === 0) {
+      var rest = event.data.slice("TYPERP_FONT_LOADED:".length);
+      var name = rest.split(" | ")[0];
+      if (name) {
+        fontEl.value = name;
+        setStatus("Font loaded and applied: " + name);
+      } else {
+        setStatus("Font loaded, but could not read its name automatically. " + rest);
       }
       return;
     }
 
-    if (event.data.indexOf("TYPERP_FONTS_ERR:") === 0) {
-      setStatus("Font list unavailable (" + event.data.slice("TYPERP_FONTS_ERR:".length) + ") â€” keeping manual font input. Ready (BUILD-023)");
+    if (event.data.indexOf("TYPERP_FONT_ERR:") === 0) {
+      var ferr = event.data.slice("TYPERP_FONT_ERR:".length);
+      setStatus("Font load error: " + ferr);
+      alert("TypeR-P font load error:\n" + ferr);
       return;
     }
 
@@ -300,7 +459,7 @@
     if (event.data.indexOf("TYPERP_ERR:") === 0) {
       var error = event.data.substring(11);
       setStatus("Error: " + error);
-      alert("TypeR-P BUILD-023\n\n" + error);
+      alert("TypeR-P BUILD-024\n\n" + error);
     }
   });
 
@@ -314,19 +473,12 @@
 
   function insertCurrentLine() {
 
-    if (!lines.length) {
-      setStatus("Load lines first.");
-      return;
-    }
+    if (!lines.length) { setStatus("Load lines first."); return; }
 
     saveCurrentLine();
 
     var text = lines[currentIndex];
-
-    if (!text || !text.trim()) {
-      setStatus("Current line is empty.");
-      return;
-    }
+    if (!text || !text.trim()) { setStatus("Current line is empty."); return; }
 
     var font = fontEl.value || "ArialMT";
     var initialSize = Number(sizeEl.value) || 48;
@@ -345,8 +497,6 @@
     var autoFit = fitEl.checked;
     var mode = modeEl.value;
 
-    // Line Spacing Ø­Ø°Ù Ø´Ø¯Ù‡ â€” Ø¯ÛŒÚ¯Ø± Ø®ÙˆØ§Ù†Ø¯Ù‡ Ù†Ù…ÛŒâ€ŒØ´ÙˆØ¯
-
     var charSpacing = Number(charSpacingEl.value);
     if (!isFinite(charSpacing)) charSpacing = 0;
 
@@ -355,10 +505,8 @@
 
     var vAlign = vAlignEl.value || "MIDDLE";
 
-    // --- ØªØ²Ø±ÛŒÙ‚ ÙØ§ØµÙ„Ù‡Ù” ÙˆØ§Ù‚Ø¹ÛŒ Ø¨Ø¹Ø¯ Ø§Ø² Â«ØŒÂ» Ùˆ Â«,Â» Ø¯Ø± ØµÙˆØ±Øª Ù†Ø¨ÙˆØ¯ ÙØ§ØµÙ„Ù‡ØŒ ØªØ§ Ù…ÙˆØªÙˆØ± Ù…ØªÙ† Photopea Ù†Ù‚Ø·Ù‡Ù” Ø´Ú©Ø³Øª Ù¾ÛŒØ¯Ø§ Ú©Ù†Ø¯ ---
     text = text.replace(/\u060C(?!\s)/g, "\u060C ").replace(/,(?!\s)/g, ", ");
 
-    // --- Ø´Ø¨ÛŒÙ‡â€ŒØ³Ø§Ø²ÛŒ Word Spacing: ÙØ§ØµÙ„Ù‡Ù” Ø§Ø¶Ø§ÙÙ‡ Ø¨ÛŒÙ† Ú©Ù„Ù…Ø§ØªØŒ Ù‡Ù…ÛŒÙ†Ø¬Ø§ Ø¯Ø± Ø³Ù…Øª Ù¾Ù„Ø§Ú¯ÛŒÙ† ---
     if (wordSpacingCount > 0) {
       var extra = "";
       for (var w = 0; w < wordSpacingCount; w++) extra += " ";
@@ -366,10 +514,6 @@
     }
 
     setStatus("Checking active selection...");
-
-    /* =================================================
-       PHOTOPEA SCRIPT
-       ================================================= */
 
     var script =
       "(function(){\n" +
@@ -392,6 +536,8 @@
       "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){ throw new Error('Could not read selection coordinates.'); }\n" +
       "if(R<=L||B<=T){ throw new Error('Selection has invalid dimensions.'); }\n" +
 
+      "try { app.preferences.rulerUnits = Units.PIXELS; app.preferences.typeUnits = TypeUnits.PIXELS; } catch(eUnits) {}\n" +
+
       "var boxLeft=L+" + padding + ";\n" +
       "var boxTop=T+" + padding + ";\n" +
       "var boxRight=R-" + padding + ";\n" +
@@ -409,14 +555,10 @@
       "var trackingReadback='unread';\n" +
       "try{ ti.tracking=" + charSpacing + "; trackingReadback=''+ti.tracking; }catch(eTrack){ trackingErr=' | tracking-failed:'+eTrack.message; }\n" +
 
-      "var leadingErr='';\n" +
-      "var leadingApplied='not-supported';\n" +
-      "var leadingReadback='n/a';\n" +
-
       "if(" + jsString(mode) + "==='PARAGRAPH'){\n" +
       "ti.kind=TextType.PARAGRAPHTEXT;\n" +
-      "ti.width=new UnitValue(boxWidth,'px');\n" +
-      "ti.height=new UnitValue(boxHeight,'px');\n" +
+      "ti.width=boxWidth;\n" +
+      "ti.height=boxHeight;\n" +
       "ti.contents=" + jsString(text) + ";\n" +
       "ti.font=" + jsString(font) + ";\n" +
       "ti.size=" + initialSize + ";\n" +
@@ -498,8 +640,7 @@
       "'TYPERP_OK:TEXT INSERTED | selection='+L+','+T+','+R+','+B+\n" +
       "' | box='+boxWidth+'x'+boxHeight+\n" +
       "' | size='+ti.size+\n" +
-      "' | trackingSet=" + charSpacing + " trackingReadback='+trackingReadback+trackingErr+\n" +
-      "' | leadingApplied='+leadingApplied+' leadingReadback='+leadingReadback+leadingErr\n" +
+      "' | trackingSet=" + charSpacing + " trackingReadback='+trackingReadback+trackingErr\n" +
       ");\n" +
 
       "}catch(e){\n" +
@@ -513,6 +654,6 @@
   insertLineBtn.onclick = insertCurrentLine;
 
   updateLine();
-  setStatus("Ready (BUILD-023) â€” loading fonts...");
+  setStatus("Ready (BUILD-024)");
 
 })();
