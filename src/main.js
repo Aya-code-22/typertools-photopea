@@ -1,5 +1,5 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-021
+// BUILD: TYPERP-BUILD-022
 //
 // Full Text -> Lines -> Current Line
 // Selection-aware Paragraph Text
@@ -10,10 +10,6 @@
 // Letter Spacing
 // Line Spacing
 // Horizontal Scale
-//
-// BUILD-021:
-// Safer selection coordinate handling
-// Step-by-step Photopea diagnostics
 
 (function () {
 
@@ -62,7 +58,7 @@
 
   if (missing.length) {
     alert(
-      "TypeR-P BUILD-021 UI ERROR\n\nMissing:\n" +
+      "TypeR-P BUILD-022 UI ERROR\n\nMissing:\n" +
       missing.join("\n")
     );
     return;
@@ -91,7 +87,8 @@
     if (!lines.length) {
 
       currentLineEl.value = "";
-      lineInfoEl.textContent = "No lines loaded.";
+      lineInfoEl.textContent =
+        "No lines loaded.";
 
       return;
     }
@@ -188,11 +185,9 @@
   previousLineBtn.onclick = function () {
 
     if (!lines.length) {
-
       setStatus(
         "Load lines first."
       );
-
       return;
     }
 
@@ -213,11 +208,9 @@
   nextLineBtn.onclick = function () {
 
     if (!lines.length) {
-
       setStatus(
         "Load lines first."
       );
-
       return;
     }
 
@@ -291,9 +284,7 @@
   }
 
 
-  /* =====================================================
-     PADDING
-     ===================================================== */
+  /* Padding */
 
   settingsPanel.appendChild(
     makeLabel("Padding")
@@ -312,9 +303,7 @@
   );
 
 
-  /* =====================================================
-     AUTO FIT
-     ===================================================== */
+  /* Auto Fit */
 
   settingsPanel.appendChild(
     makeLabel("Auto Fit")
@@ -356,9 +345,7 @@
   );
 
 
-  /* =====================================================
-     MINIMUM FONT SIZE
-     ===================================================== */
+  /* Minimum Font Size */
 
   settingsPanel.appendChild(
     makeLabel(
@@ -379,9 +366,7 @@
   );
 
 
-  /* =====================================================
-     TEXT MODE
-     ===================================================== */
+  /* Text Mode */
 
   settingsPanel.appendChild(
     makeLabel(
@@ -432,9 +417,7 @@
   );
 
 
-  /* =====================================================
-     LETTER SPACING
-     ===================================================== */
+  /* Letter Spacing */
 
   settingsPanel.appendChild(
     makeLabel(
@@ -455,9 +438,7 @@
   );
 
 
-  /* =====================================================
-     LINE SPACING
-     ===================================================== */
+  /* Line Spacing */
 
   settingsPanel.appendChild(
     makeLabel(
@@ -478,9 +459,7 @@
   );
 
 
-  /* =====================================================
-     HORIZONTAL SCALE
-     ===================================================== */
+  /* Horizontal Scale */
 
   settingsPanel.appendChild(
     makeLabel(
@@ -547,7 +526,7 @@
         );
 
         alert(
-          "TypeR-P BUILD-021\n\n" +
+          "TypeR-P BUILD-022\n\n" +
           error
         );
       }
@@ -561,11 +540,9 @@
      ===================================================== */
 
   function jsString(value) {
-
     return JSON.stringify(
       String(value)
     );
-
   }
 
 
@@ -603,9 +580,9 @@
       }
 
 
-      /* -----------------------------------------------
+      /* =================================================
          SETTINGS
-         ----------------------------------------------- */
+         ================================================= */
 
       var font =
         fontEl.value ||
@@ -702,12 +679,12 @@
       }
 
 
-      /* -----------------------------------------------
+      /* =================================================
          STATUS
-         ----------------------------------------------- */
+         ================================================= */
 
       setStatus(
-        "SCRIPT_STARTED"
+        "Checking active selection..."
       );
 
 
@@ -723,32 +700,12 @@
 
         "var d=app.activeDocument;\n" +
 
-        "if(!d){throw new Error('No active document.');}\n" +
+        "if(!d)throw new Error('No active document.');\n" +
 
 
-        /* ---------------------------------------------
-           STEP 1
-           --------------------------------------------- */
+        /* SELECTION */
 
-        "app.echoToOE('TYPERP_OK:SCRIPT_STARTED');\n" +
-
-
-        /* ---------------------------------------------
-           SELECTION
-           --------------------------------------------- */
-
-        "var b;\n" +
-
-        "try{\n" +
-
-        "b=d.selection.bounds;\n" +
-
-        "}catch(e){\n" +
-
-        "throw new Error('Could not access selection.bounds.');\n" +
-
-        "}\n" +
-
+        "var b=d.selection.bounds;\n" +
 
         "if(!b||b.length!==4){\n" +
 
@@ -757,43 +714,27 @@
         "}\n" +
 
 
-        "app.echoToOE('TYPERP_OK:SELECTION_VALID');\n" +
+        /* COORDINATES */
 
-
-        /* ---------------------------------------------
-           STEP 2
-           SAFE UNIT CONVERSION
-           --------------------------------------------- */
-
-        "function getNumber(v){\n" +
-
-        "if(typeof v==='number'){\n" +
-
-        "if(isFinite(v))return v;\n" +
-
-        "}\n" +
-
-        "if(v===null||v===undefined){\n" +
-
-        "return NaN;\n" +
-
-        "}\n" +
+        "function num(v){\n" +
 
         "try{\n" +
+
+        "if(v&&v.value!==undefined){\n" +
 
         "var n=Number(v.value);\n" +
 
         "if(isFinite(n))return n;\n" +
 
+        "}\n" +
+
         "}catch(e){}\n" +
 
         "try{\n" +
 
-        "var s=String(v);\n" +
+        "var n2=Number(v);\n" +
 
-        "var m=parseFloat(s);\n" +
-
-        "if(isFinite(m))return m;\n" +
+        "if(isFinite(n2))return n2;\n" +
 
         "}catch(e){}\n" +
 
@@ -802,38 +743,27 @@
         "}\n" +
 
 
-        "var L=getNumber(b[0]);\n" +
-
-        "var T=getNumber(b[1]);\n" +
-
-        "var R=getNumber(b[2]);\n" +
-
-        "var B=getNumber(b[3]);\n" +
-
-
-        "app.echoToOE('TYPERP_OK:COORDINATES_READ');\n" +
+        "var L=num(b[0]);\n" +
+        "var T=num(b[1]);\n" +
+        "var R=num(b[2]);\n" +
+        "var B=num(b[3]);\n" +
 
 
         "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){\n" +
 
-        "throw new Error('Could not convert selection coordinates to numbers.');\n" +
+        "throw new Error('Could not read selection coordinates.');\n" +
 
         "}\n" +
 
 
         "if(R<=L||B<=T){\n" +
 
-        "throw new Error('Selection has invalid dimensions.');\n" +
+        "throw new Error('Invalid selection dimensions.');\n" +
 
         "}\n" +
 
 
-        "app.echoToOE('TYPERP_OK:COORDINATES_VALID');\n" +
-
-
-        /* ---------------------------------------------
-           BOX
-           --------------------------------------------- */
+        /* BOX */
 
         "var boxLeft=L+" +
         padding +
@@ -856,51 +786,36 @@
         "var boxHeight=boxBottom-boxTop;\n" +
 
 
-        "if(boxWidth<1||boxHeight<1){\n" +
+        "if(boxWidth<=0||boxHeight<=0){\n" +
 
-        "throw new Error('Padding is too large for the selection.');\n" +
+        "throw new Error('Padding is larger than the selection.');\n" +
 
         "}\n" +
 
 
-        "app.echoToOE('TYPERP_OK:BOX_VALID');\n" +
-
-
-        /* ---------------------------------------------
-           CREATE LAYER
-           --------------------------------------------- */
+        /* CREATE TEXT LAYER */
 
         "var layer=d.artLayers.add();\n" +
 
         "layer.kind=LayerKind.TEXT;\n" +
 
-        "app.echoToOE('TYPERP_OK:TEXT_LAYER_CREATED');\n" +
-
-
         "layer.name=" +
 
         jsString(
           "TTP: " +
-          text.substring(0, 45)
+          text.substring(0,45)
         ) +
 
         ";\n" +
 
-
         "var ti=layer.textItem;\n" +
 
-        "app.echoToOE('TYPERP_OK:TEXT_ITEM_READY');\n" +
 
-
-        /* =================================================
-           PARAGRAPH TEXT
-           ================================================= */
+        /* PARAGRAPH */
 
         "if(" +
         jsString(mode) +
         "==='PARAGRAPH'){\n" +
-
-        "app.echoToOE('TYPERP_OK:PARAGRAPH_MODE');\n" +
 
         "ti.kind=TextType.PARAGRAPHTEXT;\n" +
 
@@ -909,8 +824,6 @@
         "ti.width=new UnitValue(boxWidth,'px');\n" +
 
         "ti.height=new UnitValue(boxHeight,'px');\n" +
-
-        "app.echoToOE('TYPERP_OK:TEXT_BOX_CREATED');\n" +
 
         "ti.contents=" +
         jsString(text) +
@@ -924,7 +837,9 @@
         initialSize +
         ";\n" +
 
-        "app.echoToOE('TYPERP_OK:TEXT_PROPERTIES_SET');\n" +
+        "ti.justification=Justification." +
+        align +
+        ";\n" +
 
 
         /* COLOR */
@@ -936,13 +851,6 @@
         ";\n" +
 
         "ti.color=c;\n" +
-
-
-        /* ALIGNMENT */
-
-        "ti.justification=Justification." +
-        align +
-        ";\n" +
 
 
         /* TRACKING */
@@ -970,10 +878,6 @@
         leading +
         ",'pt');\n" +
 
-        "}else{\n" +
-
-        "ti.useAutoLeading=true;\n" +
-
         "}\n" +
 
         "}catch(e){}\n" +
@@ -990,94 +894,11 @@
         "}catch(e){}\n" +
 
 
-        /* ---------------------------------------------
-           AUTOFIT
-           --------------------------------------------- */
+        /* AUTO FIT */
 
         "if(" +
         autoFit +
         "){\n" +
-
-        "app.echoToOE('TYPERP_OK:AUTOFIT_START');\n" +
-
-        "function estimateLines(str,size,width,track,scale){\n" +
-
-        "var avg=size*0.52*(scale/100);\n" +
-
-        "var trackingPx=(track/1000)*size;\n" +
-
-        "avg+=trackingPx;\n" +
-
-        "if(avg<0.1)avg=0.1;\n" +
-
-        "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
-
-        "var paragraphs=str.split(String.fromCharCode(10));\n" +
-
-        "var total=0;\n" +
-
-        "for(var p=0;p<paragraphs.length;p++){\n" +
-
-        "var paragraph=paragraphs[p];\n" +
-
-        "if(paragraph.trim()===''){\n" +
-
-        "total++;\n" +
-
-        "continue;\n" +
-
-        "}\n" +
-
-        "var words=paragraph.trim().split(/\\s+/);\n" +
-
-        "var chars=0;\n" +
-
-        "var lineCount=1;\n" +
-
-        "for(var w=0;w<words.length;w++){\n" +
-
-        "var word=words[w];\n" +
-
-        "var len=word.length;\n" +
-
-        "if(len>maxChars){\n" +
-
-        "if(chars>0){lineCount++;chars=0;}\n" +
-
-        "lineCount+=Math.floor(len/maxChars);\n" +
-
-        "chars=len%maxChars;\n" +
-
-        "if(chars===0){chars=maxChars;lineCount--;}\n" +
-
-        "continue;\n" +
-
-        "}\n" +
-
-        "var needed=len+(chars>0?1:0);\n" +
-
-        "if(chars+needed>maxChars){\n" +
-
-        "lineCount++;\n" +
-
-        "chars=len;\n" +
-
-        "}else{\n" +
-
-        "chars+=needed;\n" +
-
-        "}\n" +
-
-        "}\n" +
-
-        "total+=lineCount;\n" +
-
-        "}\n" +
-
-        "return Math.max(1,total);\n" +
-
-        "}\n" +
-
 
         "var current=" +
         initialSize +
@@ -1087,36 +908,39 @@
         minSize +
         ";\n" +
 
-
         "while(current>minimum){\n" +
 
-        "var estimated=estimateLines(" +
+        "var charsPerLine=Math.max(1,Math.floor(boxWidth/(current*0.52)));\n" +
+
+        "var words=" +
         jsString(text) +
-        ",current,boxWidth," +
-        tracking +
-        "," +
-        horizontalScale +
-        ");\n" +
+        ".split(/\\s+/);\n" +
 
-        "var lineHeight;\n" +
+        "var chars=0;\n" +
 
-        "if(" +
-        leading +
-        ">0){\n" +
+        "var lineCount=1;\n" +
 
-        "lineHeight=" +
-        leading +
-        ";\n" +
+        "for(var w=0;w<words.length;w++){\n" +
+
+        "var len=words[w].length;\n" +
+
+        "if(chars>0&&chars+1+len>charsPerLine){\n" +
+
+        "lineCount++;\n" +
+
+        "chars=len;\n" +
 
         "}else{\n" +
 
-        "lineHeight=current*1.20;\n" +
+        "chars+=len+(chars>0?1:0);\n" +
 
         "}\n" +
 
-        "var neededHeight=estimated*lineHeight;\n" +
+        "}\n" +
 
-        "if(neededHeight<=boxHeight){break;}\n" +
+        "var lineHeight=leading>0?leading:current*1.2;\n" +
+
+        "if(lineCount*lineHeight<=boxHeight)break;\n" +
 
         "current--;\n" +
 
@@ -1124,18 +948,12 @@
 
         "}\n" +
 
-        "app.echoToOE('TYPERP_OK:AUTOFIT_DONE');\n" +
-
         "}\n" +
-
-
-        /* =================================================
-           POINT TEXT
-           ================================================= */
 
         "}else{\n" +
 
-        "app.echoToOE('TYPERP_OK:POINT_MODE');\n" +
+
+        /* POINT */
 
         "ti.kind=TextType.POINTTEXT;\n" +
 
@@ -1196,11 +1014,7 @@
         "}\n" +
 
 
-        /* =================================================
-           FINISH
-           ================================================= */
-
-        "app.echoToOE('TYPERP_OK:FINALIZING');\n" +
+        /* FINISH */
 
         "d.activeLayer=layer;\n" +
 
@@ -1217,16 +1031,7 @@
 
         "Math.round(boxWidth)+'x'+Math.round(boxHeight)+" +
 
-        "' | size='+ti.size+" +
-
-        "' | tracking='+" +
-        tracking +
-
-        "' | leading='+" +
-        leading +
-
-        "' | scale='+" +
-        horizontalScale +
+        "' | size='+ti.size" +
 
         ");\n" +
 
@@ -1245,10 +1050,6 @@
         "})();";
 
 
-      /* =====================================================
-         SEND
-         ===================================================== */
-
       window.parent.postMessage(
         script,
         "*"
@@ -1264,8 +1065,7 @@
   updateLine();
 
   setStatus(
-    "Ready (BUILD-021)"
+    "Ready (BUILD-022)"
   );
-
 
 })();
