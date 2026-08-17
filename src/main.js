@@ -1,5 +1,5 @@
 // TypeR-P â€” main.js
-// BUILD: TYPERP-BUILD-022
+// BUILD: TYPERP-BUILD-023
 //
 // Ø§Ø¶Ø§ÙÙ‡â€ŒØ´Ø¯Ù‡ Ù†Ø³Ø¨Øª Ø¨Ù‡ build-018:
 //   - Character Spacing (ti.tracking)
@@ -41,7 +41,7 @@
   }
 
   if (missing.length) {
-    alert("TypeR-P BUILD-022 UI ERROR\n\nMissing:\n" + missing.join("\n"));
+    alert("TypeR-P BUILD-023 UI ERROR\n\nMissing:\n" + missing.join("\n"));
     return;
   }
 
@@ -183,7 +183,7 @@
   // --- Ø¬Ø¯ÛŒØ¯: Ù…Ø¯ÛŒØ±ÛŒØª ÙÙˆÙ†Øª â€” Ø¯Ø±ÛŒØ§ÙØª Ù„ÛŒØ³Øª ÙˆØ§Ù‚Ø¹ÛŒ ÙÙˆÙ†Øªâ€ŒÙ‡Ø§ÛŒ Photopea ---
   var fontRefreshBtn = document.createElement("button");
   fontRefreshBtn.type = "button";
-  fontRefreshBtn.textContent = "Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù„ÛŒØ³Øª ÙÙˆÙ†Øªâ€ŒÙ‡Ø§";
+  fontRefreshBtn.textContent = "Load Font List";
   fontRefreshBtn.style.width = "100%";
   fontRefreshBtn.style.marginTop = "6px";
   fontEl.parentElement.insertBefore(fontRefreshBtn, fontEl.nextSibling);
@@ -235,7 +235,7 @@
     if (!hasCurrent && currentValue) {
       var extraOpt = document.createElement("option");
       extraOpt.value = currentValue;
-      extraOpt.textContent = currentValue + " (ÙØ¹Ù„ÛŒ)";
+      extraOpt.textContent = currentValue + " (current)";
       extraOpt.selected = true;
       select.insertBefore(extraOpt, select.firstChild);
     }
@@ -277,9 +277,9 @@
         if (names && names.length) {
           replaceFontInputWithSelect(names);
           fontListLoaded = true;
-          setStatus("Loaded " + names.length + " font(s). Ready (BUILD-022)");
+          setStatus("Loaded " + names.length + " font(s). Ready (BUILD-023)");
         } else {
-          setStatus("Font list was empty â€” keeping manual font input. Ready (BUILD-022)");
+          setStatus("Font list was empty â€” keeping manual font input. Ready (BUILD-023)");
         }
       } catch (eParse) {
         setStatus("Could not parse font list â€” keeping manual font input.");
@@ -288,7 +288,7 @@
     }
 
     if (event.data.indexOf("TYPERP_FONTS_ERR:") === 0) {
-      setStatus("Font list unavailable (" + event.data.slice("TYPERP_FONTS_ERR:".length) + ") â€” keeping manual font input. Ready (BUILD-022)");
+      setStatus("Font list unavailable (" + event.data.slice("TYPERP_FONTS_ERR:".length) + ") â€” keeping manual font input. Ready (BUILD-023)");
       return;
     }
 
@@ -300,7 +300,7 @@
     if (event.data.indexOf("TYPERP_ERR:") === 0) {
       var error = event.data.substring(11);
       setStatus("Error: " + error);
-      alert("TypeR-P BUILD-022\n\n" + error);
+      alert("TypeR-P BUILD-023\n\n" + error);
     }
   });
 
@@ -356,7 +356,7 @@
     var vAlign = vAlignEl.value || "MIDDLE";
 
     // --- ØªØ²Ø±ÛŒÙ‚ ÙØ§ØµÙ„Ù‡Ù” ÙˆØ§Ù‚Ø¹ÛŒ Ø¨Ø¹Ø¯ Ø§Ø² Â«ØŒÂ» Ùˆ Â«,Â» Ø¯Ø± ØµÙˆØ±Øª Ù†Ø¨ÙˆØ¯ ÙØ§ØµÙ„Ù‡ØŒ ØªØ§ Ù…ÙˆØªÙˆØ± Ù…ØªÙ† Photopea Ù†Ù‚Ø·Ù‡Ù” Ø´Ú©Ø³Øª Ù¾ÛŒØ¯Ø§ Ú©Ù†Ø¯ ---
-    text = text.replace(/ØŒ(?!\s)/g, "ØŒ ").replace(/,(?!\s)/g, ", ");
+    text = text.replace(/\u060C(?!\s)/g, "\u060C ").replace(/,(?!\s)/g, ", ");
 
     // --- Ø´Ø¨ÛŒÙ‡â€ŒØ³Ø§Ø²ÛŒ Word Spacing: ÙØ§ØµÙ„Ù‡Ù” Ø§Ø¶Ø§ÙÙ‡ Ø¨ÛŒÙ† Ú©Ù„Ù…Ø§ØªØŒ Ù‡Ù…ÛŒÙ†Ø¬Ø§ Ø¯Ø± Ø³Ù…Øª Ù¾Ù„Ø§Ú¯ÛŒÙ† ---
     if (wordSpacingCount > 0) {
@@ -513,6 +513,6 @@
   insertLineBtn.onclick = insertCurrentLine;
 
   updateLine();
-  setStatus("Ready (BUILD-022) â€” loading fonts...");
+  setStatus("Ready (BUILD-023) â€” loading fonts...");
 
 })();
