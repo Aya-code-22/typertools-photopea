@@ -517,6 +517,7 @@
 
     var script =
       "(function(){\n" +
+      "alert('STEP1: script parsed and started');\n" +
       "try{\n" +
       "var d=app.activeDocument;\n" +
       "if(!d){throw new Error('No active document.');}\n" +
