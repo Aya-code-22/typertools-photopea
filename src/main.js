@@ -636,15 +636,14 @@
 
       "d.activeLayer=layer;\n" +
 
-      "app.echoToOE(\n" +
-      "'TYPERP_OK:TEXT INSERTED | selection='+L+','+T+','+R+','+B+\n" +
-      "' | box='+boxWidth+'x'+boxHeight+\n" +
-      "' | size='+ti.size+\n" +
-      "' | trackingSet=" + charSpacing + " trackingReadback='+trackingReadback+trackingErr\n" +
-      ");\n" +
+      "var __resultMsg = 'TEXT INSERTED | selection='+L+','+T+','+R+','+B+' | box='+boxWidth+'x'+boxHeight+' | size='+ti.size+' | trackingSet=" + charSpacing + " trackingReadback='+trackingReadback+trackingErr;\n" +
+      "try{ app.echoToOE('TYPERP_OK:'+__resultMsg); }catch(eEcho){}\n" +
+      "alert('TypeR-P OK: '+__resultMsg);\n" +
 
       "}catch(e){\n" +
-      "app.echoToOE('TYPERP_ERR:'+(e&&e.message?e.message:String(e)));\n" +
+      "var __errMsg = (e&&e.message?e.message:String(e));\n" +
+      "try{ app.echoToOE('TYPERP_ERR:'+__errMsg); }catch(eEcho2){}\n" +
+      "alert('TypeR-P ERROR: '+__errMsg);\n" +
       "}\n" +
       "})();";
 
