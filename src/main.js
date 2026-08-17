@@ -1,5 +1,5 @@
 // TypeR-P â€” main.js
-// BUILD: TYPERP-BUILD-020
+// BUILD: TYPERP-BUILD-021
 //
 // Ø§Ø¶Ø§ÙÙ‡â€ŒØ´Ø¯Ù‡ Ù†Ø³Ø¨Øª Ø¨Ù‡ build-018:
 //   - Character Spacing (ti.tracking)
@@ -168,10 +168,7 @@
   modeEl.appendChild(pointOption);
   settingsPanel.appendChild(modeEl);
 
-  // --- Ø¬Ø¯ÛŒØ¯: Line Spacing ---
-  settingsPanel.appendChild(makeLabel("Line Spacing (px, 0 = auto)"));
-  var lineSpacingEl = makeNumber(0, 0, 1000);
-  settingsPanel.appendChild(lineSpacingEl);
+  // --- ØªÙˆØ¬Ù‡: Line Spacing Ø­Ø°Ù Ø´Ø¯ â€” ti.leading Ø¯Ø± Ù…ÙˆØªÙˆØ± Ø±Ù†Ø¯Ø± Photopea ÙˆØ§Ù‚Ø¹Ø§Ù‹ Ø§Ø«Ø±ÛŒ Ù†Ø¯Ø§Ø±Ø¯ ---
 
   // --- Ø¬Ø¯ÛŒØ¯: Character Spacing (Tracking) ---
   settingsPanel.appendChild(makeLabel("Character Spacing (Tracking)"));
@@ -256,8 +253,7 @@
     var autoFit = fitEl.checked;
     var mode = modeEl.value;
 
-    var lineSpacing = Number(lineSpacingEl.value);
-    if (!isFinite(lineSpacing) || lineSpacing < 0) lineSpacing = 0;
+    // Line Spacing Ø­Ø°Ù Ø´Ø¯Ù‡ â€” Ø¯ÛŒÚ¯Ø± Ø®ÙˆØ§Ù†Ø¯Ù‡ Ù†Ù…ÛŒâ€ŒØ´ÙˆØ¯
 
     var charSpacing = Number(charSpacingEl.value);
     if (!isFinite(charSpacing)) charSpacing = 0;
@@ -322,16 +318,8 @@
       "try{ ti.tracking=" + charSpacing + "; trackingReadback=''+ti.tracking; }catch(eTrack){ trackingErr=' | tracking-failed:'+eTrack.message; }\n" +
 
       "var leadingErr='';\n" +
-      "var leadingApplied='auto';\n" +
-      "var leadingReadback='unread';\n" +
-      (lineSpacing > 0 ?
-        "try{\n" +
-        "  ti.autoLeading=false;\n" +
-        "  try{ ti.leading=new UnitValue(" + lineSpacing + ",'px'); leadingApplied='" + lineSpacing + "px(UnitValue)'; }\n" +
-        "  catch(eL1){ try{ ti.leading=" + lineSpacing + "; leadingApplied='" + lineSpacing + "px(plain)'; } catch(eL2){ leadingErr=' | leading-failed:'+eL2.message; } }\n" +
-        "  try{ var lr=ti.leading; leadingReadback=(lr&&lr.value!==undefined)?(''+lr.value):(''+lr); }catch(eLR){ leadingReadback='read-error'; }\n" +
-        "}catch(eLead){ leadingErr=' | leading-outer-failed:'+eLead.message; }\n"
-        : "") +
+      "var leadingApplied='not-supported';\n" +
+      "var leadingReadback='n/a';\n" +
 
       "if(" + jsString(mode) + "==='PARAGRAPH'){\n" +
       "ti.kind=TextType.PARAGRAPHTEXT;\n" +
@@ -378,7 +366,7 @@
       "var minimum=" + minSize + ";\n" +
       "while(current>minimum){\n" +
       "var est=estimateLines(" + jsString(text) + ",current,boxWidth);\n" +
-      "var lh=" + (lineSpacing > 0 ? lineSpacing : "current*1.20") + ";\n" +
+      "var lh=current*1.20;\n" +
       "var neededHeight=est*lh;\n" +
       "if(neededHeight<=boxHeight){ estimatedLines=est; break; }\n" +
       "current--;\n" +
@@ -388,7 +376,7 @@
       "finalSize=current;\n" +
       "}\n" +
 
-      "var effLineHeight=" + (lineSpacing > 0 ? lineSpacing : "finalSize*1.20") + ";\n" +
+      "var effLineHeight=finalSize*1.20;\n" +
       "var actualTextHeight=estimatedLines*effLineHeight;\n" +
       "var extraSpace=boxHeight-actualTextHeight;\n" +
       "if(extraSpace<0)extraSpace=0;\n" +
@@ -433,6 +421,6 @@
   insertLineBtn.onclick = insertCurrentLine;
 
   updateLine();
-  setStatus("Ready (BUILD-020)");
+  setStatus("Ready (BUILD-021)");
 
 })();
