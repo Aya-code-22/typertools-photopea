@@ -1,22 +1,18 @@
-// TypeR-P — main.js
-// BUILD: TYPERP-BUILD-022
+// TypeR-P â€” main.js
+// BUILD: TYPERP-BUILD-019
 //
-// Full Text -> Lines -> Current Line
-// Selection-aware Paragraph Text
-// Padding
-// Auto Fit
-// Minimum Font Size
-// Text Mode
-// Letter Spacing
-// Line Spacing
-// Horizontal Scale
+// Ø§Ø¶Ø§ÙÙ‡â€ŒØ´Ø¯Ù‡ Ù†Ø³Ø¨Øª Ø¨Ù‡ build-018:
+//   - Character Spacing (ti.tracking)
+//   - Line Spacing (ti.leading, Ø¨Ø§ autoLeading=false)
+//   - Word Spacing (Ø´Ø¨ÛŒÙ‡â€ŒØ³Ø§Ø²ÛŒ Ø¨Ø§ ØªØ²Ø±ÛŒÙ‚ space Ø§Ø¶Ø§ÙÙ‡ Ø¨ÛŒÙ† Ú©Ù„Ù…Ø§Øª)
+//   - Vertical Alignment: Top / Center / Bottom (Ù…Ø­Ø§Ø³Ø¨Ù‡ Ø¯Ø³ØªÛŒ Ø¨Ø¹Ø¯ Ø§Ø² Auto Fit)
 
 (function () {
 
   "use strict";
 
   /* =====================================================
-     UI
+     UI - Ø¹Ù†Ø§ØµØ± Ù…ÙˆØ¬ÙˆØ¯
      ===================================================== */
 
   var statusEl = document.getElementById("status");
@@ -27,456 +23,210 @@
   var previousLineBtn = document.getElementById("previousLine");
   var nextLineBtn = document.getElementById("nextLine");
   var insertLineBtn = document.getElementById("insertLine");
-
   var fontEl = document.getElementById("font");
   var sizeEl = document.getElementById("size");
   var colorEl = document.getElementById("color");
   var alignEl = document.getElementById("align");
 
-
-  /* =====================================================
-     BASIC ERROR CHECK
-     ===================================================== */
-
   var required = [
-    ["#status", statusEl],
-    ["#fullText", fullTextEl],
-    ["#loadLines", loadLinesBtn],
-    ["#currentLine", currentLineEl],
-    ["#lineInfo", lineInfoEl],
-    ["#previousLine", previousLineBtn],
-    ["#nextLine", nextLineBtn],
-    ["#insertLine", insertLineBtn],
-    ["#font", fontEl],
-    ["#size", sizeEl],
-    ["#color", colorEl],
-    ["#align", alignEl]
+    ["#status", statusEl], ["#fullText", fullTextEl], ["#loadLines", loadLinesBtn],
+    ["#currentLine", currentLineEl], ["#lineInfo", lineInfoEl], ["#previousLine", previousLineBtn],
+    ["#nextLine", nextLineBtn], ["#insertLine", insertLineBtn], ["#font", fontEl],
+    ["#size", sizeEl], ["#color", colorEl], ["#align", alignEl]
   ];
 
   var missing = [];
-
   for (var i = 0; i < required.length; i++) {
-    if (!required[i][1]) {
-      missing.push(required[i][0]);
-    }
+    if (!required[i][1]) missing.push(required[i][0]);
   }
 
-  if (missing.length > 0) {
-    alert(
-      "TypeR-P BUILD-022 UI ERROR\n\nMissing:\n" +
-      missing.join("\n")
-    );
+  if (missing.length) {
+    alert("TypeR-P BUILD-019 UI ERROR\n\nMissing:\n" + missing.join("\n"));
     return;
   }
-
-
-  /* =====================================================
-     STATUS
-     ===================================================== */
 
   function setStatus(text) {
     statusEl.textContent = text;
   }
 
-
   /* =====================================================
-     LINE SYSTEM
+     LINE SYSTEM (Ø¨Ø¯ÙˆÙ† ØªØºÛŒÛŒØ± Ù†Ø³Ø¨Øª Ø¨Ù‡ build-018)
      ===================================================== */
 
   var lines = [];
   var currentIndex = 0;
 
-
   function updateLine() {
-
-    if (lines.length === 0) {
-
+    if (!lines.length) {
       currentLineEl.value = "";
       lineInfoEl.textContent = "No lines loaded.";
-
       return;
     }
-
     currentLineEl.value = lines[currentIndex];
-
-    lineInfoEl.textContent =
-      "Line " +
-      (currentIndex + 1) +
-      " / " +
-      lines.length;
+    lineInfoEl.textContent = "Line " + (currentIndex + 1) + " / " + lines.length;
   }
 
-
   function saveCurrentLine() {
-
-    if (lines.length === 0) {
-      return;
-    }
-
+    if (!lines.length) return;
     lines[currentIndex] = currentLineEl.value;
   }
 
-
-  /* =====================================================
-     LOAD LINES
-     ===================================================== */
-
   loadLinesBtn.onclick = function () {
-
     var text = fullTextEl.value || "";
-
-    if (text.trim() === "") {
-
+    if (!text.trim()) {
       lines = [];
       currentIndex = 0;
-
       updateLine();
-
-      setStatus(
-        "Please enter the full text first."
-      );
-
+      setStatus("Please enter the full text first.");
       return;
     }
-
-    text = text.replace(/\r\n/g, "\n");
-    text = text.replace(/\r/g, "\n");
-
+    text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     lines = text.split("\n");
-
-    while (
-      lines.length > 0 &&
-      lines[lines.length - 1].trim() === ""
-    ) {
-      lines.pop();
-    }
-
+    while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
     currentIndex = 0;
-
     updateLine();
-
-    setStatus(
-      "Loaded " +
-      lines.length +
-      " line(s)."
-    );
+    setStatus("Loaded " + lines.length + " line(s).");
   };
 
-
-  /* =====================================================
-     CURRENT LINE EDIT
-     ===================================================== */
-
-  currentLineEl.addEventListener(
-    "input",
-    function () {
-      saveCurrentLine();
-    }
-  );
-
-
-  /* =====================================================
-     PREVIOUS
-     ===================================================== */
+  currentLineEl.addEventListener("input", function () { saveCurrentLine(); });
 
   previousLineBtn.onclick = function () {
-
-    if (lines.length === 0) {
-
-      setStatus("Load lines first.");
-
-      return;
-    }
-
+    if (!lines.length) { setStatus("Load lines first."); return; }
     saveCurrentLine();
-
-    if (currentIndex > 0) {
-      currentIndex--;
-    }
-
+    if (currentIndex > 0) currentIndex--;
     updateLine();
   };
-
-
-  /* =====================================================
-     NEXT
-     ===================================================== */
 
   nextLineBtn.onclick = function () {
-
-    if (lines.length === 0) {
-
-      setStatus("Load lines first.");
-
-      return;
-    }
-
+    if (!lines.length) { setStatus("Load lines first."); return; }
     saveCurrentLine();
-
-    if (currentIndex < lines.length - 1) {
-      currentIndex++;
-    }
-
+    if (currentIndex < lines.length - 1) currentIndex++;
     updateLine();
   };
 
-
   /* =====================================================
-     SETTINGS PANEL
+     EXTRA SETTINGS
      ===================================================== */
 
   var settingsPanel = fontEl.closest(".panel");
-
-  if (!settingsPanel) {
-    settingsPanel = fontEl.parentElement;
-  }
-
+  if (!settingsPanel) settingsPanel = fontEl.parentElement;
 
   function makeLabel(text) {
-
     var label = document.createElement("label");
-
     label.textContent = text;
-
     label.style.display = "block";
     label.style.marginTop = "8px";
-
     return label;
   }
 
-
-  function makeNumber(value, min, max, step) {
-
+  function makeNumber(value, min, max) {
     var input = document.createElement("input");
-
     input.type = "number";
     input.value = value;
     input.min = min;
     input.max = max;
-    input.step = step || 1;
-
+    input.step = "1";
     input.style.width = "100%";
     input.style.boxSizing = "border-box";
-
     return input;
   }
 
-
-  /* =====================================================
-     PADDING
-     ===================================================== */
-
-  settingsPanel.appendChild(
-    makeLabel("Padding")
-  );
-
-  var paddingEl = makeNumber(
-    12,
-    0,
-    500,
-    1
-  );
-
+  // Padding
+  settingsPanel.appendChild(makeLabel("Padding"));
+  var paddingEl = makeNumber(12, 0, 500);
   settingsPanel.appendChild(paddingEl);
 
-
-  /* =====================================================
-     AUTO FIT
-     ===================================================== */
-
-  settingsPanel.appendChild(
-    makeLabel("Auto Fit")
-  );
-
+  // Auto Fit
+  settingsPanel.appendChild(makeLabel("Auto Fit"));
   var fitRow = document.createElement("label");
-
   fitRow.style.display = "flex";
   fitRow.style.alignItems = "center";
   fitRow.style.gap = "6px";
-
   var fitEl = document.createElement("input");
-
   fitEl.type = "checkbox";
   fitEl.checked = true;
-
   fitRow.appendChild(fitEl);
-
-  fitRow.appendChild(
-    document.createTextNode(
-      "Automatically reduce font size"
-    )
-  );
-
+  fitRow.appendChild(document.createTextNode("Automatically reduce font size"));
   settingsPanel.appendChild(fitRow);
 
-
-  /* =====================================================
-     MINIMUM FONT SIZE
-     ===================================================== */
-
-  settingsPanel.appendChild(
-    makeLabel("Minimum Font Size")
-  );
-
-  var minSizeEl = makeNumber(
-    8,
-    1,
-    500,
-    1
-  );
-
+  // Minimum Font Size
+  settingsPanel.appendChild(makeLabel("Minimum Font Size"));
+  var minSizeEl = makeNumber(8, 1, 500);
   settingsPanel.appendChild(minSizeEl);
 
-
-  /* =====================================================
-     TEXT MODE
-     ===================================================== */
-
-  settingsPanel.appendChild(
-    makeLabel("Text Mode")
-  );
-
+  // Text Mode
+  settingsPanel.appendChild(makeLabel("Text Mode"));
   var modeEl = document.createElement("select");
-
   modeEl.style.width = "100%";
-
-  var paragraphOption =
-    document.createElement("option");
-
+  var paragraphOption = document.createElement("option");
   paragraphOption.value = "PARAGRAPH";
-  paragraphOption.textContent =
-    "Text Box (recommended)";
-
-  var pointOption =
-    document.createElement("option");
-
+  paragraphOption.textContent = "Text Box (recommended)";
+  var pointOption = document.createElement("option");
   pointOption.value = "POINT";
   pointOption.textContent = "Point Text";
-
   modeEl.appendChild(paragraphOption);
   modeEl.appendChild(pointOption);
-
   settingsPanel.appendChild(modeEl);
 
+  // --- Ø¬Ø¯ÛŒØ¯: Line Spacing ---
+  settingsPanel.appendChild(makeLabel("Line Spacing (px, 0 = auto)"));
+  var lineSpacingEl = makeNumber(0, 0, 1000);
+  settingsPanel.appendChild(lineSpacingEl);
 
-  /* =====================================================
-     LETTER SPACING
-     ===================================================== */
+  // --- Ø¬Ø¯ÛŒØ¯: Character Spacing (Tracking) ---
+  settingsPanel.appendChild(makeLabel("Character Spacing (Tracking)"));
+  var charSpacingEl = makeNumber(0, -1000, 1000);
+  settingsPanel.appendChild(charSpacingEl);
 
-  settingsPanel.appendChild(
-    makeLabel("Letter Spacing")
-  );
+  // --- Ø¬Ø¯ÛŒØ¯: Word Spacing (Ø´Ø¨ÛŒÙ‡â€ŒØ³Ø§Ø²ÛŒâ€ŒØ´Ø¯Ù‡) ---
+  settingsPanel.appendChild(makeLabel("Word Spacing (extra spaces)"));
+  var wordSpacingEl = makeNumber(0, 0, 20);
+  settingsPanel.appendChild(wordSpacingEl);
 
-  var trackingEl = makeNumber(
-    0,
-    -1000,
-    10000,
-    10
-  );
-
-  settingsPanel.appendChild(trackingEl);
-
-
-  /* =====================================================
-     LINE SPACING
-     ===================================================== */
-
-  settingsPanel.appendChild(
-    makeLabel("Line Spacing")
-  );
-
-  var leadingEl = makeNumber(
-    0,
-    0,
-    1000,
-    1
-  );
-
-  settingsPanel.appendChild(leadingEl);
-
-
-  /* =====================================================
-     HORIZONTAL SCALE
-     ===================================================== */
-
-  settingsPanel.appendChild(
-    makeLabel("Horizontal Scale (%)")
-  );
-
-  var horizontalScaleEl = makeNumber(
-    100,
-    10,
-    1000,
-    1
-  );
-
-  settingsPanel.appendChild(horizontalScaleEl);
-
+  // --- Ø¬Ø¯ÛŒØ¯: Vertical Alignment ---
+  settingsPanel.appendChild(makeLabel("Vertical Alignment"));
+  var vAlignEl = document.createElement("select");
+  vAlignEl.style.width = "100%";
+  [["TOP", "Top"], ["MIDDLE", "Center"], ["BOTTOM", "Bottom"]].forEach(function (pair) {
+    var opt = document.createElement("option");
+    opt.value = pair[0];
+    opt.textContent = pair[1];
+    if (pair[0] === "MIDDLE") opt.selected = true;
+    vAlignEl.appendChild(opt);
+  });
+  settingsPanel.appendChild(vAlignEl);
 
   /* =====================================================
      PHOTOPEA MESSAGE LISTENER
      ===================================================== */
 
-  window.addEventListener(
-    "message",
-    function (event) {
+  window.addEventListener("message", function (event) {
+    if (typeof event.data !== "string") return;
 
-      if (typeof event.data !== "string") {
-        return;
-      }
-
-      if (
-        event.data.indexOf("TYPERP_OK:") === 0
-      ) {
-
-        setStatus(
-          event.data.substring(
-            "TYPERP_OK:".length
-          )
-        );
-
-        return;
-      }
-
-      if (
-        event.data.indexOf("TYPERP_ERR:") === 0
-      ) {
-
-        var error =
-          event.data.substring(
-            "TYPERP_ERR:".length
-          );
-
-        setStatus("Error: " + error);
-
-        alert(
-          "TypeR-P BUILD-022\n\n" +
-          error
-        );
-      }
+    if (event.data.indexOf("TYPERP_OK:") === 0) {
+      setStatus(event.data.substring(10));
+      return;
     }
-  );
 
-
-  /* =====================================================
-     STRING ESCAPE
-     ===================================================== */
+    if (event.data.indexOf("TYPERP_ERR:") === 0) {
+      var error = event.data.substring(11);
+      setStatus("Error: " + error);
+      alert("TypeR-P BUILD-019\n\n" + error);
+    }
+  });
 
   function jsString(value) {
     return JSON.stringify(String(value));
   }
 
-
   /* =====================================================
-     INSERT LINE
+     INSERT CURRENT LINE
      ===================================================== */
 
-  insertLineBtn.onclick = function () {
+  function insertCurrentLine() {
 
-    if (lines.length === 0) {
-
+    if (!lines.length) {
       setStatus("Load lines first.");
-
       return;
     }
 
@@ -484,648 +234,197 @@
 
     var text = lines[currentIndex];
 
-    if (
-      !text ||
-      text.trim() === ""
-    ) {
-
-      setStatus(
-        "Current line is empty."
-      );
-
+    if (!text || !text.trim()) {
+      setStatus("Current line is empty.");
       return;
     }
 
+    var font = fontEl.value || "ArialMT";
+    var initialSize = Number(sizeEl.value) || 48;
 
-    /* =================================================
-       READ SETTINGS
-       ================================================= */
+    var color = (colorEl.value || "FF0000").replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
+    while (color.length < 6) color += "0";
 
-    var font =
-      fontEl.value || "ArialMT";
+    var align = alignEl.value || "CENTER";
 
-    var initialSize =
-      Number(sizeEl.value) || 48;
+    var padding = Number(paddingEl.value);
+    if (!isFinite(padding) || padding < 0) padding = 12;
 
-    var color =
-      (
-        colorEl.value || "FF0000"
-      )
-      .replace(
-        /[^0-9a-fA-F]/g,
-        ""
-      )
-      .slice(0, 6);
+    var minSize = Number(minSizeEl.value);
+    if (!isFinite(minSize) || minSize < 1) minSize = 8;
 
-    while (color.length < 6) {
-      color += "0";
+    var autoFit = fitEl.checked;
+    var mode = modeEl.value;
+
+    var lineSpacing = Number(lineSpacingEl.value);
+    if (!isFinite(lineSpacing) || lineSpacing < 0) lineSpacing = 0;
+
+    var charSpacing = Number(charSpacingEl.value);
+    if (!isFinite(charSpacing)) charSpacing = 0;
+
+    var wordSpacingCount = Number(wordSpacingEl.value);
+    if (!isFinite(wordSpacingCount) || wordSpacingCount < 0) wordSpacingCount = 0;
+
+    var vAlign = vAlignEl.value || "MIDDLE";
+
+    // --- Ø´Ø¨ÛŒÙ‡â€ŒØ³Ø§Ø²ÛŒ Word Spacing: ÙØ§ØµÙ„Ù‡Ù” Ø§Ø¶Ø§ÙÙ‡ Ø¨ÛŒÙ† Ú©Ù„Ù…Ø§ØªØŒ Ù‡Ù…ÛŒÙ†Ø¬Ø§ Ø¯Ø± Ø³Ù…Øª Ù¾Ù„Ø§Ú¯ÛŒÙ† ---
+    if (wordSpacingCount > 0) {
+      var extra = "";
+      for (var w = 0; w < wordSpacingCount; w++) extra += " ";
+      text = text.replace(/ /g, " " + extra);
     }
 
-    var align =
-      alignEl.value || "CENTER";
-
-    var padding =
-      Number(paddingEl.value);
-
-    if (
-      !isFinite(padding) ||
-      padding < 0
-    ) {
-      padding = 12;
-    }
-
-    var minSize =
-      Number(minSizeEl.value);
-
-    if (
-      !isFinite(minSize) ||
-      minSize < 1
-    ) {
-      minSize = 8;
-    }
-
-    var autoFit =
-      !!fitEl.checked;
-
-    var mode =
-      modeEl.value || "PARAGRAPH";
-
-    var tracking =
-      Number(trackingEl.value);
-
-    if (!isFinite(tracking)) {
-      tracking = 0;
-    }
-
-    var leading =
-      Number(leadingEl.value);
-
-    if (
-      !isFinite(leading) ||
-      leading < 0
-    ) {
-      leading = 0;
-    }
-
-    var horizontalScale =
-      Number(horizontalScaleEl.value);
-
-    if (
-      !isFinite(horizontalScale) ||
-      horizontalScale <= 0
-    ) {
-      horizontalScale = 100;
-    }
-
-
-    /* =================================================
-       STATUS
-       ================================================= */
-
-    setStatus(
-      "Checking active selection..."
-    );
-
+    setStatus("Checking active selection...");
 
     /* =================================================
        PHOTOPEA SCRIPT
        ================================================= */
 
-    var script = "";
-
-    script += "(function(){\n";
-    script += "try{\n";
-
-    script +=
-      "app.echoToOE('TYPERP_OK:SCRIPT_STARTED');\n";
-
-    script +=
-      "var d=app.activeDocument;\n";
-
-    script +=
-      "if(!d){throw new Error('No active document.');}\n";
-
-
-    /* =================================================
-       READ SELECTION
-       ================================================= */
-
-    script +=
-      "var b=null;\n";
-
-    script +=
-      "try{b=d.selection.bounds;}catch(e){b=null;}\n";
-
-    script +=
-      "if(!b||b.length!==4){\n";
-
-    script +=
-      "throw new Error('No active selection. Please make a selection first.');\n";
-
-    script +=
-      "}\n";
-
-
-    /* =================================================
-       CONVERT UNIT
-       ================================================= */
-
-    script +=
-      "function num(v){\n";
-
-    script +=
-      "var n=NaN;\n";
-
-    script +=
-      "try{if(typeof v==='number')n=Number(v);}catch(e){}\n";
-
-    script +=
-      "if(!isFinite(n)){\n";
-
-    script +=
-      "try{if(v&&typeof v.as==='function')n=Number(v.as('px'));}catch(e){}\n";
-
-    script +=
-      "}\n";
-
-    script +=
-      "if(!isFinite(n)){\n";
-
-    script +=
-      "try{if(v&&v.value!==undefined)n=Number(v.value);}catch(e){}\n";
-
-    script +=
-      "}\n";
-
-    script +=
-      "return n;\n";
-
-    script +=
-      "}\n";
-
-
-    script +=
-      "var L=num(b[0]);\n";
-
-    script +=
-      "var T=num(b[1]);\n";
-
-    script +=
-      "var R=num(b[2]);\n";
-
-    script +=
-      "var B=num(b[3]);\n";
-
-
-    script +=
-      "app.echoToOE('TYPERP_OK:BOUNDS='+L+','+T+','+R+','+B);\n";
-
-
-    /* =================================================
-       VALIDATE SELECTION
-       ================================================= */
-
-    script +=
-      "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){\n";
-
-    script +=
-      "throw new Error('Selection coordinates are invalid.');\n";
-
-    script +=
-      "}\n";
-
-
-    script +=
-      "if(R<=L||B<=T){\n";
-
-    script +=
-      "throw new Error('Selection has zero size: '+L+','+T+','+R+','+B);\n";
-
-    script +=
-      "}\n";
-
-
-    script +=
-      "app.echoToOE('TYPERP_OK:SELECTION_VALID');\n";
-
-
-    /* =================================================
-       BOX
-       ================================================= */
-
-    script +=
-      "var boxLeft=L+" +
-      padding +
-      ";\n";
-
-    script +=
-      "var boxTop=T+" +
-      padding +
-      ";\n";
-
-    script +=
-      "var boxRight=R-" +
-      padding +
-      ";\n";
-
-    script +=
-      "var boxBottom=B-" +
-      padding +
-      ";\n";
-
-    script +=
-      "var boxWidth=boxRight-boxLeft;\n";
-
-    script +=
-      "var boxHeight=boxBottom-boxTop;\n";
-
-
-    script +=
-      "if(boxWidth<=1||boxHeight<=1){\n";
-
-    script +=
-      "throw new Error('Padding is too large for this selection.');\n";
-
-    script +=
-      "}\n";
-
-
-    script +=
-      "app.echoToOE('TYPERP_OK:BOX='+boxWidth+'x'+boxHeight);\n";
-
-
-    /* =================================================
-       CREATE TEXT LAYER
-       ================================================= */
-
-    script +=
-      "var layer=d.artLayers.add();\n";
-
-    script +=
-      "layer.kind=LayerKind.TEXT;\n";
-
-    script +=
-      "var ti=layer.textItem;\n";
-
-
-    /* =================================================
-       PARAGRAPH TEXT
-       ================================================= */
-
-    if (mode === "PARAGRAPH") {
-
-      script +=
-        "ti.kind=TextType.PARAGRAPHTEXT;\n";
-
-
-      /*
-       * IMPORTANT:
-       * Set the paragraph rectangle first.
-       */
-
-      script +=
-        "ti.position=[boxLeft,boxTop];\n";
-
-      script +=
-        "ti.width=new UnitValue(boxWidth,'px');\n";
-
-      script +=
-        "ti.height=new UnitValue(boxHeight,'px');\n";
-
-
-      script +=
-        "ti.font=" +
-        jsString(font) +
-        ";\n";
-
-      script +=
-        "ti.size=" +
-        initialSize +
-        ";\n";
-
-
-      script +=
-        "ti.justification=Justification." +
-        align +
-        ";\n";
-
-
-      /* COLOR */
-
-      script +=
-        "var col=new SolidColor();\n";
-
-      script +=
-        "col.rgb.hexValue=" +
-        jsString(color) +
-        ";\n";
-
-      script +=
-        "ti.color=col;\n";
-
-
-      /* TRACKING */
-
-      script +=
-        "try{ti.tracking=" +
-        tracking +
-        ";}catch(e){}\n";
-
-
-      /* LEADING */
-
-      script +=
-        "try{\n";
-
-      script +=
-        "if(" +
-        leading +
-        ">0){\n";
-
-      script +=
-        "ti.useAutoLeading=false;\n";
-
-      script +=
-        "ti.leading=new UnitValue(" +
-        leading +
-        ",'pt');\n";
-
-      script +=
-        "}else{\n";
-
-      script +=
-        "ti.useAutoLeading=true;\n";
-
-      script +=
-        "}\n";
-
-      script +=
-        "}catch(e){}\n";
-
-
-      /* HORIZONTAL SCALE */
-
-      script +=
-        "try{ti.horizontalScale=" +
-        horizontalScale +
-        ";}catch(e){}\n";
-
-
-      /*
-       * CONTENTS AFTER BOX SETUP
-       */
-
-      script +=
-        "ti.contents=" +
-        jsString(text) +
-        ";\n";
-
-
-      script +=
-        "app.echoToOE('TYPERP_OK:TEXT_CREATED');\n";
-
-
-      /* =================================================
-         AUTO FIT
-         ================================================= */
-
-      if (autoFit) {
-
-        script +=
-          "var currentSize=" +
-          initialSize +
-          ";\n";
-
-        script +=
-          "var minimumSize=" +
-          minSize +
-          ";\n";
-
-
-        /*
-         * We use actual Photopea text bounds
-         * instead of guessing line count.
-         */
-
-        script +=
-          "function fits(){\n";
-
-        script +=
-          "try{\n";
-
-        script +=
-          "var tb=ti.bounds;\n";
-
-        script +=
-          "if(!tb||tb.length!==4)return true;\n";
-
-        script +=
-          "var bottom=num(tb[3]);\n";
-
-        script +=
-          "var top=num(tb[1]);\n";
-
-        script +=
-          "if(!isFinite(top)||!isFinite(bottom))return true;\n";
-
-        script +=
-          "return (bottom-top)<=boxHeight;\n";
-
-        script +=
-          "}catch(e){return true;}\n";
-
-        script +=
-          "}\n";
-
-
-        script +=
-          "while(currentSize>minimumSize&&!fits()){\n";
-
-        script +=
-          "currentSize--;\n";
-
-        script +=
-          "ti.size=currentSize;\n";
-
-        script +=
-          "}\n";
-
-      }
-
-
-    } else {
-
-      /* =================================================
-         POINT TEXT
-         ================================================= */
-
-      script +=
-        "ti.kind=TextType.POINTTEXT;\n";
-
-      script +=
-        "ti.font=" +
-        jsString(font) +
-        ";\n";
-
-      script +=
-        "ti.size=" +
-        initialSize +
-        ";\n";
-
-      script +=
-        "ti.justification=Justification." +
-        align +
-        ";\n";
-
-
-      script +=
-        "var pcol=new SolidColor();\n";
-
-      script +=
-        "pcol.rgb.hexValue=" +
-        jsString(color) +
-        ";\n";
-
-      script +=
-        "ti.color=pcol;\n";
-
-
-      script +=
-        "try{ti.tracking=" +
-        tracking +
-        ";}catch(e){}\n";
-
-
-      script +=
-        "try{\n";
-
-      script +=
-        "if(" +
-        leading +
-        ">0){\n";
-
-      script +=
-        "ti.useAutoLeading=false;\n";
-
-      script +=
-        "ti.leading=new UnitValue(" +
-        leading +
-        ",'pt');\n";
-
-      script +=
-        "}\n";
-
-      script +=
-        "}catch(e){}\n";
-
-
-      script +=
-        "try{ti.horizontalScale=" +
-        horizontalScale +
-        ";}catch(e){}\n";
-
-
-      script +=
-        "ti.contents=" +
-        jsString(text) +
-        ";\n";
-
-
-      script +=
-        "ti.position=[\n";
-
-      script +=
-        "new UnitValue((L+R)/2,'px'),\n";
-
-      script +=
-        "new UnitValue((T+B)/2,'px')\n";
-
-      script +=
-        "];\n";
-    }
-
-
-    /* =================================================
-       FINISH
-       ================================================= */
-
-    script +=
-      "layer.name=" +
-      jsString(
-        "TTP: " +
-        text.substring(0, 45)
-      ) +
-      ";\n";
-
-
-    script +=
-      "d.activeLayer=layer;\n";
-
-
-    script +=
-      "app.echoToOE(" +
-      "'TYPERP_OK:TEXT INSERTED | selection='+" +
-      "Math.round(L)+','+" +
-      "Math.round(T)+','+" +
-      "Math.round(R)+','+" +
-      "Math.round(B)+" +
-      "' | box='+" +
-      "Math.round(boxWidth)+'x'+Math.round(boxHeight)" +
-      ");\n";
-
-
-    script +=
-      "}catch(e){\n";
-
-
-    script +=
-      "app.echoToOE(" +
-      "'TYPERP_ERR:'+" +
-      "(e&&e.message?e.message:String(e))" +
-      ");\n";
-
-
-    script +=
-      "}\n";
-
-
-    script +=
+    var script =
+      "(function(){\n" +
+      "try{\n" +
+      "var d=app.activeDocument;\n" +
+      "if(!d){throw new Error('No active document.');}\n" +
+
+      "var b;\n" +
+      "try{ b=d.selection.bounds; }catch(e){ throw new Error('No active selection. Please make a selection first.'); }\n" +
+      "if(!b||b.length!==4){ throw new Error('No active selection. Please make a selection first.'); }\n" +
+
+      "function px(v){\n" +
+      "if(typeof v==='number')return v;\n" +
+      "try{ if(v&&typeof v.as==='function'){ var a=Number(v.as('px')); if(isFinite(a))return a; } }catch(e){}\n" +
+      "try{ if(v&&v.value!==undefined){ var n=Number(v.value); if(isFinite(n))return n; } }catch(e){}\n" +
+      "return NaN;\n" +
+      "}\n" +
+
+      "var L=px(b[0]); var T=px(b[1]); var R=px(b[2]); var B=px(b[3]);\n" +
+      "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){ throw new Error('Could not read selection coordinates.'); }\n" +
+      "if(R<=L||B<=T){ throw new Error('Selection has invalid dimensions.'); }\n" +
+
+      "var boxLeft=L+" + padding + ";\n" +
+      "var boxTop=T+" + padding + ";\n" +
+      "var boxRight=R-" + padding + ";\n" +
+      "var boxBottom=B-" + padding + ";\n" +
+      "var boxWidth=boxRight-boxLeft;\n" +
+      "var boxHeight=boxBottom-boxTop;\n" +
+      "if(boxWidth<1||boxHeight<1){ throw new Error('Padding is too large for the selection.'); }\n" +
+
+      "var layer=d.artLayers.add();\n" +
+      "layer.kind=LayerKind.TEXT;\n" +
+      "layer.name=" + jsString("TTP: " + text.substring(0, 45)) + ";\n" +
+      "var ti=layer.textItem;\n" +
+
+      "var trackingErr='';\n" +
+      "try{ ti.tracking=" + charSpacing + "; }catch(eTrack){ trackingErr=' | tracking-failed:'+eTrack.message; }\n" +
+
+      "var leadingErr='';\n" +
+      "var leadingApplied='auto';\n" +
+      (lineSpacing > 0 ?
+        "try{\n" +
+        "  ti.autoLeading=false;\n" +
+        "  try{ ti.leading=new UnitValue(" + lineSpacing + ",'px'); leadingApplied='" + lineSpacing + "px(UnitValue)'; }\n" +
+        "  catch(eL1){ try{ ti.leading=" + lineSpacing + "; leadingApplied='" + lineSpacing + "px(plain)'; } catch(eL2){ leadingErr=' | leading-failed:'+eL2.message; } }\n" +
+        "}catch(eLead){ leadingErr=' | leading-outer-failed:'+eLead.message; }\n"
+        : "") +
+
+      "if(" + jsString(mode) + "==='PARAGRAPH'){\n" +
+      "ti.kind=TextType.PARAGRAPHTEXT;\n" +
+      "ti.width=new UnitValue(boxWidth,'px');\n" +
+      "ti.height=new UnitValue(boxHeight,'px');\n" +
+      "ti.contents=" + jsString(text) + ";\n" +
+      "ti.font=" + jsString(font) + ";\n" +
+      "ti.size=" + initialSize + ";\n" +
+      "ti.justification=Justification." + align + ";\n" +
+      "var c=new SolidColor();\n" +
+      "c.rgb.hexValue=" + jsString(color) + ";\n" +
+      "ti.color=c;\n" +
+
+      "var estimatedLines=1;\n" +
+      "var finalSize=" + initialSize + ";\n" +
+      "if(" + autoFit + "){\n" +
+      "function estimateLines(str,size,width){\n" +
+      "var avg=size*0.52;\n" +
+      "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
+      "var paragraphs=str.split(String.fromCharCode(10));\n" +
+      "var total=0;\n" +
+      "for(var p=0;p<paragraphs.length;p++){\n" +
+      "var paragraph=paragraphs[p];\n" +
+      "if(paragraph.trim()===''){ total++; continue; }\n" +
+      "var words=paragraph.trim().split(/\\s+/);\n" +
+      "var chars=0; var lineCount=1;\n" +
+      "for(var w=0;w<words.length;w++){\n" +
+      "var word=words[w]; var len=word.length;\n" +
+      "if(len>maxChars){\n" +
+      "if(chars>0){ lineCount++; chars=0; }\n" +
+      "lineCount+=Math.floor(len/maxChars);\n" +
+      "chars=len%maxChars;\n" +
+      "if(chars===0){ chars=maxChars; lineCount--; }\n" +
+      "continue;\n" +
+      "}\n" +
+      "var needed=len+(chars>0?1:0);\n" +
+      "if(chars+needed>maxChars){ lineCount++; chars=len; } else { chars+=needed; }\n" +
+      "}\n" +
+      "total+=lineCount;\n" +
+      "}\n" +
+      "return Math.max(1,total);\n" +
+      "}\n" +
+      "var current=" + initialSize + ";\n" +
+      "var minimum=" + minSize + ";\n" +
+      "while(current>minimum){\n" +
+      "var est=estimateLines(" + jsString(text) + ",current,boxWidth);\n" +
+      "var lh=" + (lineSpacing > 0 ? lineSpacing : "current*1.20") + ";\n" +
+      "var neededHeight=est*lh;\n" +
+      "if(neededHeight<=boxHeight){ estimatedLines=est; break; }\n" +
+      "current--;\n" +
+      "ti.size=current;\n" +
+      "estimatedLines=est;\n" +
+      "}\n" +
+      "finalSize=current;\n" +
+      "}\n" +
+
+      "var effLineHeight=" + (lineSpacing > 0 ? lineSpacing : "finalSize*1.20") + ";\n" +
+      "var actualTextHeight=estimatedLines*effLineHeight;\n" +
+      "var extraSpace=boxHeight-actualTextHeight;\n" +
+      "if(extraSpace<0)extraSpace=0;\n" +
+      "var vAlignOffset=0;\n" +
+      "if(" + jsString(vAlign) + "==='MIDDLE'){ vAlignOffset=extraSpace/2; }\n" +
+      "else if(" + jsString(vAlign) + "==='BOTTOM'){ vAlignOffset=extraSpace; }\n" +
+      "ti.position=[boxLeft,boxTop+vAlignOffset];\n" +
+
+      "}else{\n" +
+      "ti.kind=TextType.POINTTEXT;\n" +
+      "ti.contents=" + jsString(text) + ";\n" +
+      "ti.font=" + jsString(font) + ";\n" +
+      "ti.size=" + initialSize + ";\n" +
+      "ti.justification=Justification." + align + ";\n" +
+      "var pc=new SolidColor();\n" +
+      "pc.rgb.hexValue=" + jsString(color) + ";\n" +
+      "ti.color=pc;\n" +
+      "var py=(T+B)/2;\n" +
+      "if(" + jsString(vAlign) + "==='TOP'){ py=T+" + initialSize + "; }\n" +
+      "else if(" + jsString(vAlign) + "==='BOTTOM'){ py=B-(" + initialSize + "*0.3); }\n" +
+      "ti.position=[(L+R)/2,py];\n" +
+      "}\n" +
+
+      "d.activeLayer=layer;\n" +
+
+      "app.echoToOE(\n" +
+      "'TYPERP_OK:TEXT INSERTED | selection='+Math.round(L)+','+Math.round(T)+','+Math.round(R)+','+Math.round(B)+\n" +
+      "' | box='+Math.round(boxWidth)+'x'+Math.round(boxHeight)+\n" +
+      "' | size='+ti.size+trackingErr+leadingErr\n" +
+      ");\n" +
+
+      "}catch(e){\n" +
+      "app.echoToOE('TYPERP_ERR:'+(e&&e.message?e.message:String(e)));\n" +
+      "}\n" +
       "})();";
 
+    window.parent.postMessage(script, "*");
+  }
 
-    /* =================================================
-       SEND TO PHOTOPEA
-       ================================================= */
-
-    try {
-
-      window.parent.postMessage(
-        script,
-        "*"
-      );
-
-    } catch (sendError) {
-
-      setStatus(
-        "Send error: " +
-        sendError.message
-      );
-
-      return;
-    }
-
-  };
-
-
-  /* =====================================================
-     INITIALIZE
-     ===================================================== */
+  insertLineBtn.onclick = insertCurrentLine;
 
   updateLine();
-
-  setStatus(
-    "Ready (BUILD-022)"
-  );
-
+  setStatus("Ready (BUILD-019)");
 
 })();
