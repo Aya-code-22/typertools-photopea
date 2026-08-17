@@ -1,7 +1,5 @@
 // TypeR-P — main.js
-// BUILD: TYPERP-BUILD-022
-//
-// Diagnostic selection pipeline
+// BUILD: TYPERP-BUILD-021
 //
 // Full Text -> Lines -> Current Line
 // Selection-aware Paragraph Text
@@ -12,6 +10,14 @@
 // Letter Spacing
 // Line Spacing
 // Horizontal Scale
+//
+// BUILD-021:
+// - Step-by-step Photopea diagnostics
+// - Safer selection reading
+// - Safer text-layer creation
+// - No silent hangs
+// - Paragraph text stays inside selection
+// - Long words are force-wrapped
 
 (function () {
 
@@ -22,7 +28,8 @@
      UI
      ===================================================== */
 
-  var statusEl = document.getElementById("status");
+  var statusEl =
+    document.getElementById("status");
 
   var fullTextEl =
     document.getElementById("fullText");
@@ -59,6 +66,7 @@
 
 
   var required = [
+
     ["#status", statusEl],
     ["#fullText", fullTextEl],
     ["#loadLines", loadLinesBtn],
@@ -71,13 +79,18 @@
     ["#size", sizeEl],
     ["#color", colorEl],
     ["#align", alignEl]
+
   ];
 
 
   var missing = [];
 
 
-  for (var i = 0; i < required.length; i++) {
+  for (
+    var i = 0;
+    i < required.length;
+    i++
+  ) {
 
     if (!required[i][1]) {
       missing.push(required[i][0]);
@@ -89,7 +102,7 @@
   if (missing.length) {
 
     alert(
-      "TypeR-P BUILD-022 UI ERROR\n\n" +
+      "TypeR-P BUILD-021 UI ERROR\n\n" +
       "Missing:\n" +
       missing.join("\n")
     );
@@ -103,7 +116,9 @@
      ===================================================== */
 
   function setStatus(msg) {
+
     statusEl.textContent = msg;
+
   }
 
 
@@ -112,6 +127,7 @@
      ===================================================== */
 
   var lines = [];
+
   var currentIndex = 0;
 
 
@@ -137,6 +153,7 @@
       (currentIndex + 1) +
       " / " +
       lines.length;
+
   }
 
 
@@ -148,6 +165,7 @@
 
     lines[currentIndex] =
       currentLineEl.value;
+
   }
 
 
@@ -180,7 +198,6 @@
     text =
       text.replace(/\r\n/g, "\n");
 
-
     text =
       text.replace(/\r/g, "\n");
 
@@ -191,7 +208,9 @@
 
     while (
       lines.length > 0 &&
-      lines[lines.length - 1].trim() === ""
+      lines[
+        lines.length - 1
+      ].trim() === ""
     ) {
 
       lines.pop();
@@ -220,7 +239,9 @@
   currentLineEl.addEventListener(
     "input",
     function () {
+
       saveCurrentLine();
+
     }
   );
 
@@ -229,63 +250,69 @@
      PREVIOUS
      ===================================================== */
 
-  previousLineBtn.onclick = function () {
+  previousLineBtn.onclick =
+    function () {
 
-    if (!lines.length) {
+      if (!lines.length) {
 
-      setStatus("Load lines first.");
+        setStatus(
+          "Load lines first."
+        );
 
-      return;
-    }
-
-
-    saveCurrentLine();
-
-
-    if (currentIndex > 0) {
-      currentIndex--;
-    }
+        return;
+      }
 
 
-    updateLine();
+      saveCurrentLine();
 
-  };
+
+      if (currentIndex > 0) {
+        currentIndex--;
+      }
+
+
+      updateLine();
+
+    };
 
 
   /* =====================================================
      NEXT
      ===================================================== */
 
-  nextLineBtn.onclick = function () {
+  nextLineBtn.onclick =
+    function () {
 
-    if (!lines.length) {
+      if (!lines.length) {
 
-      setStatus("Load lines first.");
+        setStatus(
+          "Load lines first."
+        );
 
-      return;
-    }
-
-
-    saveCurrentLine();
-
-
-    if (
-      currentIndex <
-      lines.length - 1
-    ) {
-
-      currentIndex++;
-
-    }
+        return;
+      }
 
 
-    updateLine();
+      saveCurrentLine();
 
-  };
+
+      if (
+        currentIndex <
+        lines.length - 1
+      ) {
+
+        currentIndex++;
+
+      }
+
+
+      updateLine();
+
+    };
 
 
   /* =====================================================
-     SETTINGS PANEL
+     EXTRA CONTROLS
      ===================================================== */
 
   var settingsPanel =
@@ -293,8 +320,10 @@
 
 
   if (!settingsPanel) {
+
     settingsPanel =
       fontEl.parentElement;
+
   }
 
 
@@ -310,6 +339,7 @@
     label.style.marginTop = "8px";
 
     return label;
+
   }
 
 
@@ -323,6 +353,7 @@
     var input =
       document.createElement("input");
 
+
     input.type = "number";
 
     input.value = value;
@@ -331,14 +362,19 @@
 
     input.max = max;
 
-    input.step = step || "1";
+    input.step =
+      step || "1";
 
-    input.style.width = "100%";
+
+    input.style.width =
+      "100%";
 
     input.style.boxSizing =
       "border-box";
 
+
     return input;
+
   }
 
 
@@ -381,10 +417,8 @@
   fitRow.style.display =
     "flex";
 
-
   fitRow.style.alignItems =
     "center";
-
 
   fitRow.style.gap =
     "6px";
@@ -394,12 +428,16 @@
     document.createElement("input");
 
 
-  fitEl.type = "checkbox";
+  fitEl.type =
+    "checkbox";
 
-  fitEl.checked = true;
+  fitEl.checked =
+    true;
 
 
-  fitRow.appendChild(fitEl);
+  fitRow.appendChild(
+    fitEl
+  );
 
 
   fitRow.appendChild(
@@ -444,19 +482,26 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel("Text Mode")
+    makeLabel(
+      "Text Mode"
+    )
   );
 
 
   var modeEl =
-    document.createElement("select");
+    document.createElement(
+      "select"
+    );
 
 
-  modeEl.style.width = "100%";
+  modeEl.style.width =
+    "100%";
 
 
   var paragraphOption =
-    document.createElement("option");
+    document.createElement(
+      "option"
+    );
 
 
   paragraphOption.value =
@@ -468,7 +513,9 @@
 
 
   var pointOption =
-    document.createElement("option");
+    document.createElement(
+      "option"
+    );
 
 
   pointOption.value =
@@ -499,7 +546,9 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel("Letter Spacing")
+    makeLabel(
+      "Letter Spacing"
+    )
   );
 
 
@@ -522,7 +571,9 @@
      ===================================================== */
 
   settingsPanel.appendChild(
-    makeLabel("Line Spacing")
+    makeLabel(
+      "Line Spacing"
+    )
   );
 
 
@@ -566,7 +617,7 @@
 
 
   /* =====================================================
-     PHOTOPEA MESSAGE LISTENER
+     MESSAGE LISTENER
      ===================================================== */
 
   window.addEventListener(
@@ -599,6 +650,22 @@
 
       if (
         event.data.indexOf(
+          "TYPERP_STEP:"
+        ) === 0
+      ) {
+
+        setStatus(
+          event.data.substring(
+            "TYPERP_STEP:".length
+          )
+        );
+
+        return;
+      }
+
+
+      if (
+        event.data.indexOf(
           "TYPERP_ERR:"
         ) === 0
       ) {
@@ -615,7 +682,7 @@
 
 
         alert(
-          "TypeR-P BUILD-022\n\n" +
+          "TypeR-P BUILD-021\n\n" +
           error
         );
 
@@ -639,7 +706,7 @@
 
 
   /* =====================================================
-     INSERT
+     INSERT LINE
      ===================================================== */
 
   insertLineBtn.onclick =
@@ -675,9 +742,9 @@
       }
 
 
-      /* =================================================
+      /* -------------------------------------------------
          SETTINGS
-         ================================================= */
+         ------------------------------------------------- */
 
       var font =
         fontEl.value ||
@@ -694,15 +761,19 @@
           colorEl.value ||
           "FF0000"
         )
-        .replace(
-          /[^0-9a-fA-F]/g,
-          ""
-        )
-        .slice(0, 6);
+          .replace(
+            /[^0-9a-fA-F]/g,
+            ""
+          )
+          .slice(0, 6);
 
 
-      while (color.length < 6) {
+      while (
+        color.length < 6
+      ) {
+
         color += "0";
+
       }
 
 
@@ -721,7 +792,9 @@
         !isFinite(padding) ||
         padding < 0
       ) {
+
         padding = 12;
+
       }
 
 
@@ -735,17 +808,18 @@
         !isFinite(minSize) ||
         minSize < 1
       ) {
+
         minSize = 8;
+
       }
 
 
       var autoFit =
-        !!fitEl.checked;
+        fitEl.checked;
 
 
       var mode =
-        modeEl.value ||
-        "PARAGRAPH";
+        modeEl.value;
 
 
       var tracking =
@@ -755,7 +829,9 @@
 
 
       if (!isFinite(tracking)) {
+
         tracking = 0;
+
       }
 
 
@@ -769,7 +845,9 @@
         !isFinite(leading) ||
         leading < 0
       ) {
+
         leading = 0;
+
       }
 
 
@@ -780,786 +858,521 @@
 
 
       if (
-        !isFinite(horizontalScale) ||
-        horizontalScale <= 0
+        !isFinite(
+          horizontalScale
+        )
       ) {
+
         horizontalScale = 100;
+
       }
 
 
+      /* -------------------------------------------------
+         START
+         ------------------------------------------------- */
+
       setStatus(
-        "Sending to Photopea..."
+        "Sending BUILD-021..."
       );
 
 
       /* =================================================
-         BUILD PHOTOPEA SCRIPT
+         PHOTOPEA SCRIPT
          ================================================= */
 
-      var script = "";
+      var script =
 
+        "(function(){\n" +
 
-      script +=
-        "(function(){try{\n";
+        "try{\n" +
 
+        "app.echoToOE('TYPERP_STEP:SCRIPT_STARTED');\n" +
 
-      /* STEP 1 */
 
-      script +=
-        "app.echoToOE('TYPERP_OK:SCRIPT_STARTED');\n";
+        /* DOCUMENT */
 
+        "var d=app.activeDocument;\n" +
 
-      /* STEP 2 */
+        "if(!d){throw new Error('NO_ACTIVE_DOCUMENT');}\n" +
 
-      script +=
-        "var d=app.activeDocument;\n";
+        "app.echoToOE('TYPERP_STEP:DOCUMENT_VALID');\n" +
 
 
-      script +=
-        "if(!d){throw new Error('No active document.');}\n";
+        /* SELECTION */
 
+        "var b;\n" +
 
-      script +=
-        "app.echoToOE('TYPERP_OK:DOCUMENT_OK');\n";
+        "try{\n" +
 
+        "b=d.selection.bounds;\n" +
 
-      /* STEP 3 */
+        "}catch(e){\n" +
 
-      script +=
-        "app.echoToOE('TYPERP_OK:READING_SELECTION');\n";
+        "throw new Error('NO_ACTIVE_SELECTION');\n" +
 
+        "}\n" +
 
-      /*
-       * IMPORTANT:
-       * Read selection bounds directly.
-       * No helper function or conversion happens
-       * until we know Photopea returned the bounds.
-       */
 
-      script +=
-        "var b=d.selection.bounds;\n";
+        "if(!b||b.length!==4){\n" +
 
+        "throw new Error('NO_ACTIVE_SELECTION');\n" +
 
-      script +=
-        "app.echoToOE('TYPERP_OK:SELECTION_READ');\n";
+        "}\n" +
 
 
-      /* STEP 4 */
+        "app.echoToOE('TYPERP_STEP:SELECTION_VALID');\n" +
 
-      script +=
-        "if(!b||b.length!==4){\n";
 
+        /* SAFE NUMBER */
 
-      script +=
-        "throw new Error('No active selection. Please make a selection first.');\n";
+        "function num(v){\n" +
 
+        "if(typeof v==='number'&&isFinite(v))return v;\n" +
 
-      script +=
-        "}\n";
+        "try{\n" +
 
+        "if(v&&typeof v.as==='function'){\n" +
 
-      script +=
-        "app.echoToOE('TYPERP_OK:SELECTION_VALID');\n";
+        "var x=Number(v.as('px'));\n" +
 
+        "if(isFinite(x))return x;\n" +
 
-      /* =================================================
-         COORDINATES
-         ================================================= */
+        "}\n" +
 
-      script +=
-        "function px(v){\n";
+        "}catch(e){}\n" +
 
+        "try{\n" +
 
-      script +=
-        "if(typeof v==='number'&&isFinite(v))return v;\n";
+        "if(v&&v.value!==undefined){\n" +
 
+        "var y=Number(v.value);\n" +
 
-      script +=
-        "try{\n";
+        "if(isFinite(y))return y;\n" +
 
+        "}\n" +
 
-      script +=
-        "if(v&&typeof v.as==='function'){\n";
+        "}catch(e){}\n" +
 
+        "return NaN;\n" +
 
-      script +=
-        "var a=Number(v.as('px'));\n";
+        "}\n" +
 
 
-      script +=
-        "if(isFinite(a))return a;\n";
+        "var L=num(b[0]);\n" +
 
+        "var T=num(b[1]);\n" +
 
-      script +=
-        "}\n";
+        "var R=num(b[2]);\n" +
 
+        "var B=num(b[3]);\n" +
 
-      script +=
-        "}catch(e){}\n";
 
+        "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){\n" +
 
-      script +=
-        "try{\n";
+        "throw new Error('SELECTION_COORDINATES_INVALID');\n" +
 
+        "}\n" +
 
-      script +=
-        "if(v&&v.value!==undefined){\n";
 
+        "app.echoToOE('TYPERP_STEP:COORDINATES_VALID');\n" +
 
-      script +=
-        "var n=Number(v.value);\n";
 
+        /* DIMENSIONS */
 
-      script +=
-        "if(isFinite(n))return n;\n";
+        "if(R<=L||B<=T){\n" +
 
+        "throw new Error('SELECTION_DIMENSIONS_INVALID');\n" +
 
-      script +=
-        "}\n";
+        "}\n" +
 
 
-      script +=
-        "}catch(e){}\n";
+        "var W=R-L;\n" +
 
+        "var H=B-T;\n" +
 
-      script +=
-        "return NaN;\n";
 
+        "app.echoToOE('TYPERP_STEP:DIMENSIONS_VALID');\n" +
 
-      script +=
-        "}\n";
 
+        /* BOX */
 
-      script +=
-        "var L=px(b[0]);\n";
-
-
-      script +=
-        "var T=px(b[1]);\n";
-
-
-      script +=
-        "var R=px(b[2]);\n";
-
-
-      script +=
-        "var B=px(b[3]);\n";
-
-
-      script +=
-        "app.echoToOE('TYPERP_OK:COORDINATES_READ');\n";
-
-
-      script +=
-        "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){\n";
-
-
-      script +=
-        "throw new Error('Could not read selection coordinates.');\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "if(R<=L||B<=T){\n";
-
-
-      script +=
-        "throw new Error('Selection has invalid dimensions.');\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "app.echoToOE('TYPERP_OK:COORDINATES_OK');\n";
-
-
-      /* =================================================
-         BOX
-         ================================================= */
-
-      script +=
-        "var boxLeft=L+" +
+        "var pad=" +
         padding +
-        ";\n";
+        ";\n" +
+
+        "var boxL=L+pad;\n" +
+
+        "var boxT=T+pad;\n" +
+
+        "var boxR=R-pad;\n" +
+
+        "var boxB=B-pad;\n" +
+
+        "var boxW=boxR-boxL;\n" +
+
+        "var boxH=boxB-boxT;\n" +
 
 
-      script +=
-        "var boxTop=T+" +
-        padding +
-        ";\n";
+        "if(boxW<=1||boxH<=1){\n" +
+
+        "throw new Error('PADDING_TOO_LARGE');\n" +
+
+        "}\n" +
 
 
-      script +=
-        "var boxRight=R-" +
-        padding +
-        ";\n";
+        "app.echoToOE('TYPERP_STEP:BOX_VALID');\n" +
 
 
-      script +=
-        "var boxBottom=B-" +
-        padding +
-        ";\n";
+        /* CREATE LAYER */
+
+        "var layer=d.artLayers.add();\n" +
+
+        "app.echoToOE('TYPERP_STEP:LAYER_CREATED');\n" +
 
 
-      script +=
-        "var boxWidth=boxRight-boxLeft;\n";
+        "layer.kind=LayerKind.TEXT;\n" +
+
+        "app.echoToOE('TYPERP_STEP:TEXT_LAYER_CREATED');\n" +
 
 
-      script +=
-        "var boxHeight=boxBottom-boxTop;\n";
+        "var ti=layer.textItem;\n" +
+
+        "if(!ti){throw new Error('TEXT_ITEM_NOT_AVAILABLE');}\n" +
 
 
-      script +=
-        "if(boxWidth<1||boxHeight<1){\n";
+        "app.echoToOE('TYPERP_STEP:TEXT_ITEM_VALID');\n" +
 
 
-      script +=
-        "throw new Error('Padding is too large for the selection.');\n";
+        /* PARAGRAPH */
 
-
-      script +=
-        "}\n";
-
-
-      /* =================================================
-         CREATE LAYER
-         ================================================= */
-
-      script +=
-        "var layer=d.artLayers.add();\n";
-
-
-      script +=
-        "layer.kind=LayerKind.TEXT;\n";
-
-
-      script +=
-        "layer.name=" +
-        jsString(
-          "TTP: " +
-          text.substring(0,45)
-        ) +
-        ";\n";
-
-
-      script +=
-        "var ti=layer.textItem;\n";
-
-
-      /* =================================================
-         PARAGRAPH
-         ================================================= */
-
-      script +=
         "if(" +
         jsString(mode) +
-        "==='PARAGRAPH'){\n";
+        "==='PARAGRAPH'){\n" +
+
+        "app.echoToOE('TYPERP_STEP:PARAGRAPH_MODE');\n" +
 
 
-      script +=
-        "ti.kind=TextType.PARAGRAPHTEXT;\n";
+        "ti.kind=TextType.PARAGRAPHTEXT;\n" +
+
+        "app.echoToOE('TYPERP_STEP:PARAGRAPH_KIND_SET');\n" +
 
 
-      script +=
-        "ti.position=[boxLeft,boxTop];\n";
+        "ti.position=[boxL,boxT];\n" +
+
+        "app.echoToOE('TYPERP_STEP:POSITION_SET');\n" +
 
 
-      script +=
-        "ti.width=new UnitValue(boxWidth,'px');\n";
+        "ti.width=new UnitValue(boxW,'px');\n" +
+
+        "app.echoToOE('TYPERP_STEP:WIDTH_SET');\n" +
 
 
-      script +=
-        "ti.height=new UnitValue(boxHeight,'px');\n";
+        "ti.height=new UnitValue(boxH,'px');\n" +
+
+        "app.echoToOE('TYPERP_STEP:HEIGHT_SET');\n" +
 
 
-      script +=
         "ti.contents=" +
         jsString(text) +
-        ";\n";
+        ";\n" +
+
+        "app.echoToOE('TYPERP_STEP:CONTENTS_SET');\n" +
 
 
-      script +=
         "ti.font=" +
         jsString(font) +
-        ";\n";
+        ";\n" +
+
+        "app.echoToOE('TYPERP_STEP:FONT_SET');\n" +
 
 
-      script +=
         "ti.size=" +
         initialSize +
-        ";\n";
+        ";\n" +
+
+        "app.echoToOE('TYPERP_STEP:SIZE_SET');\n" +
 
 
-      script +=
         "ti.justification=Justification." +
         align +
-        ";\n";
+        ";\n" +
+
+        "app.echoToOE('TYPERP_STEP:ALIGN_SET');\n" +
 
 
-      /* COLOR */
+        /* COLOR */
 
-      script +=
-        "var c=new SolidColor();\n";
+        "var c=new SolidColor();\n" +
 
-
-      script +=
         "c.rgb.hexValue=" +
         jsString(color) +
-        ";\n";
+        ";\n" +
+
+        "ti.color=c;\n" +
+
+        "app.echoToOE('TYPERP_STEP:COLOR_SET');\n" +
 
 
-      script +=
-        "ti.color=c;\n";
+        /* TRACKING */
 
+        "try{\n" +
 
-      /* TRACKING */
-
-      script +=
-        "try{ti.tracking=" +
+        "ti.tracking=" +
         tracking +
-        ";}catch(e){}\n";
+        ";\n" +
+
+        "}catch(e){}\n" +
 
 
-      /* LEADING */
+        /* LEADING */
 
-      script +=
-        "try{\n";
+        "try{\n" +
 
-
-      script +=
         "if(" +
         leading +
-        ">0){\n";
+        ">0){\n" +
 
+        "ti.useAutoLeading=false;\n" +
 
-      script +=
-        "ti.useAutoLeading=false;\n";
-
-
-      script +=
         "ti.leading=new UnitValue(" +
         leading +
-        ",'pt');\n";
+        ",'pt');\n" +
+
+        "}else{\n" +
+
+        "ti.useAutoLeading=true;\n" +
+
+        "}\n" +
+
+        "}catch(e){}\n" +
 
 
-      script +=
-        "}else{\n";
+        /* HORIZONTAL SCALE */
 
+        "try{\n" +
 
-      script +=
-        "ti.useAutoLeading=true;\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "}catch(e){}\n";
-
-
-      /* HORIZONTAL SCALE */
-
-      script +=
-        "try{\n";
-
-
-      script +=
         "ti.horizontalScale=" +
         horizontalScale +
-        ";\n";
+        ";\n" +
+
+        "}catch(e){}\n" +
 
 
-      script +=
-        "}catch(e){}\n";
+        "app.echoToOE('TYPERP_STEP:TEXT_SETTINGS_DONE');\n" +
 
 
-      /* =================================================
-         AUTO FIT
-         ================================================= */
+        /* AUTO FIT */
 
-      script +=
         "if(" +
         autoFit +
-        "){\n";
+        "){\n" +
 
+        "app.echoToOE('TYPERP_STEP:AUTOFIT_START');\n" +
 
-      script +=
-        "function estimateLines(str,size,width,track,scale){\n";
 
-
-      script +=
-        "var avg=size*0.52*(scale/100);\n";
-
-
-      script +=
-        "var trackingPx=(track/1000)*size;\n";
-
-
-      script +=
-        "avg+=trackingPx;\n";
-
-
-      script +=
-        "if(avg<0.1)avg=0.1;\n";
-
-
-      script +=
-        "var maxChars=Math.max(1,Math.floor(width/avg));\n";
-
-
-      script +=
-        "var paragraphs=str.split(String.fromCharCode(10));\n";
-
-
-      script +=
-        "var total=0;\n";
-
-
-      script +=
-        "for(var p=0;p<paragraphs.length;p++){\n";
-
-
-      script +=
-        "var paragraph=paragraphs[p];\n";
-
-
-      script +=
-        "if(paragraph.trim()===''){total++;continue;}\n";
-
-
-      script +=
-        "var words=paragraph.trim().split(/\\s+/);\n";
-
-
-      script +=
-        "var chars=0;\n";
-
-
-      script +=
-        "var lineCount=1;\n";
-
-
-      script +=
-        "for(var w=0;w<words.length;w++){\n";
-
-
-      script +=
-        "var word=words[w];\n";
-
-
-      script +=
-        "var len=word.length;\n";
-
-
-      script +=
-        "if(len>maxChars){\n";
-
-
-      script +=
-        "if(chars>0){lineCount++;chars=0;}\n";
-
-
-      script +=
-        "lineCount+=Math.floor(len/maxChars);\n";
-
-
-      script +=
-        "chars=len%maxChars;\n";
-
-
-      script +=
-        "if(chars===0){chars=maxChars;lineCount--;}\n";
-
-
-      script +=
-        "continue;\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "var needed=len+(chars>0?1:0);\n";
-
-
-      script +=
-        "if(chars+needed>maxChars){\n";
-
-
-      script +=
-        "lineCount++;\n";
-
-
-      script +=
-        "chars=len;\n";
-
-
-      script +=
-        "}else{\n";
-
-
-      script +=
-        "chars+=needed;\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "total+=lineCount;\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "return Math.max(1,total);\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
         "var current=" +
         initialSize +
-        ";\n";
+        ";\n" +
 
-
-      script +=
         "var minimum=" +
         minSize +
-        ";\n";
+        ";\n" +
 
 
-      script +=
-        "while(current>minimum){\n";
+        "function estimateLines(str,size,width){\n" +
+
+        "var avg=size*0.52;\n" +
+
+        "if(avg<0.1)avg=0.1;\n" +
+
+        "var maxChars=Math.max(1,Math.floor(width/avg));\n" +
+
+        "var parts=str.split(String.fromCharCode(10));\n" +
+
+        "var total=0;\n" +
 
 
-      script +=
+        "for(var p=0;p<parts.length;p++){\n" +
+
+        "var s=parts[p];\n" +
+
+        "if(s.length===0){total++;continue;}\n" +
+
+
+        "var words=s.split(/\\s+/);\n" +
+
+        "var chars=0;\n" +
+
+        "var count=1;\n" +
+
+
+        "for(var w=0;w<words.length;w++){\n" +
+
+        "var word=words[w];\n" +
+
+        "var remaining=word.length;\n" +
+
+
+        "if(remaining>maxChars){\n" +
+
+        "if(chars>0){count++;chars=0;}\n" +
+
+        "while(remaining>maxChars){\n" +
+
+        "count++;\n" +
+
+        "remaining-=maxChars;\n" +
+
+        "}\n" +
+
+        "chars=remaining;\n" +
+
+        "continue;\n" +
+
+        "}\n" +
+
+
+        "var needed=word.length+(chars>0?1:0);\n" +
+
+
+        "if(chars+needed>maxChars){\n" +
+
+        "count++;\n" +
+
+        "chars=word.length;\n" +
+
+        "}else{\n" +
+
+        "chars+=needed;\n" +
+
+        "}\n" +
+
+        "}\n" +
+
+
+        "total+=count;\n" +
+
+        "}\n" +
+
+
+        "return Math.max(1,total);\n" +
+
+        "}\n" +
+
+
+        "var guard=0;\n" +
+
+
+        "while(current>minimum&&guard<1000){\n" +
+
+        "guard++;\n" +
+
         "var estimated=estimateLines(" +
         jsString(text) +
-        ",current,boxWidth," +
-        tracking +
-        "," +
-        horizontalScale +
-        ");\n";
+        ",current,boxW);\n" +
+
+        "var lh=" +
+        leading +
+        ">0?" +
+        leading +
+        ":current*1.2;\n" +
+
+        "if(estimated*lh<=boxH){break;}\n" +
+
+        "current--;\n" +
+
+        "ti.size=current;\n" +
+
+        "}\n" +
 
 
-      script +=
-        "var lineHeight=";
+        "app.echoToOE('TYPERP_STEP:AUTOFIT_DONE');\n" +
+
+        "}\n" +
 
 
-      if (leading > 0) {
+        /* POINT */
 
-        script +=
-          leading;
+        "}else{\n" +
 
-      } else {
+        "app.echoToOE('TYPERP_STEP:POINT_MODE');\n" +
 
-        script +=
-          "current*1.20";
+        "ti.kind=TextType.POINTTEXT;\n" +
 
-      }
-
-
-      script +=
-        ";\n";
-
-
-      script +=
-        "var neededHeight=estimated*lineHeight;\n";
-
-
-      script +=
-        "if(neededHeight<=boxHeight)break;\n";
-
-
-      script +=
-        "current--;\n";
-
-
-      script +=
-        "ti.size=current;\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "}\n";
-
-
-      /* =================================================
-         POINT TEXT
-         ================================================= */
-
-      script +=
-        "}else{\n";
-
-
-      script +=
-        "ti.kind=TextType.POINTTEXT;\n";
-
-
-      script +=
         "ti.contents=" +
         jsString(text) +
-        ";\n";
+        ";\n" +
 
-
-      script +=
         "ti.font=" +
         jsString(font) +
-        ";\n";
+        ";\n" +
 
-
-      script +=
         "ti.size=" +
         initialSize +
-        ";\n";
+        ";\n" +
 
-
-      script +=
         "ti.justification=Justification." +
         align +
-        ";\n";
+        ";\n" +
 
+        "var pc=new SolidColor();\n" +
 
-      script +=
-        "var pc=new SolidColor();\n";
-
-
-      script +=
         "pc.rgb.hexValue=" +
         jsString(color) +
-        ";\n";
+        ";\n" +
+
+        "ti.color=pc;\n" +
+
+        "ti.position=[(L+R)/2,(T+B)/2];\n" +
+
+        "}\n" +
 
 
-      script +=
-        "ti.color=pc;\n";
+        /* FINISH */
+
+        "app.echoToOE('TYPERP_STEP:BEFORE_ACTIVE_LAYER');\n" +
+
+        "d.activeLayer=layer;\n" +
+
+        "app.echoToOE('TYPERP_STEP:ACTIVE_LAYER_SET');\n" +
 
 
-      script +=
-        "try{ti.tracking=" +
-        tracking +
-        ";}catch(e){}\n";
+        "app.echoToOE(" +
 
+        "'TYPERP_OK:TEXT INSERTED | selection='+" +
 
-      script +=
-        "try{\n";
-
-
-      script +=
-        "if(" +
-        leading +
-        ">0){\n";
-
-
-      script +=
-        "ti.useAutoLeading=false;\n";
-
-
-      script +=
-        "ti.leading=new UnitValue(" +
-        leading +
-        ",'pt');\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
-        "}catch(e){}\n";
-
-
-      script +=
-        "try{ti.horizontalScale=" +
-        horizontalScale +
-        ";}catch(e){}\n";
-
-
-      script +=
-        "ti.position=[(L+R)/2,(T+B)/2];\n";
-
-
-      script +=
-        "}\n";
-
-
-      /* =================================================
-         FINISH
-         ================================================= */
-
-      script +=
-        "d.activeLayer=layer;\n";
-
-
-      script +=
-        "app.echoToOE(";
-
-
-      script +=
-        "'TYPERP_OK:TEXT INSERTED | selection=' +";
-
-
-      script +=
         "Math.round(L)+','+" +
+
         "Math.round(T)+','+" +
+
         "Math.round(R)+','+" +
+
         "Math.round(B)+" +
+
         "' | box='+" +
-        "Math.round(boxWidth)+'x'+Math.round(boxHeight)+" +
-        "' | size='+ti.size+" +
-        "' | tracking='+" +
-        tracking +
-        "+' | leading='+" +
-        leading +
-        "+' | scale='+" +
-        horizontalScale +
-        ");\n";
+
+        "Math.round(boxW)+'x'+Math.round(boxH)+" +
+
+        "' | size='+ti.size" +
+
+        ");\n" +
 
 
-      script +=
-        "}catch(e){\n";
+        "}catch(e){\n" +
 
+        "app.echoToOE(" +
 
-      script +=
-        "app.echoToOE(";
+        "'TYPERP_ERR:'+" +
 
+        "(e&&e.message?" +
 
-      script +=
-        "'TYPERP_ERR:'+";
+        "e.message:String(e))" +
 
+        ");\n" +
 
-      script +=
-        "(e&&e.message?e.message:String(e))";
+        "}\n" +
 
-
-      script +=
-        ");\n";
-
-
-      script +=
-        "}\n";
-
-
-      script +=
         "})();";
 
 
@@ -1567,47 +1380,9 @@
          SEND
          ================================================= */
 
-      try {
-
-        window.parent.postMessage(
-          script,
-          "*"
-        );
-
-      } catch (e) {
-
-        setStatus(
-          "Send error: " +
-          e.message
-        );
-
-      }
-
-
-      /* =================================================
-         TIMEOUT
-         ================================================= */
-
-      setTimeout(
-        function () {
-
-          var current =
-            statusEl.textContent;
-
-
-          if (
-            current ===
-            "Sending to Photopea..."
-          ) {
-
-            setStatus(
-              "Photopea did not respond."
-            );
-
-          }
-
-        },
-        7000
+      window.parent.postMessage(
+        script,
+        "*"
       );
 
     };
@@ -1621,7 +1396,7 @@
 
 
   setStatus(
-    "Ready (BUILD-022)"
+    "Ready (BUILD-021)"
   );
 
 
