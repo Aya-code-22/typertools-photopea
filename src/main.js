@@ -539,8 +539,7 @@
       "if(!isFinite(L)||!isFinite(T)||!isFinite(R)||!isFinite(B)){ throw new Error('Could not read selection coordinates.'); }\n" +
       "if(R<=L||B<=T){ throw new Error('Selection has invalid dimensions.'); }\n" +
 
-      "try { app.preferences.rulerUnits = Units.PIXELS; app.preferences.typeUnits = TypeUnits.PIXELS; } catch(eUnits) {}\n" +
-      "alert('STEP4: units set');\n" +
+      "alert('STEP4: skipped rulerUnits, using plain px numbers');\n" +
 
       "var boxLeft=L+" + padding + ";\n" +
       "var boxTop=T+" + padding + ";\n" +
